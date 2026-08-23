@@ -137,10 +137,14 @@ export default function Dashboard() {
   }, []);
 
   const handlePauseToggle = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (isPaused) {
-      await supabase.from('positions').delete().eq('status', 'system_pause');
+      await supabase.from('positions').delete().eq('status', 'system_pause').eq('user_id', user.id);
     } else {
       await supabase.from('positions').insert([{ 
+        user_id: user.id,
         status: 'system_pause', underlying: 'SYSTEM', expiry_date: '2099-01-01', short_call_symbol: 'SYSTEM', short_call_strike: 0, short_put_symbol: 'SYSTEM', short_put_strike: 0, credit_received: 0, lots: 0
       }]);
     }
@@ -263,8 +267,8 @@ export default function Dashboard() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8 w-full max-w-[100vw]">
+          <div className="overflow-x-auto w-full">
             {activeTab === 'active' ? (
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
