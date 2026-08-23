@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayCircle, PauseCircle } from 'lucide-react';
+import { fetchLivePnl } from './actions';
 
 export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
@@ -31,33 +32,8 @@ export default function Dashboard() {
     // Fetch open positions
     const { data: openData } = await supabase.from('positions').select('*').in('status', ['open', 'adjusted']);
     
-    // Enrich open positions with Live Delta API marks
-    const enrichedOpenData = await Promise.all((openData || []).map(async (pos) => {
-        try {
-            const [callRes, putRes] = await Promise.all([
-                fetch(`https://api.delta.exchange/v2/products/${pos.short_call_symbol}/ticker`),
-                fetch(`https://api.delta.exchange/v2/products/${pos.short_put_symbol}/ticker`)
-            ]);
-            
-            const callData = await callRes.json();
-            const putData = await putRes.json();
-            
-            const cMark = parseFloat(callData.result?.mark_price || 0);
-            const pMark = parseFloat(putData.result?.mark_price || 0);
-            
-            const currentCost = (cMark + pMark) * pos.lots * 0.001;
-            const adjCost = parseFloat(pos.adjustment_cost || 0);
-            const actualPnl = parseFloat(pos.credit_received || 0) - currentCost - adjCost;
-
-            return {
-                ...pos,
-                actualPnl,
-                peakPnl: parseFloat(pos.peak_unrealized_pnl || 0)
-            };
-        } catch (error) {
-            return { ...pos, actualPnl: 0, peakPnl: parseFloat(pos.peak_unrealized_pnl || 0) };
-        }
-    }));
+    // Enrich open positions with Live Delta API marks via Server Action (bypasses CORS)
+    const enrichedOpenData = await fetchLivePnl(openData || []);
     
     // Fetch closed positions
     const { data: closedData } = await supabase.from('positions').select('*').eq('status', 'closed').order('closed_at', { ascending: false });
@@ -151,8 +127,22 @@ export default function Dashboard() {
   const heatmapTrades = [...closedPositions].reverse().slice(-30);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans">
-      
+    <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
+      {/* Main Shared Navbar */}
+      <nav className="w-full bg-[#050505] py-4 px-6 flex items-center justify-between shadow-md z-50">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          </div>
+          <span className="text-white font-bold text-xl tracking-tight">ProfitPilot</span>
+        </div>
+        <div className="flex items-center gap-6">
+          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Platform</a>
+          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Risk Engine</a>
+          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Security</a>
+        </div>
+      </nav>
+
       {/* Top Ticker Bar (Like old dashboard) */}
       <div className="w-full bg-slate-100 border-b border-slate-200 py-2 px-4 flex items-center gap-6 overflow-hidden text-sm font-semibold">
         <div className="flex items-center gap-2 whitespace-nowrap">
@@ -164,21 +154,24 @@ export default function Dashboard() {
 
       {/* Main Header */}
       <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold text-slate-800">ProfitPilot Bot</h1>
+        <h1 className="text-xl font-bold text-slate-800">ProfitPilot Bot Dashboard</h1>
         <div className="flex items-center gap-3">
-          <button onClick={handlePauseToggle} className={`px-4 py-2 font-bold rounded text-sm ${isPaused ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
+          <button onClick={handlePauseToggle} className={`px-4 py-2 font-bold rounded text-sm transition ${isPaused ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
             {isPaused ? '▶ Resume Entries' : '⏸ Pause Entries'}
           </button>
-          <button className="px-4 py-2 font-bold rounded text-sm bg-slate-800 text-white hover:bg-slate-900">
-            View Logs
-          </button>
-          <button onClick={fetchData} className="px-4 py-2 font-bold rounded text-sm bg-slate-900 text-white hover:bg-black">
+          <button 
+            onClick={() => {
+              setLoading(true);
+              fetchData();
+            }} 
+            className="px-4 py-2 font-bold rounded text-sm bg-slate-900 text-white hover:bg-black transition flex items-center gap-2"
+          >
             Refresh Data
           </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-8">
+      <div className="max-w-7xl mx-auto px-8 py-8 w-full">
         
         {/* KPI Row (Clean White Box) */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-8 flex justify-between items-center">
