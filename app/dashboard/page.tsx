@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Activity, DollarSign, Target, Hash, PlayCircle, PauseCircle, AlertOctagon } from 'lucide-react';
+import { PlayCircle, PauseCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
@@ -10,6 +10,18 @@ export default function Dashboard() {
   const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0 });
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
+  const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
+  const [btcPrice, setBtcPrice] = useState<string>('...');
+
+  // WebSocket for Live BTC Price
+  useEffect(() => {
+    let ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setBtcPrice(parseFloat(data.p).toFixed(2));
+    };
+    return () => ws.close();
+  }, []);
 
   async function fetchData() {
     // Fetch system_pause flag
@@ -17,22 +29,13 @@ export default function Dashboard() {
     setIsPaused((pauseData || []).length > 0);
 
     // Fetch open positions
-    const { data: openData } = await supabase
-      .from('positions')
-      .select('*')
-      .in('status', ['open', 'adjusted']);
+    const { data: openData } = await supabase.from('positions').select('*').in('status', ['open', 'adjusted']);
     
     // Fetch closed positions
-    const { data: closedData } = await supabase
-      .from('positions')
-      .select('*')
-      .eq('status', 'closed')
-      .order('closed_at', { ascending: false });
+    const { data: closedData } = await supabase.from('positions').select('*').eq('status', 'closed').order('closed_at', { ascending: false });
 
     // Fetch trade events
-    const { data: eventsData } = await supabase
-      .from('trade_events')
-      .select('*');
+    const { data: eventsData } = await supabase.from('trade_events').select('*');
 
     // Process Closed Positions
     const processedClosed = (closedData || []).map(pos => {
@@ -75,18 +78,18 @@ export default function Dashboard() {
         callEntry: callEntry !== 'N/A' ? `$${parseFloat(callEntry as string).toFixed(2)}` : 'N/A',
         putEntry: putEntry !== 'N/A' ? `$${parseFloat(putEntry as string).toFixed(2)}` : 'N/A',
         callExit,
-        putExit
+        putExit,
+        realizedPnl
       };
     });
 
     setOpenPositions(openData || []);
     setClosedPositions(processedClosed);
 
-    // Calc metrics
     const roundTrips = processedClosed.length;
-    const winners = processedClosed.filter(p => p.realized_pnl > 0).length;
+    const winners = processedClosed.filter(p => p.realizedPnl > 0).length;
     const hitRate = roundTrips > 0 ? Math.round((winners / roundTrips) * 100) : 0;
-    const totalPnl = processedClosed.reduce((sum, p) => sum + parseFloat(p.realized_pnl || 0), 0);
+    const totalPnl = processedClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
     
     setMetrics({ roundTrips, winners, hitRate, totalPnl });
     setLoading(false);
@@ -116,203 +119,197 @@ export default function Dashboard() {
 
   if (loading) return <div className="p-10 text-center text-slate-500">Loading Dashboard...</div>;
 
+  // Generate heatmap squares (last 20 trades)
+  const heatmapTrades = [...closedPositions].reverse().slice(-30);
+
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-slate-50 font-sans">
+      
+      {/* Top Ticker Bar (Like old dashboard) */}
+      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 px-4 flex items-center gap-6 overflow-hidden text-sm font-semibold">
+        <div className="flex items-center gap-2 whitespace-nowrap">
+          <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
+          <span className="text-slate-800">Bitcoin</span>
+          <span className="text-slate-900">{btcPrice !== '...' ? `$${btcPrice}` : 'Loading...'}</span>
+        </div>
+      </div>
+
+      {/* Main Header */}
+      <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
+        <h1 className="text-xl font-bold text-slate-800">ProfitPilot Bot</h1>
+        <div className="flex items-center gap-3">
+          <button onClick={handlePauseToggle} className={`px-4 py-2 font-bold rounded text-sm ${isPaused ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
+            {isPaused ? '▶ Resume Entries' : '⏸ Pause Entries'}
+          </button>
+          <button className="px-4 py-2 font-bold rounded text-sm bg-slate-800 text-white hover:bg-slate-900">
+            View Logs
+          </button>
+          <button onClick={fetchData} className="px-4 py-2 font-bold rounded text-sm bg-slate-900 text-white hover:bg-black">
+            Refresh Data
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-8 py-8">
         
-        {/* Header */}
-        <div className="flex justify-between items-center bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">ProfitPilot Dashboard</h1>
-            <p className="text-slate-500">Live Trading Data</p>
+        {/* KPI Row (Clean White Box) */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-8 flex justify-between items-center">
+          <div className="flex-1 border-r border-slate-100">
+            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Live Balance</div>
+            <div className="text-2xl font-bold text-slate-800">$15.90</div>
           </div>
-          
-          <div className="flex items-center gap-6">
-            {/* Live BTC Price */}
-            <div className="hidden md:block text-right">
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-1">Live Market (Binance)</div>
-              <div className="text-xl font-bold font-mono text-slate-800">
-                <LiveBtcPrice />
-              </div>
-            </div>
-
-            <div className="h-10 w-px bg-slate-200 hidden md:block"></div>
-
-            <div className="flex items-center gap-4">
-              {isPaused ? (
-                <button onClick={handlePauseToggle} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-semibold transition">
-                  <PlayCircle size={18} /> Resume Trading
-                </button>
-              ) : (
-                <button onClick={handlePauseToggle} className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition">
-                  <PauseCircle size={18} /> Pause Entries
-                </button>
-              )}
-              <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${isPaused ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`}></span>
-                {isPaused ? 'Paused (No New Entries)' : 'System Active'}
-              </span>
+          <div className="flex-1 border-r border-slate-100 pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Round-Trips</div>
+            <div className="text-2xl font-bold text-slate-800">{metrics.roundTrips}</div>
+          </div>
+          <div className="flex-1 border-r border-slate-100 pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Winners</div>
+            <div className="text-2xl font-bold text-slate-800">{metrics.winners}</div>
+          </div>
+          <div className="flex-1 border-r border-slate-100 pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Hit Rate</div>
+            <div className="text-2xl font-bold text-slate-800">{metrics.hitRate}%</div>
+          </div>
+          <div className="flex-1 pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Realised P&L</div>
+            <div className={`text-2xl font-bold ${metrics.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              ${metrics.totalPnl.toFixed(2)}
             </div>
           </div>
         </div>
 
-        {/* Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <MetricCard icon={<Hash />} label="Round Trips" value={metrics.roundTrips} />
-          <MetricCard icon={<Target />} label="Winners" value={metrics.winners} />
-          <MetricCard icon={<Activity />} label="Hit Rate" value={`${metrics.hitRate}%`} />
-          <MetricCard 
-            icon={<DollarSign />} 
-            label="Net P&L" 
-            value={`$${metrics.totalPnl.toFixed(2)}`} 
-            valueClass={metrics.totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"} 
-          />
-        </div>
-
-        {/* Open Positions Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Open Trades</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4">Instrument</th>
-                  <th className="px-6 py-4">Size</th>
-                  <th className="px-6 py-4">Credit</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {openPositions.map(pos => (
-                  <tr key={pos.id} className="hover:bg-slate-50/50">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
-                      <div>{pos.short_call_symbol}</div>
-                      <div>{pos.short_put_symbol}</div>
-                    </td>
-                    <td className="px-6 py-4">{(pos.lots * 0.001).toFixed(3)} BTC</td>
-                    <td className="px-6 py-4 font-medium">${parseFloat(pos.credit_received).toFixed(2)}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">{pos.status}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {pos.manual_exit_requested ? (
-                        <span className="text-rose-600 font-semibold text-xs">KILL SIGNAL SENT</span>
-                      ) : (
-                        <button onClick={() => handleKillSwitch(pos.id)} className="flex items-center gap-1 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs font-bold transition ml-auto">
-                          <AlertOctagon size={14} /> KILL
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {openPositions.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No open trades right now.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        {/* Heatmap */}
+        <div className="mb-8">
+          <div className="text-[11px] font-bold text-slate-400 mb-3 uppercase tracking-wider">Daily Profitability Heatmap</div>
+          <div className="flex flex-wrap gap-1.5">
+            {heatmapTrades.map((trade, i) => (
+              <div 
+                key={i} 
+                title={`$${trade.realizedPnl.toFixed(2)}`}
+                className={`w-6 h-6 rounded ${trade.realizedPnl > 0 ? 'bg-emerald-500' : trade.realizedPnl < 0 ? 'bg-rose-500' : 'bg-slate-300'}`}
+              ></div>
+            ))}
+            {heatmapTrades.length === 0 && <div className="text-sm text-slate-400">No trades yet.</div>}
           </div>
         </div>
 
-        {/* Closed Positions Table */}
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6">
+          <button 
+            onClick={() => setActiveTab('active')}
+            className={`px-4 py-2 font-bold rounded-lg text-sm transition ${activeTab === 'active' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            Active Positions ({openPositions.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('closed')}
+            className={`px-4 py-2 font-bold rounded-lg text-sm transition ${activeTab === 'closed' ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            Closed Positions ({closedPositions.length})
+          </button>
+        </div>
+
+        {/* Tab Content */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Closed Trades</h2>
-          </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4">Instrument</th>
-                  <th className="px-6 py-4">Size</th>
-                  <th className="px-6 py-4">Entry</th>
-                  <th className="px-6 py-4">Exit</th>
-                  <th className="px-6 py-4">Gross P&L</th>
-                  <th className="px-6 py-4">Fees</th>
-                  <th className="px-6 py-4">Net P&L</th>
-                  <th className="px-6 py-4">Reason</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {closedPositions.map(pos => (
-                  <tr key={pos.id} className="hover:bg-slate-50/50">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
-                      <div>{pos.short_call_symbol}</div>
-                      <div>{pos.short_put_symbol}</div>
-                    </td>
-                    <td className="px-6 py-4">{(pos.lots * 0.001).toFixed(3)} BTC</td>
-                    <td className="px-6 py-4">
-                      <div>{pos.callEntry}</div>
-                      <div>{pos.putEntry}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>{pos.callExit}</div>
-                      <div>{pos.putExit}</div>
-                    </td>
-                    <td className="px-6 py-4 font-medium">
-                      <span className={pos.grossPnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                        {pos.grossPnl >= 0 ? "+" : ""}${pos.grossPnl.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-rose-500 font-medium">
-                      -${pos.fees.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 font-bold">
-                      <span className={pos.realized_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                        {pos.realized_pnl >= 0 ? "+" : ""}${parseFloat(pos.realized_pnl).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 text-xs">
-                      {pos.close_reason}
-                    </td>
+            {activeTab === 'active' ? (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Instrument (C/P)</th>
+                    <th className="px-6 py-4">Strategy</th>
+                    <th className="px-6 py-4">Size (BTC)</th>
+                    <th className="px-6 py-4">Entry Price</th>
+                    <th className="px-6 py-4">Actual P&L</th>
+                    <th className="px-6 py-4">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {openPositions.map(pos => (
+                    <tr key={pos.id} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-4 font-mono text-xs text-slate-700 font-semibold">
+                        <div>{pos.short_call_symbol}</div>
+                        <div>{pos.short_put_symbol}</div>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-600">Strangle</td>
+                      <td className="px-6 py-4 font-medium text-slate-600">{(pos.lots * 0.001).toFixed(3)}</td>
+                      <td className="px-6 py-4 text-slate-600">
+                        <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
+                        <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
+                      </td>
+                      <td className="px-6 py-4 text-emerald-500 font-bold">Live</td>
+                      <td className="px-6 py-4 flex items-center gap-3">
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold uppercase">{pos.status}</span>
+                        {pos.manual_exit_requested ? (
+                          <span className="text-rose-600 font-bold text-xs">KILL SIGNAL SENT</span>
+                        ) : (
+                          <button onClick={() => handleKillSwitch(pos.id)} className="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs font-bold transition">
+                            KILL
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {openPositions.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500">No active positions right now.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            ) : (
+              <table className="w-full text-sm text-left">
+                <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
+                  <tr>
+                    <th className="px-6 py-4">Instrument (C/P)</th>
+                    <th className="px-6 py-4">Size (BTC)</th>
+                    <th className="px-6 py-4">Entry Price</th>
+                    <th className="px-6 py-4">Exit Price</th>
+                    <th className="px-6 py-4">Fees</th>
+                    <th className="px-6 py-4">Net P&L</th>
+                    <th className="px-6 py-4">Reason</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {closedPositions.map(pos => (
+                    <tr key={pos.id} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-4 font-mono text-xs text-slate-700 font-semibold">
+                        <div>{pos.short_call_symbol}</div>
+                        <div>{pos.short_put_symbol}</div>
+                      </td>
+                      <td className="px-6 py-4 font-medium text-slate-600">{(pos.lots * 0.001).toFixed(3)}</td>
+                      <td className="px-6 py-4 text-slate-600 text-xs">
+                        <div>{pos.callEntry}</div>
+                        <div>{pos.putEntry}</div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 text-xs">
+                        <div>{pos.callExit}</div>
+                        <div>{pos.putExit}</div>
+                      </td>
+                      <td className="px-6 py-4 text-rose-500 font-medium">
+                        -${pos.fees.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 font-bold">
+                        <span className={pos.realizedPnl >= 0 ? "text-emerald-500" : "text-rose-500"}>
+                          {pos.realizedPnl >= 0 ? "+" : ""}${pos.realizedPnl.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-slate-500 text-xs font-medium">
+                        {pos.close_reason}
+                      </td>
+                    </tr>
+                  ))}
+                  {closedPositions.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500">No closed positions yet.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function MetricCard({ icon, label, value, valueClass = "text-slate-900" }: { icon: React.ReactNode, label: string, value: string | number, valueClass?: string }) {
-  return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-        {icon}
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-slate-500">{label}</div>
-        <div className={`text-2xl font-bold ${valueClass}`}>{value}</div>
-      </div>
-    </div>
-  );
-}
-
-function LiveBtcPrice() {
-  const [price, setPrice] = useState<string>('...');
-  const [color, setColor] = useState('text-slate-800');
-  
-  useEffect(() => {
-    let ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      const newPrice = parseFloat(data.p).toFixed(2);
-      setPrice((prev) => {
-        if (prev !== '...') {
-          setColor(parseFloat(newPrice) > parseFloat(prev) ? 'text-emerald-500' : 'text-rose-500');
-          setTimeout(() => setColor('text-slate-800'), 1000);
-        }
-        return newPrice;
-      });
-    };
-    return () => ws.close();
-  }, []);
-
-  return <span className={`transition-colors duration-300 ${color}`}>${price === '...' ? '...' : parseFloat(price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>;
 }
