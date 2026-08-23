@@ -2,8 +2,13 @@
 
 import { supabase } from '@/lib/supabase';
 import { Shield } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get('error');
+
   const handleGoogleLogin = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -14,21 +19,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-[#111827] border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
-        <div className="flex justify-center mb-6">
-          <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-            <Shield className="w-8 h-8 text-indigo-400" />
-          </div>
+    <div className="max-w-md w-full bg-[#111827] border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
+      <div className="flex justify-center mb-6">
+        <div className="p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+          <Shield className="w-8 h-8 text-indigo-400" />
         </div>
-        <h2 className="text-2xl font-bold text-white text-center mb-2">ProfitPilot Login</h2>
-        <p className="text-slate-400 text-center text-sm mb-8">Secure access to your automated trading strategies.</p>
-        
-        <button 
-          onClick={handleGoogleLogin}
-          className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-semibold py-3 px-4 rounded-lg transition"
-        >
+      </div>
+      <h2 className="text-2xl font-bold text-white text-center mb-2">ProfitPilot Login</h2>
+      <p className="text-slate-400 text-center text-sm mb-6">Secure access to your automated trading strategies.</p>
+      
+      {error === 'unauthorized' && (
+        <div className="mb-6 p-3 bg-rose-500/10 border border-rose-500/20 rounded-lg text-rose-500 text-sm text-center font-medium">
+          Access Denied. Your email is not authorized to view this bot's trading data.
+        </div>
+      )}
+      
+      <button 
+        onClick={handleGoogleLogin}
+        className="w-full flex items-center justify-center gap-3 bg-white hover:bg-slate-50 text-slate-900 font-semibold py-3 px-4 rounded-lg transition"
+      >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
             <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -38,6 +48,16 @@ export default function LoginPage() {
           Continue with Google
         </button>
       </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center p-4">
+      <Suspense fallback={<div>Loading...</div>}>
+        <LoginContent />
+      </Suspense>
     </div>
   );
 }
