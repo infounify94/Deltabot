@@ -4,8 +4,8 @@ export async function fetchLivePnl(positions: any[]) {
     return await Promise.all(positions.map(async (pos) => {
         try {
             const [callRes, putRes] = await Promise.all([
-                fetch(`https://api.delta.exchange/v2/products/${pos.short_call_symbol}/ticker`, { next: { revalidate: 0 } }),
-                fetch(`https://api.delta.exchange/v2/products/${pos.short_put_symbol}/ticker`, { next: { revalidate: 0 } })
+                fetch(`https://api.india.delta.exchange/v2/products/${pos.short_call_symbol}/ticker`, { next: { revalidate: 0 } }),
+                fetch(`https://api.india.delta.exchange/v2/products/${pos.short_put_symbol}/ticker`, { next: { revalidate: 0 } })
             ]);
             
             const callData = await callRes.json();
@@ -42,7 +42,7 @@ export async function fetchWalletBalance(apiKey: string, apiSecret: string) {
     const signature = crypto.createHmac('sha256', apiSecret).update(signaturePayload).digest('hex');
     
     try {
-        const res = await fetch(`https://api.delta.exchange${endpoint}`, {
+        const res = await fetch(`https://api.india.delta.exchange${endpoint}`, {
             method,
             headers: {
                 'api-key': apiKey,
