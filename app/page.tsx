@@ -58,7 +58,7 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">Log in</Link>
+            <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">Log In / Sign Up</Link>
             <Link href="/login" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-md hover:bg-slate-200 transition">
               Start Trading
             </Link>
