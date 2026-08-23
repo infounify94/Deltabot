@@ -137,9 +137,8 @@ export default function Dashboard() {
           <span className="text-white font-bold text-xl tracking-tight">ProfitPilot</span>
         </div>
         <div className="flex items-center gap-6">
-          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Platform</a>
-          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Risk Engine</a>
-          <a href="#" className="text-sm font-medium text-slate-300 hover:text-white transition">Security</a>
+          <a href="/dashboard" className="text-sm font-medium text-white transition border-b-2 border-indigo-500 pb-1">Dashboard</a>
+          <a href="/dashboard/settings" className="text-sm font-medium text-slate-300 hover:text-white transition">Settings</a>
         </div>
       </nav>
 
