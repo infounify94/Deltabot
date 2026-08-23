@@ -25,24 +25,29 @@ export default function Dashboard() {
   }, []);
 
   async function fetchData() {
-    // Fetch system_pause flag
-    const { data: pauseData } = await supabase.from('positions').select('id').eq('status', 'system_pause');
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch system_pause flag for this user specifically
+    const { data: pauseData } = await supabase.from('positions').select('id').eq('status', 'system_pause').eq('user_id', user.id);
     setIsPaused((pauseData || []).length > 0);
 
-    // Fetch open positions
-    const { data: openData } = await supabase.from('positions').select('*').in('status', ['open', 'adjusted']);
+    // Fetch open positions FOR THIS USER
+    const { data: openData } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['open', 'adjusted']);
     
     // Enrich open positions with Live Delta API marks via Server Action (bypasses CORS)
     const enrichedOpenData = await fetchLivePnl(openData || []);
     
-    // Fetch closed positions
-    const { data: closedData } = await supabase.from('positions').select('*').eq('status', 'closed').order('closed_at', { ascending: false });
+    // Fetch closed positions FOR THIS USER
+    const { data: closedData } = await supabase.from('positions').select('*').eq('user_id', user.id).eq('status', 'closed').order('closed_at', { ascending: false });
 
-    // Fetch trade events
-    const { data: eventsData } = await supabase.from('trade_events').select('*');
+    // Fetch trade events FOR THIS USER
+    const { data: eventsData } = await supabase.from('trade_events').select('*').eq('user_id', user.id);
 
-    // Fetch user profile to get API keys for Live Balance
-    const { data: { user } } = await supabase.auth.getUser();
     let liveBalance = 0;
     if (user) {
         const { data: profile } = await supabase.from('profiles').select('delta_api_key, delta_api_secret').eq('id', user.id).single();
@@ -180,7 +185,7 @@ export default function Dashboard() {
       </div>
 
       {/* Main Header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center">
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col md:flex-row gap-4 justify-between md:items-center">
         <h1 className="text-xl font-bold text-slate-800">ProfitPilot Bot Dashboard</h1>
         <div className="flex items-center gap-3">
           <button onClick={handlePauseToggle} className={`px-4 py-2 font-bold rounded text-sm transition ${isPaused ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
@@ -198,29 +203,29 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-8 py-8 w-full">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 w-full">
         
         {/* KPI Row (Clean White Box) */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-8 flex justify-between items-center">
-          <div className="flex-1 border-r border-slate-100">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Live Balance</div>
-            <div className="text-2xl font-bold text-slate-800">${metrics.liveBalance.toFixed(2)}</div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-8 mb-8 grid grid-cols-2 gap-4 md:flex justify-between items-center">
+          <div className="md:flex-1 md:border-r border-slate-100">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Live Balance</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">${metrics.liveBalance.toFixed(2)}</div>
           </div>
-          <div className="flex-1 border-r border-slate-100 pl-8">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Round-Trips</div>
-            <div className="text-2xl font-bold text-slate-800">{metrics.roundTrips}</div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Round-Trips</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.roundTrips}</div>
           </div>
-          <div className="flex-1 border-r border-slate-100 pl-8">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Winners</div>
-            <div className="text-2xl font-bold text-slate-800">{metrics.winners}</div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Winners</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.winners}</div>
           </div>
-          <div className="flex-1 border-r border-slate-100 pl-8">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Hit Rate</div>
-            <div className="text-2xl font-bold text-slate-800">{metrics.hitRate}%</div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Hit Rate</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.hitRate}%</div>
           </div>
-          <div className="flex-1 pl-8">
-            <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Realised P&L</div>
-            <div className={`text-2xl font-bold ${metrics.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+          <div className="col-span-2 md:col-span-1 md:flex-1 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Realised P&L</div>
+            <div className={`text-xl md:text-2xl font-bold ${metrics.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
               ${metrics.totalPnl.toFixed(2)}
             </div>
           </div>
