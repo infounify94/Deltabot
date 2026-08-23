@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayCircle, PauseCircle } from 'lucide-react';
-import { fetchLivePnl } from './actions';
+import { fetchLivePnl, fetchWalletBalance } from './actions';
 
 export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0 });
+  const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, liveBalance: 0 });
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
@@ -40,6 +40,16 @@ export default function Dashboard() {
 
     // Fetch trade events
     const { data: eventsData } = await supabase.from('trade_events').select('*');
+
+    // Fetch user profile to get API keys for Live Balance
+    const { data: { user } } = await supabase.auth.getUser();
+    let liveBalance = 0;
+    if (user) {
+        const { data: profile } = await supabase.from('profiles').select('delta_api_key, delta_api_secret').eq('id', user.id).single();
+        if (profile?.delta_api_key && profile?.delta_api_secret) {
+            liveBalance = await fetchWalletBalance(profile.delta_api_key, profile.delta_api_secret);
+        }
+    }
 
     // Process Closed Positions
     const processedClosed = (closedData || []).map(pos => {
@@ -87,7 +97,25 @@ export default function Dashboard() {
       };
     });
 
-    setOpenPositions(enrichedOpenData);
+    const processedOpen = enrichedOpenData.map((pos: any) => {
+      let callEntry = 'N/A', putEntry = 'N/A';
+      const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
+      posEvents.forEach(e => {
+        if (!e.detail) return;
+        if (e.event_type === 'entry') {
+          const fill = e.detail.fill || {};
+          callEntry = fill.short_call_fill || fill.call_fill_price || 'N/A';
+          putEntry = fill.short_put_fill || fill.put_fill_price || 'N/A';
+        }
+      });
+      return {
+        ...pos,
+        callEntry: callEntry !== 'N/A' ? `$${parseFloat(callEntry as string).toFixed(2)}` : 'N/A',
+        putEntry: putEntry !== 'N/A' ? `$${parseFloat(putEntry as string).toFixed(2)}` : 'N/A',
+      };
+    });
+
+    setOpenPositions(processedOpen);
     setClosedPositions(processedClosed);
 
     const roundTrips = processedClosed.length;
@@ -95,7 +123,7 @@ export default function Dashboard() {
     const hitRate = roundTrips > 0 ? Math.round((winners / roundTrips) * 100) : 0;
     const totalPnl = processedClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
     
-    setMetrics({ roundTrips, winners, hitRate, totalPnl });
+    setMetrics({ roundTrips, winners, hitRate, totalPnl, liveBalance });
     setLoading(false);
   }
 
@@ -176,7 +204,7 @@ export default function Dashboard() {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-8 mb-8 flex justify-between items-center">
           <div className="flex-1 border-r border-slate-100">
             <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Live Balance</div>
-            <div className="text-2xl font-bold text-slate-800">$15.90</div>
+            <div className="text-2xl font-bold text-slate-800">${metrics.liveBalance.toFixed(2)}</div>
           </div>
           <div className="flex-1 border-r border-slate-100 pl-8">
             <div className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-wider">Round-Trips</div>
@@ -255,8 +283,8 @@ export default function Dashboard() {
                       <td className="px-6 py-4 font-medium text-slate-600">Strangle</td>
                       <td className="px-6 py-4 font-medium text-slate-600">{(pos.lots * 0.001).toFixed(3)}</td>
                       <td className="px-6 py-4 text-slate-600">
-                        <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
-                        <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
+                        <div>{pos.callEntry || 'N/A'}</div>
+                        <div>{pos.putEntry || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 font-bold">
                         <span className={pos.actualPnl >= 0 ? "text-emerald-500" : "text-rose-500"}>

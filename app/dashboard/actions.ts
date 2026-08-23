@@ -15,7 +15,6 @@ export async function fetchLivePnl(positions: any[]) {
             const pMark = parseFloat(putData.result?.mark_price || 0);
             
             if (cMark === 0 && pMark === 0) {
-                // Ticker not found or expired
                 return { ...pos, actualPnl: 0, peakPnl: parseFloat(pos.peak_unrealized_pnl || 0) };
             }
             
@@ -29,8 +28,40 @@ export async function fetchLivePnl(positions: any[]) {
                 peakPnl: parseFloat(pos.peak_unrealized_pnl || 0)
             };
         } catch (error) {
-            console.error("Error fetching ticker", error);
             return { ...pos, actualPnl: 0, peakPnl: parseFloat(pos.peak_unrealized_pnl || 0) };
         }
     }));
+}
+
+export async function fetchWalletBalance(apiKey: string, apiSecret: string) {
+    const crypto = await import('crypto');
+    const timestamp = Date.now().toString();
+    const method = 'GET';
+    const endpoint = '/v2/wallet/balances';
+    const signaturePayload = method + timestamp + endpoint;
+    const signature = crypto.createHmac('sha256', apiSecret).update(signaturePayload).digest('hex');
+    
+    try {
+        const res = await fetch(`https://api.delta.exchange${endpoint}`, {
+            method,
+            headers: {
+                'api-key': apiKey,
+                'timestamp': timestamp,
+                'signature': signature,
+                'User-Agent': 'delta-client/1.0'
+            },
+            next: { revalidate: 0 }
+        });
+        const data = await res.json();
+        if (data.success && data.result) {
+            const usdAsset = data.result.find((a: any) => a.asset_symbol === 'USD' || a.asset_symbol === 'USDT');
+            if (usdAsset) {
+                return parseFloat(usdAsset.balance);
+            }
+        }
+        return 0;
+    } catch (e) {
+        console.error("Failed to fetch balance", e);
+        return 0;
+    }
 }
