@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { PlayCircle, PauseCircle } from 'lucide-react';
-import { fetchLivePnl, fetchWalletBalance } from './actions';
 
 export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
@@ -39,8 +38,12 @@ export default function Dashboard() {
     // Fetch open positions FOR THIS USER
     const { data: openData } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['open', 'adjusted']);
     
-    // Enrich open positions with Live Delta API marks via Server Action (bypasses CORS)
-    const enrichedOpenData = await fetchLivePnl(openData || []);
+    // Enrich open positions using the master bot's updated database values
+    const enrichedOpenData = (openData || []).map((pos: any) => ({
+      ...pos,
+      actualPnl: parseFloat(pos.actual_pnl || 0),
+      peakPnl: parseFloat(pos.peak_unrealized_pnl || 0)
+    }));
     
     // Fetch closed positions FOR THIS USER
     const { data: closedData } = await supabase.from('positions').select('*').eq('user_id', user.id).eq('status', 'closed').order('closed_at', { ascending: false });
@@ -49,11 +52,9 @@ export default function Dashboard() {
     const { data: eventsData } = await supabase.from('trade_events').select('*').eq('user_id', user.id);
 
     let liveBalance = 0;
-    if (user) {
-        const { data: profile } = await supabase.from('profiles').select('delta_api_key, delta_api_secret').eq('id', user.id).single();
-        if (profile?.delta_api_key && profile?.delta_api_secret) {
-            liveBalance = await fetchWalletBalance(profile.delta_api_key, profile.delta_api_secret);
-        }
+    const { data: profile } = await supabase.from('profiles').select('live_balance').eq('id', user.id).single();
+    if (profile?.live_balance) {
+        liveBalance = parseFloat(profile.live_balance);
     }
 
     // Process Closed Positions
