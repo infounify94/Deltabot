@@ -72,7 +72,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-slate-50 font-sans flex flex-col">
       {/* Main Shared Navbar */}
       <nav className="w-full bg-[#050505] py-4 px-6 flex items-center justify-between shadow-md z-50">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/'}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.href = '/dashboard'}>
           <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
           </div>
@@ -81,6 +81,15 @@ export default function SettingsPage() {
         <div className="flex items-center gap-6">
           <a href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-white transition">Dashboard</a>
           <a href="/dashboard/settings" className="text-sm font-medium text-white transition border-b-2 border-indigo-500 pb-1">Settings</a>
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }}
+            className="text-sm font-medium text-rose-400 hover:text-rose-300 transition"
+          >
+            Logout
+          </button>
         </div>
       </nav>
 
