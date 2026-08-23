@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Activity, DollarSign, Target, Hash, CheckCircle2, XCircle, PauseCircle, PlayCircle, AlertOctagon } from 'lucide-react';
+import { Activity, DollarSign, Target, Hash, PlayCircle, PauseCircle, AlertOctagon } from 'lucide-react';
 
 export default function Dashboard() {
-  const [openPositions, setOpenPositions] = useState([]);
-  const [closedPositions, setClosedPositions] = useState([]);
+  const [openPositions, setOpenPositions] = useState<any[]>([]);
+  const [closedPositions, setClosedPositions] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0 });
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -14,7 +14,7 @@ export default function Dashboard() {
   async function fetchData() {
     // Fetch system_pause flag
     const { data: pauseData } = await supabase.from('positions').select('id').eq('status', 'system_pause');
-    setIsPaused(pauseData && pauseData.length > 0);
+    setIsPaused((pauseData || []).length > 0);
 
     // Fetch open positions
     const { data: openData } = await supabase
@@ -53,7 +53,7 @@ export default function Dashboard() {
           const cf = fills[pos.short_call_symbol] || {};
           const pf = fills[pos.short_put_symbol] || {};
           
-          const extract = (f) => {
+          const extract = (f: any) => {
             if (f.average_fill_price) return [f.average_fill_price, parseFloat(f.paid_commission || 0) * 1.18];
             if (f.result?.average_fill_price) return [f.result.average_fill_price, parseFloat(f.result.paid_commission || 0) * 1.18];
             return [null, 0];
@@ -62,8 +62,8 @@ export default function Dashboard() {
           const [pp, pfFee] = extract(pf);
           
           fees += cfFee + pfFee;
-          callExit = cp ? `$${parseFloat(cp).toFixed(2)}` : 'N/A';
-          putExit = pp ? `$${parseFloat(pp).toFixed(2)}` : 'N/A';
+          callExit = cp ? `$${parseFloat(cp as string).toFixed(2)}` : 'N/A';
+          putExit = pp ? `$${parseFloat(pp as string).toFixed(2)}` : 'N/A';
         }
       });
 
@@ -72,8 +72,8 @@ export default function Dashboard() {
         ...pos,
         fees,
         grossPnl: realizedPnl + fees,
-        callEntry: callEntry !== 'N/A' ? `$${parseFloat(callEntry).toFixed(2)}` : 'N/A',
-        putEntry: putEntry !== 'N/A' ? `$${parseFloat(putEntry).toFixed(2)}` : 'N/A',
+        callEntry: callEntry !== 'N/A' ? `$${parseFloat(callEntry as string).toFixed(2)}` : 'N/A',
+        putEntry: putEntry !== 'N/A' ? `$${parseFloat(putEntry as string).toFixed(2)}` : 'N/A',
         callExit,
         putExit
       };
@@ -107,7 +107,7 @@ export default function Dashboard() {
     fetchData();
   };
 
-  const handleKillSwitch = async (id) => {
+  const handleKillSwitch = async (id: string | number) => {
     if (confirm("Are you sure you want to emergency close this position?")) {
       await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id);
       fetchData();
@@ -267,7 +267,7 @@ export default function Dashboard() {
   );
 }
 
-function MetricCard({ icon, label, value, valueClass = "text-slate-900" }) {
+function MetricCard({ icon, label, value, valueClass = "text-slate-900" }: { icon: React.ReactNode, label: string, value: string | number, valueClass?: string }) {
   return (
     <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
       <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
