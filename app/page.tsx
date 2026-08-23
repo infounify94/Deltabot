@@ -1,282 +1,303 @@
 'use client';
 
+import { motion } from 'framer-motion';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import { ArrowRight, Activity, Shield, Zap, Lock, BarChart3, Crosshair, ChevronRight, Menu } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Activity, DollarSign, Target, Hash, PlayCircle, PauseCircle, AlertOctagon } from 'lucide-react';
 
-export default function Dashboard() {
-  const [openPositions, setOpenPositions] = useState<any[]>([]);
-  const [closedPositions, setClosedPositions] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0 });
-  const [loading, setLoading] = useState(true);
-  const [isPaused, setIsPaused] = useState(false);
+// Demo Data for Hero Chart
+const chartData = [
+  { time: '09:00', price: 74200 },
+  { time: '10:00', price: 74800 },
+  { time: '11:00', price: 74500 },
+  { time: '12:00', price: 75200 },
+  { time: '13:00', price: 75900 },
+  { time: '14:00', price: 75600 },
+  { time: '15:00', price: 76842 },
+];
 
-  async function fetchData() {
-    // Fetch system_pause flag
-    const { data: pauseData } = await supabase.from('positions').select('id').eq('status', 'system_pause');
-    setIsPaused((pauseData || []).length > 0);
-
-    // Fetch open positions
-    const { data: openData } = await supabase
-      .from('positions')
-      .select('*')
-      .in('status', ['open', 'adjusted']);
-    
-    // Fetch closed positions
-    const { data: closedData } = await supabase
-      .from('positions')
-      .select('*')
-      .eq('status', 'closed')
-      .order('closed_at', { ascending: false });
-
-    // Fetch trade events
-    const { data: eventsData } = await supabase
-      .from('trade_events')
-      .select('*');
-
-    // Process Closed Positions
-    const processedClosed = (closedData || []).map(pos => {
-      let fees = 0;
-      let callEntry = 'N/A', putEntry = 'N/A', callExit = 'N/A', putExit = 'N/A';
-      
-      const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
-      posEvents.forEach(e => {
-        if (!e.detail) return;
-        if (e.event_type === 'entry') {
-          const fill = e.detail.fill || {};
-          fees += parseFloat(fill.fees_paid || 0);
-          callEntry = fill.short_call_fill || fill.call_fill_price || 'N/A';
-          putEntry = fill.short_put_fill || fill.put_fill_price || 'N/A';
-        }
-        if (['time_exit', 'profit_take', 'stop_loss', 'manual_kill_switch', 'liquidation_buffer_breach'].includes(e.event_type)) {
-          const fills = e.detail.fills || {};
-          const cf = fills[pos.short_call_symbol] || {};
-          const pf = fills[pos.short_put_symbol] || {};
-          
-          const extract = (f: any) => {
-            if (f.average_fill_price) return [f.average_fill_price, parseFloat(f.paid_commission || 0) * 1.18];
-            if (f.result?.average_fill_price) return [f.result.average_fill_price, parseFloat(f.result.paid_commission || 0) * 1.18];
-            return [null, 0];
-          };
-          const [cp, cfFee] = extract(cf);
-          const [pp, pfFee] = extract(pf);
-          
-          fees += cfFee + pfFee;
-          callExit = cp ? `$${parseFloat(cp as string).toFixed(2)}` : 'N/A';
-          putExit = pp ? `$${parseFloat(pp as string).toFixed(2)}` : 'N/A';
-        }
-      });
-
-      const realizedPnl = parseFloat(pos.realized_pnl || 0);
-      return {
-        ...pos,
-        fees,
-        grossPnl: realizedPnl + fees,
-        callEntry: callEntry !== 'N/A' ? `$${parseFloat(callEntry as string).toFixed(2)}` : 'N/A',
-        putEntry: putEntry !== 'N/A' ? `$${parseFloat(putEntry as string).toFixed(2)}` : 'N/A',
-        callExit,
-        putExit
-      };
-    });
-
-    setOpenPositions(openData || []);
-    setClosedPositions(processedClosed);
-
-    // Calc metrics
-    const roundTrips = processedClosed.length;
-    const winners = processedClosed.filter(p => p.realized_pnl > 0).length;
-    const hitRate = roundTrips > 0 ? Math.round((winners / roundTrips) * 100) : 0;
-    const totalPnl = processedClosed.reduce((sum, p) => sum + parseFloat(p.realized_pnl || 0), 0);
-    
-    setMetrics({ roundTrips, winners, hitRate, totalPnl });
-    setLoading(false);
-  }
+export default function LandingPage() {
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handlePauseToggle = async () => {
-    if (isPaused) {
-      await supabase.from('positions').delete().eq('status', 'system_pause');
-    } else {
-      await supabase.from('positions').insert([{ 
-        status: 'system_pause', underlying: 'SYSTEM', expiry_date: '2099-01-01', short_call_symbol: 'SYSTEM', short_call_strike: 0, short_put_symbol: 'SYSTEM', short_put_strike: 0, credit_received: 0, lots: 0
-      }]);
-    }
-    fetchData();
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6 } }
   };
-
-  const handleKillSwitch = async (id: string | number) => {
-    if (confirm("Are you sure you want to emergency close this position?")) {
-      await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id);
-      fetchData();
-    }
-  };
-
-  if (loading) return <div className="p-10 text-center text-slate-500">Loading Dashboard...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 font-sans">
-      <div className="max-w-6xl mx-auto space-y-8">
-        
-        {/* Header */}
-        <div className="flex justify-between items-center bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">Delta Options Bot</h1>
-            <p className="text-slate-500">Live Trading Dashboard</p>
-          </div>
-          <div className="flex items-center gap-4">
-            {isPaused ? (
-              <button onClick={handlePauseToggle} className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-semibold transition">
-                <PlayCircle size={18} /> Resume Trading
-              </button>
-            ) : (
-              <button onClick={handlePauseToggle} className="flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-sm font-semibold transition">
-                <PauseCircle size={18} /> Pause Entries
-              </button>
-            )}
-            <span className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold ${isPaused ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-              <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`}></span>
-              {isPaused ? 'Paused (No New Entries)' : 'System Active'}
-            </span>
-          </div>
-        </div>
-
-        {/* Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <MetricCard icon={<Hash />} label="Round Trips" value={metrics.roundTrips} />
-          <MetricCard icon={<Target />} label="Winners" value={metrics.winners} />
-          <MetricCard icon={<Activity />} label="Hit Rate" value={`${metrics.hitRate}%`} />
-          <MetricCard 
-            icon={<DollarSign />} 
-            label="Net P&L" 
-            value={`$${metrics.totalPnl.toFixed(2)}`} 
-            valueClass={metrics.totalPnl >= 0 ? "text-emerald-600" : "text-rose-600"} 
-          />
-        </div>
-
-        {/* Open Positions Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mb-8">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Open Trades</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4">Instrument</th>
-                  <th className="px-6 py-4">Size</th>
-                  <th className="px-6 py-4">Credit</th>
-                  <th className="px-6 py-4">Status</th>
-                  <th className="px-6 py-4 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {openPositions.map(pos => (
-                  <tr key={pos.id} className="hover:bg-slate-50/50">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
-                      <div>{pos.short_call_symbol}</div>
-                      <div>{pos.short_put_symbol}</div>
-                    </td>
-                    <td className="px-6 py-4">{(pos.lots * 0.001).toFixed(3)} BTC</td>
-                    <td className="px-6 py-4 font-medium">${parseFloat(pos.credit_received).toFixed(2)}</td>
-                    <td className="px-6 py-4">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold uppercase">{pos.status}</span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      {pos.manual_exit_requested ? (
-                        <span className="text-rose-600 font-semibold text-xs">KILL SIGNAL SENT</span>
-                      ) : (
-                        <button onClick={() => handleKillSwitch(pos.id)} className="flex items-center gap-1 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs font-bold transition ml-auto">
-                          <AlertOctagon size={14} /> KILL
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {openPositions.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-500">No open trades right now.</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Closed Positions Table */}
-        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="p-6 border-b border-slate-200">
-            <h2 className="text-lg font-bold text-slate-900">Closed Trades</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="px-6 py-4">Instrument</th>
-                  <th className="px-6 py-4">Size</th>
-                  <th className="px-6 py-4">Entry</th>
-                  <th className="px-6 py-4">Exit</th>
-                  <th className="px-6 py-4">Gross P&L</th>
-                  <th className="px-6 py-4">Fees</th>
-                  <th className="px-6 py-4">Net P&L</th>
-                  <th className="px-6 py-4">Reason</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {closedPositions.map(pos => (
-                  <tr key={pos.id} className="hover:bg-slate-50/50">
-                    <td className="px-6 py-4 font-mono text-xs text-slate-600">
-                      <div>{pos.short_call_symbol}</div>
-                      <div>{pos.short_put_symbol}</div>
-                    </td>
-                    <td className="px-6 py-4">{(pos.lots * 0.001).toFixed(3)} BTC</td>
-                    <td className="px-6 py-4">
-                      <div>{pos.callEntry}</div>
-                      <div>{pos.putEntry}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>{pos.callExit}</div>
-                      <div>{pos.putExit}</div>
-                    </td>
-                    <td className="px-6 py-4 font-medium">
-                      <span className={pos.grossPnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                        {pos.grossPnl >= 0 ? "+" : ""}${pos.grossPnl.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-rose-500 font-medium">
-                      -${pos.fees.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 font-bold">
-                      <span className={pos.realized_pnl >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                        {pos.realized_pnl >= 0 ? "+" : ""}${parseFloat(pos.realized_pnl).toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-slate-500 text-xs">
-                      {pos.close_reason}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <div className="min-h-screen bg-[#050505] text-slate-300 font-sans selection:bg-indigo-500/30">
+      
+      {/* Background Effects */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-0 left-0 right-0 h-[500px] bg-indigo-500/5 blur-[150px] rounded-full transform -translate-y-1/2"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000,transparent)]"></div>
       </div>
+
+      {/* Navbar */}
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-md border-b border-white/5 py-3' : 'bg-transparent py-5'}`}>
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center">
+              <Activity className="text-white w-5 h-5" />
+            </div>
+            <span className="text-white font-bold text-xl tracking-tight">ProfitPilot</span>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+            <a href="#platform" className="hover:text-white transition">Platform</a>
+            <a href="#strategies" className="hover:text-white transition">Strategies</a>
+            <a href="#risk" className="hover:text-white transition">Risk Engine</a>
+            <a href="#security" className="hover:text-white transition">Security</a>
+          </div>
+
+          <div className="hidden md:flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition">Log in</Link>
+            <Link href="/login" className="text-sm font-medium bg-white text-black px-4 py-2 rounded-md hover:bg-slate-200 transition">
+              Start Trading
+            </Link>
+          </div>
+          <button className="md:hidden text-white"><Menu /></button>
+        </div>
+      </nav>
+
+      <main className="relative z-10 pt-32 pb-20">
+        {/* Hero Section */}
+        <section className="max-w-7xl mx-auto px-6 pt-10 pb-24 grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div initial="hidden" animate="visible" variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, transition: { staggerChildren: 0.2 } }
+          }}>
+            <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider mb-6">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+              Built for systematic traders
+            </motion.div>
+            <motion.h1 variants={fadeUp} className="text-5xl lg:text-7xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+              Automated Trading.<br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400">Smarter Risk Management.</span>
+            </motion.h1>
+            <motion.p variants={fadeUp} className="text-lg text-slate-400 mb-10 max-w-xl leading-relaxed">
+              Deploy automated trading strategies, monitor positions in real time, and let the institutional-grade risk engine respond when markets move. You stay in control.
+            </motion.p>
+            <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-4">
+              <Link href="/login" className="flex items-center gap-2 bg-white text-black px-6 py-3 rounded-lg font-semibold hover:bg-slate-200 transition">
+                Get Started <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a href="#platform" className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold text-white bg-white/5 border border-white/10 hover:bg-white/10 transition">
+                Explore the Platform
+              </a>
+            </motion.div>
+          </motion.div>
+
+          {/* Hero Visual - Premium Dashboard Demo */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative"
+          >
+            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-cyan-500/20 blur-3xl -z-10 rounded-full"></div>
+            <div className="bg-[#0c101a] border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-xl">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <div className="text-sm font-medium text-slate-500 mb-1">BTC/USD (Demo Data)</div>
+                  <div className="text-3xl font-bold text-white">$76,842.30 <span className="text-emerald-500 text-lg font-medium">+2.41%</span></div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-slate-500 mb-1">Demo P&L</div>
+                  <div className="text-xl font-bold text-emerald-500">+$1,284.32</div>
+                </div>
+              </div>
+              
+              <div className="h-64 mb-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff0a" vertical={false} />
+                    <XAxis dataKey="time" hide />
+                    <YAxis domain={['dataMin - 500', 'dataMax + 500']} hide />
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0c101a', borderColor: '#ffffff1a', color: '#fff' }}
+                      itemStyle={{ color: '#818cf8' }}
+                    />
+                    <Area type="monotone" dataKey="price" stroke="#818cf8" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Risk Status</div>
+                  <div className="flex items-center gap-2 text-emerald-400 font-medium">
+                    <Shield className="w-4 h-4" /> LOW
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/5 rounded-xl p-4">
+                  <div className="text-xs text-slate-500 uppercase tracking-wider font-semibold mb-1">Strategy</div>
+                  <div className="flex items-center gap-2 text-indigo-400 font-medium">
+                    <Activity className="w-4 h-4" /> ACTIVE
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* Dashboard Showcase & Risk Engine */}
+        <section id="risk" className="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Risk management happens in real time.</h2>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto">Every open position is continuously monitored against predefined risk rules. If volatility spikes, the risk engine detects the change and automatically deploys protective wings or exits.</p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} className="bg-[#0c101a] border border-white/5 rounded-2xl p-8">
+              <div className="w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-6">
+                <Activity className="w-6 h-6 text-indigo-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Continuous Analysis</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">The algorithm evaluates Delta, Volatility, and Margin utilization every few seconds to assess exact exposure.</p>
+            </motion.div>
+
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.1 }} variants={fadeUp} className="bg-[#0c101a] border border-white/5 rounded-2xl p-8">
+              <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center mb-6">
+                <Shield className="w-6 h-6 text-emerald-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Dynamic Protection</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">If risk thresholds are breached, the system automatically buys protective wings to cap losses instantly.</p>
+            </motion.div>
+
+            <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} transition={{ delay: 0.2 }} variants={fadeUp} className="bg-[#0c101a] border border-white/5 rounded-2xl p-8">
+              <div className="w-12 h-12 bg-cyan-500/10 rounded-xl flex items-center justify-center mb-6">
+                <Zap className="w-6 h-6 text-cyan-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">Automated Execution</h3>
+              <p className="text-slate-400 text-sm leading-relaxed">Limit orders are dynamically managed. Stop-losses act as the final failsafe for total capital protection.</p>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* Security Section */}
+        <section id="security" className="max-w-7xl mx-auto px-6 py-24 border-t border-white/5">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight">Your account.<br/>Your control.</h2>
+              <p className="text-lg text-slate-400 mb-8 leading-relaxed">We utilize secure API protocols to execute trades. Your funds stay on your exchange. Strict risk limits and emergency controls guarantee you hold the ultimate authority.</p>
+              
+              <ul className="space-y-4">
+                <li className="flex items-center gap-3 text-slate-300">
+                  <CheckCircle /> Trading-only permissions (no withdrawals)
+                </li>
+                <li className="flex items-center gap-3 text-slate-300">
+                  <CheckCircle /> Encrypted credential storage
+                </li>
+                <li className="flex items-center gap-3 text-slate-300">
+                  <CheckCircle /> Hard-coded max daily loss limits
+                </li>
+                <li className="flex items-center gap-3 text-slate-300">
+                  <CheckCircle /> Universal Emergency Kill-Switch
+                </li>
+              </ul>
+            </div>
+            
+            <div className="bg-[#0c101a] border border-white/5 rounded-2xl p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-32 bg-rose-500/5 blur-[100px] rounded-full pointer-events-none"></div>
+              <div className="flex items-center justify-between mb-8 pb-8 border-b border-white/5">
+                <div>
+                  <div className="text-white font-bold mb-1">Global Kill Switch</div>
+                  <div className="text-sm text-slate-500">Emergency force-close all open positions at market price.</div>
+                </div>
+                <div className="px-4 py-2 bg-rose-500/10 text-rose-500 font-bold rounded-lg border border-rose-500/20 flex items-center gap-2">
+                  <Lock className="w-4 h-4" /> ARMED
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-white font-bold mb-1">Max Daily Drawdown</div>
+                  <div className="text-sm text-slate-500">Trading stops automatically if hit.</div>
+                </div>
+                <div className="text-xl font-bold text-white font-mono">
+                  $5,000.00
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="max-w-4xl mx-auto px-6 py-24 text-center">
+          <div className="bg-gradient-to-b from-indigo-500/10 to-transparent border border-indigo-500/20 rounded-3xl p-12 relative overflow-hidden">
+            <h2 className="text-3xl md:text-5xl font-bold text-white mb-6">Ready to automate your trading?</h2>
+            <p className="text-lg text-slate-400 mb-10 max-w-xl mx-auto">Build your strategy. Set your risk parameters. Let ProfitPilot's algorithms handle the execution flawlessly.</p>
+            <Link href="/login" className="inline-flex items-center gap-2 bg-white text-black px-8 py-4 rounded-lg font-bold hover:bg-slate-200 transition text-lg">
+              Start Trading Now
+            </Link>
+          </div>
+        </section>
+
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 bg-[#050505] pt-16 pb-8">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-16">
+            <div>
+              <div className="flex items-center gap-2 mb-6">
+                <Activity className="text-indigo-400 w-5 h-5" />
+                <span className="text-white font-bold">ProfitPilot</span>
+              </div>
+              <p className="text-sm text-slate-500">Premium algorithmic trading and risk management infrastructure.</p>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Platform</h4>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li><a href="#" className="hover:text-white transition">Strategies</a></li>
+                <li><a href="#" className="hover:text-white transition">Risk Engine</a></li>
+                <li><a href="#" className="hover:text-white transition">Analytics</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li><a href="#" className="hover:text-white transition">About</a></li>
+                <li><a href="#" className="hover:text-white transition">Security</a></li>
+                <li><a href="#" className="hover:text-white transition">Contact</a></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-white font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li><a href="#" className="hover:text-white transition">Terms of Service</a></li>
+                <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
+                <li><a href="#" className="hover:text-white transition">Risk Disclosure</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="text-center text-xs text-slate-600 border-t border-white/5 pt-8">
+            Trading involves significant risk. Simulated and demo data shown for illustrative purposes only. Past performance does not guarantee future results.
+            <br/>&copy; {new Date().getFullYear()} ProfitPilot. All rights reserved.
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
-function MetricCard({ icon, label, value, valueClass = "text-slate-900" }: { icon: React.ReactNode, label: string, value: string | number, valueClass?: string }) {
+function CheckCircle() {
   return (
-    <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
-      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-        {icon}
-      </div>
-      <div>
-        <div className="text-sm font-semibold text-slate-500">{label}</div>
-        <div className={`text-2xl font-bold ${valueClass}`}>{value}</div>
-      </div>
+    <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+      <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
     </div>
   );
 }
