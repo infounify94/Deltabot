@@ -31,6 +31,34 @@ export default function Dashboard() {
     // Fetch open positions
     const { data: openData } = await supabase.from('positions').select('*').in('status', ['open', 'adjusted']);
     
+    // Enrich open positions with Live Delta API marks
+    const enrichedOpenData = await Promise.all((openData || []).map(async (pos) => {
+        try {
+            const [callRes, putRes] = await Promise.all([
+                fetch(`https://api.delta.exchange/v2/products/${pos.short_call_symbol}/ticker`),
+                fetch(`https://api.delta.exchange/v2/products/${pos.short_put_symbol}/ticker`)
+            ]);
+            
+            const callData = await callRes.json();
+            const putData = await putRes.json();
+            
+            const cMark = parseFloat(callData.result?.mark_price || 0);
+            const pMark = parseFloat(putData.result?.mark_price || 0);
+            
+            const currentCost = (cMark + pMark) * pos.lots * 0.001;
+            const adjCost = parseFloat(pos.adjustment_cost || 0);
+            const actualPnl = parseFloat(pos.credit_received || 0) - currentCost - adjCost;
+
+            return {
+                ...pos,
+                actualPnl,
+                peakPnl: parseFloat(pos.peak_unrealized_pnl || 0)
+            };
+        } catch (error) {
+            return { ...pos, actualPnl: 0, peakPnl: parseFloat(pos.peak_unrealized_pnl || 0) };
+        }
+    }));
+    
     // Fetch closed positions
     const { data: closedData } = await supabase.from('positions').select('*').eq('status', 'closed').order('closed_at', { ascending: false });
 
@@ -83,7 +111,7 @@ export default function Dashboard() {
       };
     });
 
-    setOpenPositions(openData || []);
+    setOpenPositions(enrichedOpenData);
     setClosedPositions(processedClosed);
 
     const roundTrips = processedClosed.length;
@@ -221,6 +249,7 @@ export default function Dashboard() {
                     <th className="px-6 py-4">Size (BTC)</th>
                     <th className="px-6 py-4">Entry Price</th>
                     <th className="px-6 py-4">Actual P&L</th>
+                    <th className="px-6 py-4">Peak P&L</th>
                     <th className="px-6 py-4">Status</th>
                   </tr>
                 </thead>
@@ -237,7 +266,16 @@ export default function Dashboard() {
                         <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
                         <div>${(parseFloat(pos.credit_received) / 2).toFixed(2)}</div>
                       </td>
-                      <td className="px-6 py-4 text-emerald-500 font-bold">Live</td>
+                      <td className="px-6 py-4 font-bold">
+                        <span className={pos.actualPnl >= 0 ? "text-emerald-500" : "text-rose-500"}>
+                          {pos.actualPnl >= 0 ? "+" : ""}${pos.actualPnl.toFixed(2)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-bold">
+                        <span className={pos.peakPnl > 0 ? "text-emerald-500" : "text-slate-600"}>
+                          {pos.peakPnl > 0 ? "+" : ""}${pos.peakPnl.toFixed(2)}
+                        </span>
+                      </td>
                       <td className="px-6 py-4 flex items-center gap-3">
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded text-xs font-bold uppercase">{pos.status}</span>
                         {pos.manual_exit_requested ? (
