@@ -64,15 +64,15 @@ export default function Dashboard() {
       
       const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
       posEvents.forEach(e => {
-        if (!e.detail) return;
+        if (!e.details) return;
         if (e.event_type === 'entry') {
-          const fill = e.detail.fill || {};
+          const fill = e.details.fill || {};
           fees += parseFloat(fill.fees_paid || 0);
           callEntry = fill.short_call_fill || fill.call_fill_price || 'N/A';
           putEntry = fill.short_put_fill || fill.put_fill_price || 'N/A';
         }
         if (['time_exit', 'profit_take', 'stop_loss', 'manual_kill_switch', 'liquidation_buffer_breach'].includes(e.event_type)) {
-          const fills = e.detail.fills || {};
+          const fills = e.details.fills || {};
           const cf = fills[pos.short_call_symbol] || {};
           const pf = fills[pos.short_put_symbol] || {};
           
@@ -107,9 +107,9 @@ export default function Dashboard() {
       let callEntry = 'N/A', putEntry = 'N/A';
       const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
       posEvents.forEach(e => {
-        if (!e.detail) return;
+        if (!e.details) return;
         if (e.event_type === 'entry') {
-          const fill = e.detail.fill || {};
+          const fill = e.details.fill || {};
           callEntry = fill.short_call_fill || fill.call_fill_price || 'N/A';
           putEntry = fill.short_put_fill || fill.put_fill_price || 'N/A';
         }
