@@ -196,11 +196,16 @@ export default function Dashboard() {
       </nav>
 
       {/* Top Ticker Bar (Like old dashboard) */}
-      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 px-4 flex items-center gap-6 overflow-hidden text-sm font-semibold">
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
-          <span className="text-slate-800">Bitcoin</span>
-          <span className="text-slate-900">{btcPrice !== '...' ? `$${btcPrice}` : 'Loading...'}</span>
+      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold relative flex">
+        <div className="animate-ticker flex items-center gap-12">
+          {Array(10).fill(0).map((_, i) => (
+            <div key={i} className="flex items-center gap-2 whitespace-nowrap">
+              <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
+              <span className="text-slate-800">Bitcoin</span>
+              <span className="text-slate-900">{btcPrice !== '...' ? `${btcPrice}` : 'Loading...'}</span>
+              <span className="text-emerald-500 text-xs ml-1">+ Live</span>
+            </div>
+          ))}
         </div>
       </div>
 

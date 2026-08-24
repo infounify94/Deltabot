@@ -1,1 +1,16 @@
 @tailwind base; @tailwind components; @tailwind utilities;
+
+
+@keyframes ticker {
+  0% { transform: translateX(100vw); }
+  100% { transform: translateX(-100%); }
+}
+.animate-ticker {
+  animation: ticker 30s linear infinite;
+  white-space: nowrap;
+  display: inline-block;
+  will-change: transform;
+}
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
