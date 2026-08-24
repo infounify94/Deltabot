@@ -202,19 +202,19 @@ export default function Dashboard() {
       </nav>
 
       {/* Top Ticker Bar (Like old dashboard) */}
-      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold block">
-        <div className="animate-ticker inline-flex items-center gap-12 whitespace-nowrap">
-          {Array(15).fill(0).map((_, i) => (
-            <div key={i} className="inline-flex items-center gap-12 whitespace-nowrap">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
-                <span className="text-slate-800">Bitcoin</span>
-                <span className="text-slate-900">{btcPrice !== '...' ? `$${btcPrice}` : '...'}</span>
+      <div className="w-full bg-slate-100 border-b border-slate-200 py-4 overflow-hidden text-base font-bold block">
+        <div className="animate-ticker inline-flex items-center whitespace-nowrap">
+          {Array(20).fill(0).map((_, i) => (
+            <div key={i} className="inline-flex items-center whitespace-nowrap">
+              <div className="flex items-center gap-3 mr-24">
+                <span className="w-7 h-7 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-sm">₿</span>
+                <span className="text-slate-800 text-lg">Bitcoin</span>
+                <span className="text-slate-900 text-lg">{btcPrice !== '...' ? `$${btcPrice}` : '...'}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#627eea] text-white flex items-center justify-center text-[10px]">♦</span>
-                <span className="text-slate-800">Ethereum</span>
-                <span className="text-slate-900">{ethPrice !== '...' ? `$${ethPrice}` : '...'}</span>
+              <div className="flex items-center gap-3 mr-24">
+                <span className="w-7 h-7 rounded-full bg-[#627eea] text-white flex items-center justify-center text-[12px]">♦</span>
+                <span className="text-slate-800 text-lg">Ethereum</span>
+                <span className="text-slate-900 text-lg">{ethPrice !== '...' ? `$${ethPrice}` : '...'}</span>
               </div>
             </div>
           ))}
