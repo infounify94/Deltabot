@@ -285,6 +285,7 @@ export default function Dashboard() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                   <tr>
+                    <th className="px-6 py-4">Opened</th>
                     <th className="px-6 py-4">Instrument (C/P)</th>
                     <th className="px-6 py-4">Strategy</th>
                     <th className="px-6 py-4">Size (BTC)</th>
@@ -297,6 +298,7 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {openPositions.map(pos => (
                     <tr key={pos.id} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-4 text-slate-600 text-xs whitespace-nowrap">{pos.opened_at ? new Date(pos.opened_at).toLocaleString() : 'N/A'}</td>
                       <td className="px-6 py-4 font-mono text-xs text-slate-700 font-semibold">
                         <div>{pos.short_call_symbol}</div>
                         <div>{pos.short_put_symbol}</div>
@@ -340,6 +342,7 @@ export default function Dashboard() {
               <table className="w-full text-sm text-left">
                 <thead className="bg-slate-50 text-slate-500 font-bold border-b border-slate-200 text-[11px] uppercase tracking-wider">
                   <tr>
+                    <th className="px-6 py-4">Opened / Closed</th>
                     <th className="px-6 py-4">Instrument (C/P)</th>
                     <th className="px-6 py-4">Size (BTC)</th>
                     <th className="px-6 py-4">Entry Price</th>
@@ -352,6 +355,10 @@ export default function Dashboard() {
                 <tbody className="divide-y divide-slate-100">
                   {closedPositions.map(pos => (
                     <tr key={pos.id} className="hover:bg-slate-50/50">
+                      <td className="px-6 py-4 text-slate-600 text-[10px] whitespace-nowrap leading-tight">
+                        <div className="text-emerald-600 font-medium">O: {pos.opened_at ? new Date(pos.opened_at).toLocaleString() : 'N/A'}</div>
+                        <div className="text-rose-600 mt-1">C: {pos.closed_at ? new Date(pos.closed_at).toLocaleString() : 'N/A'}</div>
+                      </td>
                       <td className="px-6 py-4 font-mono text-xs text-slate-700 font-semibold">
                         <div>{pos.short_call_symbol}</div>
                         <div>{pos.short_put_symbol}</div>
