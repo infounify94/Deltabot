@@ -177,6 +177,8 @@ export default function Dashboard() {
         <div className="flex items-center gap-6">
           <a href="/dashboard" className="text-sm font-medium text-white transition border-b-2 border-[#e27625] pb-1">Dashboard</a>
           <a href="/dashboard/settings" className="text-sm font-medium text-slate-300 hover:text-white transition">Settings</a>
+            <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
+            <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
           <button 
             onClick={async () => {
               await supabase.auth.signOut();

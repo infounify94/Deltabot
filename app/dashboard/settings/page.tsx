@@ -360,6 +360,8 @@ export default function Settings() {
         <div className="flex items-center gap-6">
           <a href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-white transition">Dashboard</a>
           <a href="/dashboard/settings" className="text-sm font-medium text-[#e27625] transition border-b-2 border-[#e27625] pb-1">Settings</a>
+          <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
+          <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
           <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }} className="text-sm font-medium text-rose-400 hover:text-rose-300 transition">Logout</button>
         </div>
       </nav>
