@@ -55,7 +55,10 @@ export default function Dashboard() {
     const { data: closedData } = await supabase.from('positions').select('*').eq('user_id', user.id).eq('status', 'closed').order('closed_at', { ascending: false });
 
     // Fetch trade events FOR THIS USER
-    const { data: eventsData } = await supabase.from('trade_events').select('*').eq('user_id', user.id);
+    const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
+    const { data: eventsData } = posIds.length > 0 
+      ? await supabase.from('trade_events').select('*').in('position_id', posIds) 
+      : { data: [] };
 
     let liveBalance = 0;
     const { data: profile } = await supabase.from('profiles').select('live_balance').eq('id', user.id).single();
