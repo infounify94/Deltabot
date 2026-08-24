@@ -12,7 +12,6 @@ export default function Dashboard() {
   const [isPaused, setIsPaused] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [btcPrice, setBtcPrice] = useState<string>('...');
-  const [ethPrice, setEthPrice] = useState<string>('...');
 
   // WebSocket for Live BTC Price
   useEffect(() => {
@@ -21,12 +20,7 @@ export default function Dashboard() {
       const data = JSON.parse(event.data);
       setBtcPrice(parseFloat(data.p).toFixed(2));
     };
-    let wsEth = new WebSocket('wss://stream.binance.com:9443/ws/ethusdt@trade');
-    wsEth.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      setEthPrice(parseFloat(data.p).toFixed(2));
-    };
-    return () => { ws.close(); wsEth.close(); };
+    return () => ws.close();
   }, []);
 
   async function fetchData() {
@@ -202,24 +196,65 @@ export default function Dashboard() {
       </nav>
 
       {/* Top Ticker Bar (Like old dashboard) */}
-      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold block">
-        <div className="animate-ticker inline-flex items-center gap-12 whitespace-nowrap">
-          {Array(15).fill(0).map((_, i) => (
-            <div key={i} className="inline-flex items-center gap-12 whitespace-nowrap">
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
-                <span className="text-slate-800">Bitcoin</span>
-                <span className="text-slate-900">{btcPrice !== '...' ? `${btcPrice}` : '...'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-[#627eea] text-white flex items-center justify-center text-[10px]">♦</span>
-                <span className="text-slate-800">Ethereum</span>
-                <span className="text-slate-900">{ethPrice !== '...' ? `${ethPrice}` : '...'}</span>
-              </div>
+      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold relative flex">
+        <div className="animate-ticker flex items-center gap-12">
+          {Array(10).fill(0).map((_, i) => (
+            <div key={i} className="flex items-center gap-2 whitespace-nowrap">
+              <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
+              <span className="text-slate-800">Bitcoin</span>
+              <span className="text-slate-900">{btcPrice !== '...' ? `${btcPrice}` : 'Loading...'}</span>
+              <span className="text-emerald-500 text-xs ml-1">+ Live</span>
             </div>
           ))}
         </div>
       </div>
+
+      {/* Main Header */}
+      <div className="bg-white border-b border-slate-200 px-4 md:px-8 py-4 flex flex-col md:flex-row gap-4 justify-between md:items-center">
+        <h1 className="text-xl font-bold text-slate-800">ProfitPilot Bot Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <button onClick={handlePauseToggle} className={`px-4 py-2 font-bold rounded text-sm transition ${isPaused ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-amber-500 text-white hover:bg-amber-600'}`}>
+            {isPaused ? '▶ Resume Entries' : '⏸ Pause Entries'}
+          </button>
+          <button 
+            onClick={() => {
+              setLoading(true);
+              fetchData();
+            }} 
+            className="px-4 py-2 font-bold rounded text-sm bg-slate-900 text-white hover:bg-black transition flex items-center gap-2"
+          >
+            Refresh Data
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 w-full">
+        
+        {/* KPI Row (Clean White Box) */}
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 md:p-8 mb-8 grid grid-cols-2 gap-4 md:flex justify-between items-center">
+          <div className="md:flex-1 md:border-r border-slate-100">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Live Balance</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">${metrics.liveBalance.toFixed(2)}</div>
+          </div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Round-Trips</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.roundTrips}</div>
+          </div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Winners</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.winners}</div>
+          </div>
+          <div className="md:flex-1 md:border-r border-slate-100 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Hit Rate</div>
+            <div className="text-xl md:text-2xl font-bold text-slate-800">{metrics.hitRate}%</div>
+          </div>
+          <div className="col-span-2 md:col-span-1 md:flex-1 md:pl-8">
+            <div className="text-[11px] font-bold text-slate-400 mb-1 md:mb-2 uppercase tracking-wider">Realised P&L</div>
+            <div className={`text-xl md:text-2xl font-bold ${metrics.totalPnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+              ${metrics.totalPnl.toFixed(2)}
+            </div>
+          </div>
+        </div>
 
         {/* Heatmap */}
         <div className="mb-8">
