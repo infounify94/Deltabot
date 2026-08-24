@@ -12,6 +12,7 @@ export default function Dashboard() {
   const [isPaused, setIsPaused] = useState(false);
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
   const [btcPrice, setBtcPrice] = useState<string>('...');
+  const [ethPrice, setEthPrice] = useState<string>('...');
 
   // WebSocket for Live BTC Price
   useEffect(() => {
@@ -20,7 +21,12 @@ export default function Dashboard() {
       const data = JSON.parse(event.data);
       setBtcPrice(parseFloat(data.p).toFixed(2));
     };
-    return () => ws.close();
+    let wsEth = new WebSocket('wss://stream.binance.com:9443/ws/ethusdt@trade');
+    wsEth.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setEthPrice(parseFloat(data.p).toFixed(2));
+    };
+    return () => { ws.close(); wsEth.close(); };
   }, []);
 
   async function fetchData() {
@@ -196,14 +202,20 @@ export default function Dashboard() {
       </nav>
 
       {/* Top Ticker Bar (Like old dashboard) */}
-      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold relative flex">
-        <div className="animate-ticker flex items-center gap-12">
-          {Array(10).fill(0).map((_, i) => (
-            <div key={i} className="flex items-center gap-2 whitespace-nowrap">
-              <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
-              <span className="text-slate-800">Bitcoin</span>
-              <span className="text-slate-900">{btcPrice !== '...' ? `${btcPrice}` : 'Loading...'}</span>
-              <span className="text-emerald-500 text-xs ml-1">+ Live</span>
+      <div className="w-full bg-slate-100 border-b border-slate-200 py-2 overflow-hidden text-sm font-semibold block">
+        <div className="animate-ticker inline-flex items-center gap-12 whitespace-nowrap">
+          {Array(15).fill(0).map((_, i) => (
+            <div key={i} className="inline-flex items-center gap-12 whitespace-nowrap">
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#f7931a] text-white flex items-center justify-center text-xs">₿</span>
+                <span className="text-slate-800">Bitcoin</span>
+                <span className="text-slate-900">{btcPrice !== '...' ? `$${btcPrice}` : '...'}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-[#627eea] text-white flex items-center justify-center text-[10px]">♦</span>
+                <span className="text-slate-800">Ethereum</span>
+                <span className="text-slate-900">{ethPrice !== '...' ? `$${ethPrice}` : '...'}</span>
+              </div>
             </div>
           ))}
         </div>
