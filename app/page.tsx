@@ -468,9 +468,9 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--hair)]">
                 <div>
                   <h3 className="font-bold text-lg text-[var(--ink)]">
-                    Compounded Equity Curve &mdash; {fmt(5000)} &rarr; {fmt(16532)} Net
+                    Compounded Equity Curve — {fmt(5000)} → {fmt(16532)} Net
                   </h3>
-                  <p className="text-xs text-[var(--grey)] mt-0.5">Aug 2025 &rarr; Aug 2026 &middot; Realized Net P&amp;L after exchange taker fees &amp; GST</p>
+                  <p className="text-xs text-[var(--grey)] mt-0.5">Aug 2025 → Aug 2026 · Realized Net P&amp;L after exchange taker fees &amp; GST</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-[#f09455]" />
@@ -838,7 +838,7 @@ export default function Home() {
                     href="/login"
                     className="w-full py-4 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-black text-center block shadow-lg hover:brightness-105 transition-all text-sm"
                   >
-                    Start 30-Day Free Trial on Delta &rarr;
+                    Start 30-Day Free Trial on Delta →
                   </Link>
 
                 </div>

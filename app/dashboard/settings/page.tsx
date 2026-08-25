@@ -368,7 +368,7 @@ export default function Settings() {
                     disabled={saving}
                     className="w-full py-3.5 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-black shadow-lg hover:brightness-105 transition disabled:opacity-50 text-sm"
                   >
-                    {saving ? 'Connecting & Verifying...' : 'Save & Connect Delta Account &rarr;'}
+                    {saving ? 'Connecting & Verifying...' : 'Save & Connect Delta Account →'}
                   </button>
                 </form>
 
