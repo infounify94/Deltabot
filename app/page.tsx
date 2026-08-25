@@ -4,6 +4,8 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import GlassmorphismTrustHero from '@/components/ui/glassmorphism-trust-hero';
 import { InteractiveBentoGrid } from '@/components/ui/interactive-bento-grid';
+import { ConnectionFlow } from '@/components/ui/connection-flow';
+import { SpotlightCard } from '@/components/ui/spotlight-card';
 import { 
   Shield, 
   Activity, 
@@ -27,11 +29,14 @@ import {
   Compass,
   Crosshair,
   BarChart3,
+  ShieldCheck,
   Brain,
   ShieldAlert,
   HelpCircle,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Wallet,
+  Scale
 } from 'lucide-react';
 
 export default function Home() {
@@ -200,10 +205,10 @@ export default function Home() {
         <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium text-[var(--grey)]">
           <a href="#pipeline" className="hover:text-[var(--ink)] transition-colors">Pipeline</a>
           <a href="#bento" className="hover:text-[var(--ink)] transition-colors">7 Engines</a>
-          <a href="#regime" className="hover:text-[var(--ink)] transition-colors">Market Regime</a>
-          <a href="#defense" className="hover:text-[var(--ink)] transition-colors">Dynamic Defense</a>
+          <a href="#flow" className="hover:text-[var(--ink)] transition-colors">Architecture</a>
+          <a href="#regime" className="hover:text-[var(--ink)] transition-colors">Regime Matrix</a>
           <a href="#scenario" className="hover:text-[var(--ink)] transition-colors">Scenario Lab</a>
-          <a href="#notrade" className="hover:text-[var(--ink)] transition-colors">No-Trade Analytics</a>
+          <a href="#notrade" className="hover:text-[var(--ink)] transition-colors">No-Trade</a>
           <a href="#backtest" className="hover:text-[var(--ink)] transition-colors">Backtest</a>
           <a href="#pricing" className="hover:text-[var(--ink)] transition-colors">Pricing</a>
         </nav>
@@ -266,8 +271,8 @@ export default function Home() {
         <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-2.5 text-xs font-medium">
           <a href="#pipeline" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">10-Step Quantitative Pipeline</a>
           <a href="#bento" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">7 Proprietary Engines (Bento)</a>
+          <a href="#flow" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Non-Custodial Architecture</a>
           <a href="#regime" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Market Regime Matrix</a>
-          <a href="#defense" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Dynamic Defense Wings</a>
           <a href="#scenario" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Scenario Stress Lab</a>
           <a href="#notrade" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">No-Trade Analytics</a>
           <a href="#backtest" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Strategy Backtest</a>
@@ -306,11 +311,11 @@ export default function Home() {
 
       <main className="flex-1">
         
-        {/* 3. HERO SECTION (Using Modular GlassmorphismTrustHero Component) */}
+        {/* 3. HERO SECTION (High-Impact Container with AnimatedGridBackground + Interactive OptionPayoffChart) */}
         <GlassmorphismTrustHero btcPrice={btcPrice} ethPrice={ethPrice} />
 
         {/* 4. THE 10-STEP QUANTITATIVE ENGINE PIPELINE */}
-        <section id="pipeline" className="py-16 bg-[var(--paper-2)] border-b border-[var(--hair)]">
+        <section id="pipeline" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -340,7 +345,7 @@ export default function Home() {
             </div>
 
             {/* Active Pipeline Card */}
-            <div className="fintech-card p-6 sm:p-7 space-y-3">
+            <div className="fintech-card p-6 sm:p-7 space-y-3 shadow-subtle">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--hair)] pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="font-mono text-xs font-semibold w-7 h-7 rounded-lg bg-[var(--orange-tint)] text-[#d97706] flex items-center justify-center border border-[#d97706]/20">
@@ -363,7 +368,7 @@ export default function Home() {
         </section>
 
         {/* 5. 21st.dev STYLE INTERACTIVE BENTO GRID SHOWCASE */}
-        <section id="bento" className="py-20">
+        <section id="bento" className="py-20 bg-[var(--paper)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -383,8 +388,29 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 6. 01 MARKET REGIME & VOLATILITY ENGINES */}
-        <section id="regime" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        {/* 6. NON-CUSTODIAL CONNECTION ARCHITECTURE FLOW */}
+        <section id="flow" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider">
+                Security Architecture
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
+                Non-Custodial. Funds Stay In Your Delta Wallet.
+              </h2>
+              <p className="text-sm text-[var(--grey)] leading-relaxed">
+                ProfitPilot connects exclusively via trade-only API keys with zero withdrawal capabilities.
+              </p>
+            </div>
+
+            <ConnectionFlow />
+
+          </div>
+        </section>
+
+        {/* 7. 01 MARKET REGIME & VOLATILITY ENGINES */}
+        <section id="regime" className="py-20 bg-[var(--paper)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -408,7 +434,7 @@ export default function Home() {
               </div>
 
               {/* Regime Matrix Card Right */}
-              <div className="fintech-card p-5 sm:p-6 space-y-4">
+              <div className="fintech-card p-5 sm:p-6 space-y-4 shadow-subtle">
                 <div className="flex justify-between items-center border-b border-[var(--hair)] pb-3 text-xs">
                   <span className="font-semibold text-[var(--ink)]">Quantitative Factor Scores</span>
                   <span className="font-mono text-[#d97706] font-semibold">Overall: 78 / 100</span>
@@ -452,7 +478,7 @@ export default function Home() {
                 </p>
               </div>
 
-              <div className="lg:col-span-7 fintech-card p-5 sm:p-6 space-y-4">
+              <div className="lg:col-span-7 fintech-card p-5 sm:p-6 space-y-4 shadow-subtle">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <div className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)]">
                     <span className="text-[11px] font-medium text-[var(--grey)] block">NATR Level</span>
@@ -477,64 +503,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 7. DYNAMIC DEFENSE ENGINE (04) */}
-        <section id="defense" className="py-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-            
-            <div className="text-center max-w-2xl mx-auto space-y-2">
-              <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider">
-                04 &middot; Dynamic Defense &amp; Wings
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
-                Automated Iron Condor Defense
-              </h2>
-              <p className="text-sm text-[var(--grey)] max-w-xl mx-auto leading-relaxed">
-                When Bitcoin trends aggressively toward a short strike, ProfitPilot automatically purchases protective wings to mathematically define risk.
-              </p>
-            </div>
-
-            {/* Animated Defense Progression Sequence */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center shadow-subtle">
-                <span className="text-[11px] text-emerald-600 font-semibold uppercase block">1. Normal</span>
-                <span className="font-medium text-[var(--ink)]">Theta harvesting</span>
-                <p className="font-mono text-[10px] text-[var(--grey)]">&Delta; Call: 0.15 | &Delta; Put: 0.14</p>
-              </div>
-
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center shadow-subtle">
-                <span className="text-[11px] text-amber-600 font-semibold uppercase block">2. Threat detected</span>
-                <span className="font-medium text-[var(--ink)]">Spot approaches strike</span>
-                <p className="font-mono text-[10px] text-[var(--grey)]">&Delta; expands toward 0.35</p>
-              </div>
-
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[#d97706] bg-[var(--orange-tint)] space-y-1 text-center shadow-subtle">
-                <span className="text-[11px] text-[#d97706] font-semibold uppercase block">3. Defense mode</span>
-                <span className="font-medium text-[#d97706]">Trigger active (&Delta; &ge; 0.35)</span>
-                <p className="text-[10px] text-[#d97706]/80">Evaluates wing liquidity</p>
-              </div>
-
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-blue-400 bg-blue-50 dark:bg-blue-500/10 space-y-1 text-center shadow-subtle">
-                <span className="text-[11px] text-blue-600 font-semibold uppercase block">4. Wing activated</span>
-                <span className="font-medium text-blue-700 dark:text-blue-300">Buys long wing</span>
-                <p className="text-[10px] text-blue-600/80">Converts to Iron Condor</p>
-              </div>
-
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 space-y-1 text-center shadow-subtle">
-                <span className="text-[11px] text-emerald-600 font-semibold uppercase block">5. Risk controlled</span>
-                <span className="font-medium text-emerald-700 dark:text-emerald-300">Max loss capped</span>
-                <p className="text-[10px] text-emerald-600/80">Tail risk defined</p>
-              </div>
-            </div>
-
-            <div className="p-3.5 bg-[var(--card)] border border-[var(--hair)] rounded-lg text-center text-xs text-[var(--grey)] max-w-2xl mx-auto leading-relaxed shadow-subtle">
-              <em>Note:</em> Dynamic wing purchases define maximum loss to a fixed boundary. They are designed to mitigate catastrophic tail risk rather than eliminate all drawdowns.
-            </div>
-
-          </div>
-        </section>
-
         {/* 8. SCENARIO STRESS LAB */}
-        <section id="scenario" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        <section id="scenario" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -549,7 +519,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="fintech-card p-6 sm:p-7 space-y-6">
+            <div className="fintech-card p-6 sm:p-7 space-y-6 shadow-subtle">
               
               {/* Quick Stress Presets */}
               <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -628,7 +598,7 @@ export default function Home() {
         </section>
 
         {/* 9. "THE TRADES WE DIDN'T TAKE" (NO-TRADE ANALYTICS) */}
-        <section id="notrade" className="py-16">
+        <section id="notrade" className="py-20 bg-[var(--paper)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -677,7 +647,7 @@ export default function Home() {
         </section>
 
         {/* 10. STRATEGY BACKTEST PERFORMANCE & REGIME SPLIT */}
-        <section id="backtest" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        <section id="backtest" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -692,7 +662,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="fintech-card p-6 sm:p-7 space-y-6">
+            <div className="fintech-card p-6 sm:p-7 space-y-6 shadow-subtle">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
                   <span className="text-[11px] font-medium text-[var(--grey)] block">Backtest CAGR</span>
@@ -765,7 +735,7 @@ export default function Home() {
         </section>
 
         {/* 11. PRICING & PROFIT CALCULATOR */}
-        <section id="pricing" className="py-16">
+        <section id="pricing" className="py-20 bg-[var(--paper)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -849,7 +819,7 @@ export default function Home() {
         </section>
 
         {/* 12. FAQ ACCORDION */}
-        <section id="faq" className="py-20 bg-[var(--paper-2)] border-t border-[var(--hair)]">
+        <section id="faq" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center space-y-2">
@@ -863,7 +833,7 @@ export default function Home() {
 
             <div className="space-y-2.5 text-xs">
               {faqs.map((faq, i) => (
-                <div key={i} className="fintech-card overflow-hidden">
+                <div key={i} className="fintech-card overflow-hidden shadow-subtle">
                   <button
                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
                     className="w-full p-4 flex justify-between items-center text-left font-medium text-[var(--ink)] hover:bg-[var(--paper-2)] transition"
@@ -880,6 +850,47 @@ export default function Home() {
               ))}
             </div>
 
+          </div>
+        </section>
+
+        {/* 13. FINAL HIGH-CONVERSION CTA CALLOUT BANNER */}
+        <section className="py-20 bg-[var(--paper)]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SpotlightCard className="p-8 sm:p-12 text-center space-y-6 shadow-subtle bg-gradient-to-b from-[var(--card)] to-[var(--paper-2)]" spotlightColor="rgba(217, 119, 6, 0.12)">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--orange-tint)] text-[#d97706] border border-[#d97706]/20 flex items-center justify-center mx-auto shadow-sm">
+                <Activity className="w-6 h-6" />
+              </div>
+
+              <div className="space-y-2 max-w-xl mx-auto">
+                <h2 className="text-2xl sm:text-4xl font-bold text-[var(--ink)] tracking-tight">
+                  Start Trading With a Systematic Quantitative Edge
+                </h2>
+                <p className="text-sm text-[var(--grey)] leading-relaxed">
+                  Connect your trade-only Delta API keys and experience institutional-grade options intelligence with 30 days 100% free.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <Link
+                  href="/login"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[#d97706] hover:bg-[#b45309] text-white font-medium text-sm shadow-subtle transition-all active:scale-[0.98]"
+                >
+                  Create Free Account &rarr;
+                </Link>
+                <Link
+                  href="/dashboard"
+                  className="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-[var(--card)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-medium text-sm shadow-subtle transition-colors"
+                >
+                  Open Command Center
+                </Link>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-center gap-6 text-[11px] text-[var(--grey)] pt-2">
+                <span className="flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-emerald-600" /> Non-Custodial API</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> 30-Day Free Trial</span>
+                <span className="flex items-center gap-1.5"><Scale className="w-4 h-4 text-emerald-600" /> High-Water Mark Protection</span>
+              </div>
+            </SpotlightCard>
           </div>
         </section>
 
