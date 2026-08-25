@@ -3,37 +3,38 @@
 @tailwind utilities;
 
 :root {
-  /* LIGHT FIRST DEFAULT (High-contrast, crisp quantitative fintech) */
-  --paper: #ffffff;
-  --paper-2: #f8fafc;
+  /* LIGHT FIRST DEFAULT (Calm, High-Contrast Quantitative Fintech: Stripe + Linear + Ramp) */
+  --paper: #f8fafc;
+  --paper-2: #f1f5f9;
   --card: #ffffff;
+  --card-hover: #ffffff;
   --raise: #f1f5f9;
   --raise-2: #e2e8f0;
-  --ink: #0f172a;
+  --ink: #172033;
   --ink-2: #334155;
   --grey: #64748b;
   --faint: #94a3b8;
   --hair: #e2e8f0;
   --hair-2: #cbd5e1;
+  
+  /* Semantic & Quantitative Accents */
   --orange: #d97706;
-  --orange-hi: #f59e0b;
+  --orange-hover: #b45309;
   --orange-tint: #fef3c7;
   --pine: #059669;
   --pine-tint: #ecfdf5;
   --clay: #dc2626;
   --clay-tint: #fef2f2;
-  --amber: #b45309;
-  --amber-tint: #fffbeb;
-  --indigo: #4f46e5;
+  --indigo: #6366f1;
   --indigo-tint: #eef2ff;
-  --brand-on: #ffffff;
 }
 
 [data-theme="dark"] {
-  /* DARK OBSIDIAN MODE */
+  /* DARK OBSIDIAN MODE (Optional Secondary Theme) */
   --paper: #090a0f;
   --paper-2: #111319;
   --card: #141720;
+  --card-hover: #171b26;
   --raise: #1a1e2a;
   --raise-2: #242938;
   --ink: #f8fafc;
@@ -43,17 +44,14 @@
   --hair: rgba(255, 255, 255, 0.08);
   --hair-2: rgba(255, 255, 255, 0.16);
   --orange: #f59e0b;
-  --orange-hi: #fbbf24;
+  --orange-hover: #d97706;
   --orange-tint: rgba(245, 158, 11, 0.12);
   --pine: #10b981;
   --pine-tint: rgba(16, 185, 129, 0.12);
   --clay: #ef4444;
   --clay-tint: rgba(239, 68, 68, 0.12);
-  --amber: #f59e0b;
-  --amber-tint: rgba(245, 158, 11, 0.1);
-  --indigo: #6366f1;
+  --indigo: #818cf8;
   --indigo-tint: rgba(99, 102, 241, 0.12);
-  --brand-on: #0f172a;
 }
 
 body {
@@ -64,18 +62,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Precise Tabular Numerals for IBM Plex Mono data */
 .num-tabular {
   font-variant-numeric: tabular-nums slashed-zero;
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Custom crisp scrollbars */
+/* Subtle, calm scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--paper-2);
+  background: var(--paper);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--hair-2);
@@ -94,44 +93,36 @@ body {
 .animate-ticker-marquee {
   display: flex;
   width: max-content;
-  animation: ticker 32s linear infinite;
+  animation: ticker 45s linear infinite;
 }
 
 .animate-ticker-marquee:hover {
   animation-play-state: paused;
 }
 
-/* Quantitative card & panel styling */
+/* Institutional Fintech Card (Calm 8-10px border radius, 1px solid hairline border, very subtle shadow) */
 .fintech-card {
   background: var(--card);
   border: 1px solid var(--hair);
-  border-radius: 1rem;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
 }
 
 .fintech-card-subtle {
   background: var(--paper-2);
   border: 1px solid var(--hair);
-  border-radius: 0.75rem;
+  border-radius: 0.5rem;
 }
 
-/* Glassmorphism helpers for headers/dropdowns only */
+/* Header subtle blur */
 .glass-header {
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hair);
 }
 
-.glass-dropdown {
-  background: color-mix(in srgb, var(--card) 96%, transparent);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--hair-2);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-}
-
-/* Range input styling */
+/* Clean range inputs */
 input[type="range"] {
-  accent-color: var(--orange-hi);
+  accent-color: var(--orange);
 }

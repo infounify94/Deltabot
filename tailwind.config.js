@@ -10,43 +10,37 @@ module.exports = {
     extend: {
       colors: {
         brand: {
-          50: '#fff8f1',
-          100: '#feeedb',
-          200: '#fcd9b3',
-          300: '#fabf82',
-          400: '#f79f4c',
-          500: '#f09455',
-          600: '#e27625',
-          700: '#c45a1b',
-          800: '#9d471b',
-          900: '#7e3c1a',
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
         },
-        obsidian: {
-          950: '#07080a',
-          900: '#0c0d10',
-          850: '#121419',
-          800: '#16181d',
-          700: '#1b1e24',
-          600: '#262a33',
-        },
-        pine: {
-          DEFAULT: '#10b981',
-          tint: '#0f2a22',
-          light: '#4fc79b',
-        },
-        clay: {
-          DEFAULT: '#ef4444',
-          tint: '#2b1512',
-          light: '#e8776a',
-        },
+        slate: {
+          850: '#172033',
+          900: '#0f172a',
+          950: '#090a0f',
+        }
       },
       fontFamily: {
-        mono: ['ui-monospace', 'SF Mono', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['var(--font-mono)', 'IBM Plex Mono', 'ui-monospace', 'SF Mono', 'Menlo', 'Consolas', 'monospace'],
+      },
+      borderRadius: {
+        'card': '0.5rem', // 8px default card radius
+        'card-lg': '0.625rem', // 10px
+      },
+      boxShadow: {
+        'subtle': '0 1px 2px 0 rgba(15, 23, 42, 0.04)',
+        'subtle-md': '0 4px 6px -1px rgba(15, 23, 42, 0.04), 0 2px 4px -2px rgba(15, 23, 42, 0.04)',
       },
       animation: {
-        'ticker': 'ticker 40s linear infinite',
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'ticker': 'ticker 45s linear infinite',
       },
       keyframes: {
         ticker: {

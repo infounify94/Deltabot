@@ -360,10 +360,10 @@ export default function Dashboard() {
   const aiQueries = [
     {
       q: "Why didn't the bot trade new entries?",
-      a: `DIAGNOSTIC AUDIT (Time: ${new Date().toLocaleTimeString()}): Strategy conditions met, Liquidity buffer ($4,200) verified, Account margin healthy (34% utilization). However, IV/RV spread is currently tight (${(calculatedModel.iv - calculatedModel.rv).toFixed(1)} pts), meaning risk-adjusted premium harvest does not clear the quantitative entry threshold. Bot is in disciplined stand-by mode.`
+      a: `DIAGNOSTIC AUDIT: Strategy conditions met, Liquidity buffer ($4,200) verified, Account margin healthy (34% utilization). However, IV/RV spread is currently tight (${(calculatedModel.iv - calculatedModel.rv).toFixed(1)} pts), meaning risk-adjusted premium harvest does not clear the quantitative entry threshold. Bot is in disciplined stand-by mode.`
     },
     {
-      q: "Why is the position in HARVEST vs DEFEND state?",
+      q: "Why is the position in Harvest vs Defend state?",
       a: `POSITION AUDIT: Active short call delta is 0.14 and short put delta is 0.13. Both are safely below the 0.35 threat threshold. Current standard deviation buffer is 2.4σ from spot price ($${btcPrice.toLocaleString()}). Dynamic Iron Condor protective wings remain armed on standby.`
     },
     {
@@ -381,7 +381,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#f59e0b]/20">
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#d97706]/15">
       
       {/* Top Main Navigation Header */}
       <header className="sticky top-0 z-50 glass-header px-4 sm:px-8 py-3 flex items-center justify-between">
@@ -390,34 +390,34 @@ export default function Dashboard() {
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
+            className="lg:hidden p-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
             aria-label="Toggle Navigation Sidebar"
           >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-md">
-              <Activity className="text-white w-5 h-5" strokeWidth={2.5} />
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-sm">
+              <Activity className="text-white w-4 h-4" strokeWidth={2.5} />
             </div>
             <div className="flex items-center">
-              <span className="font-bold text-lg tracking-tight text-[var(--ink)]">Profit</span>
-              <span className="font-bold text-lg tracking-tight text-[#d97706]">Pilot</span>
-              <span className="ml-2 text-[10px] font-mono font-bold bg-[var(--orange-tint)] text-[var(--orange)] px-2 py-0.5 rounded-full border border-[var(--orange)]/20">
-                v2.0 QUANT
+              <span className="font-semibold text-base tracking-tight text-[var(--ink)]">Profit</span>
+              <span className="font-semibold text-base tracking-tight text-[#d97706]">Pilot</span>
+              <span className="ml-2 text-[10px] font-medium bg-[var(--orange-tint)] text-[var(--orange)] px-2 py-0.5 rounded-full border border-[var(--orange)]/20">
+                2.0 Quant
               </span>
             </div>
           </Link>
         </div>
 
         {/* Center: Live Strategy Operational Pill */}
-        <div className="hidden sm:flex items-center gap-2.5 bg-[var(--paper-2)] border border-[var(--hair)] px-3.5 py-1.5 rounded-full text-xs font-mono">
-          <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-pulse'}`} />
-          <span className="font-bold text-[var(--ink)]">
-            {isPaused ? 'ENTRIES PAUSED' : 'AUTO-EXECUTION ACTIVE'}
+        <div className="hidden sm:flex items-center gap-2.5 bg-[var(--paper-2)] border border-[var(--hair)] px-3.5 py-1.5 rounded-full text-xs">
+          <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+          <span className="font-medium text-[var(--ink)]">
+            {isPaused ? 'Entries paused' : 'Auto-execution active'}
           </span>
           <span className="text-[var(--grey)] border-l border-[var(--hair)] pl-2">
-            BTC: <strong className="text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</strong>
+            BTC: <strong className="font-mono text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</strong>
           </span>
         </div>
 
@@ -425,16 +425,16 @@ export default function Dashboard() {
         <div className="flex items-center gap-2.5">
           
           {/* Currency Toggle */}
-          <div className="bg-[var(--paper-2)] p-0.5 rounded-lg border border-[var(--hair)] flex items-center text-xs font-semibold">
+          <div className="bg-[var(--paper-2)] p-0.5 rounded-lg border border-[var(--hair)] flex items-center text-xs font-medium">
             <button 
               onClick={() => setCurrency('INR')}
-              className={`px-2 py-1 rounded transition-all ${currency === 'INR' ? 'bg-[#d97706] text-white shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
+              className={`px-2 py-1 rounded transition-all ${currency === 'INR' ? 'bg-[#d97706] text-white shadow-sm font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
             >
               ₹ INR
             </button>
             <button 
               onClick={() => setCurrency('USD')}
-              className={`px-2 py-1 rounded transition-all ${currency === 'USD' ? 'bg-[#d97706] text-white shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
+              className={`px-2 py-1 rounded transition-all ${currency === 'USD' ? 'bg-[#d97706] text-white shadow-sm font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
             >
               $ USD
             </button>
@@ -443,10 +443,10 @@ export default function Dashboard() {
           {/* Theme Switcher */}
           <button 
             onClick={toggleTheme}
-            className="w-8 h-8 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
+            className="w-7 h-7 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
             title="Toggle Light/Dark Theme"
           >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
           </button>
 
           {/* Sign Out */}
@@ -455,7 +455,7 @@ export default function Dashboard() {
               await supabase.auth.signOut();
               window.location.href = '/';
             }}
-            className="hidden sm:block text-xs font-medium text-rose-500 hover:text-rose-600 transition bg-rose-50 dark:bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-500/20"
+            className="hidden sm:block text-xs font-medium text-rose-600 hover:text-rose-700 transition bg-rose-50 dark:bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-500/20"
           >
             Sign Out
           </button>
@@ -466,157 +466,151 @@ export default function Dashboard() {
       <div className="flex-1 flex overflow-hidden">
         
         {/* Left Collapsible Quantitative Navigation Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           
-          <div className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-80px)]">
+          <div className="p-3 space-y-5 overflow-y-auto max-h-[calc(100vh-80px)] text-xs">
             
             {/* 1. COMMAND CENTER */}
             <div>
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1.5">
-                Operations Hub
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
+                Operations
               </div>
               <button
                 onClick={() => { setSection('command'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all ${section === 'command' ? 'bg-[#d97706] text-white shadow-sm' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'command' ? 'bg-[#d97706] text-white shadow-subtle' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Activity className="w-4 h-4" /> Command Center
               </button>
             </div>
 
             {/* 2. MARKETS */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Markets &amp; Volatility
               </div>
               <button
                 onClick={() => { setSection('markets_intel'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'markets_intel' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'markets_intel' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Compass className="w-4 h-4" /> Market Regime (01)
               </button>
               <button
                 onClick={() => { setSection('markets_vol'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'markets_vol' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'markets_vol' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Zap className="w-4 h-4" /> Volatility Engine (02)
               </button>
             </div>
 
             {/* 3. STRATEGIES */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Strategy &amp; Structure
               </div>
               <button
                 onClick={() => { setSection('strategy_engine'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'strategy_engine' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'strategy_engine' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Cpu className="w-4 h-4" /> Strategy Engine (03)
               </button>
               <button
                 onClick={() => { setSection('scenario_lab'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'scenario_lab' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'scenario_lab' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Sliders className="w-4 h-4" /> Scenario Stress Lab
               </button>
             </div>
 
             {/* 4. TRADING */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Execution &amp; Positions
               </div>
               <button
                 onClick={() => { setSection('trading_positions'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'trading_positions' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'trading_positions' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Layers className="w-4 h-4" /> Live Positions ({openPositions.length})
               </button>
               <button
                 onClick={() => { setSection('trading_algo'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'trading_algo' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'trading_algo' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Terminal className="w-4 h-4" /> Algo Center &amp; Kill Switch
+                <Terminal className="w-4 h-4" /> Algo Center &amp; Controls
               </button>
             </div>
 
             {/* 5. RISK */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Risk Management
               </div>
               <button
                 onClick={() => { setSection('risk_center'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'risk_center' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'risk_center' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Shield className="w-4 h-4" /> Risk Center (05)
               </button>
               <button
                 onClick={() => { setSection('risk_guard'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'risk_guard' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'risk_guard' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <ShieldAlert className="w-4 h-4" /> Risk Guard Limits
               </button>
             </div>
 
             {/* 6. ANALYTICS */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Analytics &amp; Audits
               </div>
               <button
                 onClick={() => { setSection('analytics_notrade'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'analytics_notrade' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_notrade' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Eye className="w-4 h-4" /> Trades We Didn't Take
               </button>
               <button
                 onClick={() => { setSection('analytics_backtest'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'analytics_backtest' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_backtest' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <BarChart3 className="w-4 h-4" /> Backtest by Regime
               </button>
               <button
                 onClick={() => { setSection('analytics_journal'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'analytics_journal' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_journal' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <BookOpen className="w-4 h-4" /> Decision Journal
               </button>
             </div>
 
             {/* 7. INTELLIGENCE */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 Explainability (07)
               </div>
               <button
                 onClick={() => { setSection('intel_ai'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'intel_ai' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'intel_ai' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <Brain className="w-4 h-4 text-[#d97706]" /> "WHY?" AI Analyst
-              </button>
-              <button
-                onClick={() => { setSection('intel_research'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono transition-all ${section === 'intel_research' ? 'bg-[#d97706] text-white font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <FileText className="w-4 h-4" /> Quantitative Briefs
               </button>
             </div>
 
             {/* 8. SYSTEM */}
-            <div className="space-y-1">
-              <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--faint)] px-3 mb-1">
+            <div className="space-y-0.5">
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
                 System &amp; Keys
               </div>
               <Link
                 href="/dashboard/settings"
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
+                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
               >
                 <Settings className="w-4 h-4" /> Delta API Keys &amp; IP
               </Link>
               <Link
                 href="/dashboard/help"
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-mono text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
+                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
               >
                 <HelpCircle className="w-4 h-4" /> Help &amp; WhatsApp Support
               </Link>
@@ -625,123 +619,123 @@ export default function Dashboard() {
           </div>
 
           {/* User Footer info */}
-          <div className="p-4 border-t border-[var(--hair)] bg-[var(--paper)]">
-            <div className="text-[11px] font-mono text-[var(--grey)] truncate">
-              User: <strong className="text-[var(--ink)]">{userEmail || 'trader'}</strong>
+          <div className="p-3 border-t border-[var(--hair)] bg-[var(--paper)]">
+            <div className="text-xs text-[var(--grey)] truncate">
+              User: <strong className="text-[var(--ink)] font-medium">{userEmail || 'trader'}</strong>
             </div>
-            <div className="text-[9px] font-mono text-[var(--faint)] mt-0.5">
-              Self-Custodial &middot; Delta Exchange
+            <div className="text-[11px] text-[var(--faint)] mt-0.5">
+              Non-custodial &middot; Delta Exchange
             </div>
           </div>
         </aside>
 
         {/* Main Content Viewport */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-8">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
           
           {/* SECTION 1: COMMAND CENTER (Default Overview) */}
           {(section === 'command' || section === 'trading_positions') && (
             <div className="space-y-6">
               
-              {/* Top Operational Metrics Row */}
-              <div className="fintech-card p-4 sm:p-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* Top Operational KPI Row (Inter 500 Labels / IBM Plex Mono 600 Values) */}
+              <div className="fintech-card p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 
                 <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Delta Balance
-                    <span className="text-[8px] bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
+                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-[var(--ink)] mt-1 num-tabular">
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
                     {fmt(metrics.liveBalance)}
                   </div>
-                  <div className="text-[9px] text-[var(--grey)] font-mono">Live Collateral</div>
+                  <div className="text-[11px] text-[var(--grey)]">Live Collateral</div>
                 </div>
 
                 <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Today Net P&amp;L
-                    <span className="text-[8px] bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">DB</span>
+                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">DB</span>
                   </div>
-                  <div className={`text-xl sm:text-2xl font-black font-mono mt-1 num-tabular ${metrics.totalPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                  <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${metrics.totalPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
                     {metrics.totalPnl >= 0 ? '+' : ''}{fmt(metrics.totalPnl)}
                   </div>
-                  <div className="text-[9px] text-[var(--grey)] font-mono">After Fees &amp; GST</div>
+                  <div className="text-[11px] text-[var(--grey)]">After Fees &amp; GST</div>
                 </div>
 
                 <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Market Regime
-                    <span className="text-[8px] bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-bold">MODEL</span>
+                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
-                  <div className="text-sm font-black font-mono text-[var(--orange)] mt-2 uppercase truncate">
+                  <div className="text-sm font-semibold text-[#d97706] mt-1.5 truncate">
                     High Vol / Bull
                   </div>
-                  <div className="text-[9px] text-[var(--grey)] font-mono">Score: 78/100</div>
+                  <div className="font-mono text-[11px] text-[var(--grey)]">Score: 78/100</div>
                 </div>
 
                 <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Strategy Fit
-                    <span className="text-[8px] bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-bold">MODEL</span>
+                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-black font-mono text-[var(--ink)] mt-1 num-tabular">
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
                     82 <span className="text-xs font-normal text-[var(--grey)]">/ 100</span>
                   </div>
-                  <div className="text-[9px] text-emerald-600 font-mono font-bold">Favorable (Short Vol)</div>
+                  <div className="text-[11px] text-emerald-600 font-medium">Favorable (Short Vol)</div>
                 </div>
 
                 <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Entry Gate
-                    <span className="text-[8px] bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-bold">MODEL</span>
+                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
-                  <div className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded inline-block border border-emerald-200 dark:border-emerald-500/20">
-                    ● APPROVED
+                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded inline-block border border-emerald-200 dark:border-emerald-500/20">
+                    ● Approved
                   </div>
-                  <div className="text-[9px] text-[var(--grey)] font-mono mt-0.5">Confidence: HIGH</div>
+                  <div className="text-[11px] text-[var(--grey)] mt-0.5">Confidence: High</div>
                 </div>
 
                 <div>
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[var(--grey)] flex items-center gap-1">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
                     Risk State
-                    <span className="text-[8px] bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
+                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
                   </div>
-                  <div className="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-2">
-                    NORMAL (Buffer 40%)
+                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
+                    Normal (Buffer 40%)
                   </div>
-                  <div className="text-[9px] text-[var(--grey)] font-mono">Wings Armed</div>
+                  <div className="text-[11px] text-[var(--grey)]">Wings Armed</div>
                 </div>
 
               </div>
 
               {/* Primary Engine Operational Status Bar */}
-              <div className="fintech-card p-4 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="fintech-card p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div>
-                  <div className="flex items-center gap-3">
-                    <span className={`w-3 h-3 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500 animate-ping'}`} />
-                    <h2 className="text-lg font-black font-mono text-[var(--ink)] tracking-tight">
-                      PROFITPILOT EXECUTION CORE
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                    <h2 className="text-base font-semibold text-[var(--ink)]">
+                      ProfitPilot Execution Core
                     </h2>
-                    <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${isPaused ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>
-                      {isPaused ? 'PAUSED' : 'ACTIVE'}
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${isPaused ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>
+                      {isPaused ? 'Paused' : 'Active'}
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--grey)] font-mono mt-1">
-                    Target Underlying: BTC &middot; Target Delta: 0.15–0.18 &middot; Dynamic Wings Trigger: &Delta; &ge; 0.35 &middot; Evaluation Interval: 5s
+                  <p className="text-xs text-[var(--grey)] mt-1">
+                    Target: BTC &middot; Delta: 0.15–0.18 &middot; Dynamic Wings Trigger: &Delta; &ge; 0.35 &middot; Evaluation Interval: 5s
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2.5">
                   <button 
                     onClick={handlePauseToggle}
-                    className={`px-4 py-2.5 font-bold rounded-xl text-xs font-mono transition flex items-center gap-2 shadow-sm ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
+                    className={`px-3.5 py-2 font-medium rounded-lg text-xs transition flex items-center gap-2 shadow-subtle ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
                   >
                     {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
-                    {isPaused ? 'Resume Strategy Entries' : 'Pause New Entries'}
+                    {isPaused ? 'Resume strategy entries' : 'Pause new entries'}
                   </button>
 
                   <button 
                     onClick={() => { setLoading(true); fetchData(); }}
-                    className="px-3.5 py-2.5 font-bold rounded-xl text-xs font-mono bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--ink)] hover:bg-[var(--raise)] transition flex items-center gap-1.5"
+                    className="px-3 py-2 font-medium rounded-lg text-xs bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--ink)] hover:bg-[var(--raise)] transition flex items-center gap-1.5"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Refresh</span>
@@ -750,12 +744,12 @@ export default function Dashboard() {
               </div>
 
               {/* LIVE ACTIVE POSITION & 4 DEFENSE STATES */}
-              <div className="fintech-card p-4 sm:p-6 space-y-4">
+              <div className="fintech-card p-4 sm:p-5 space-y-4">
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--hair)] pb-3">
                   <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <h3 className="font-bold text-base text-[var(--ink)] font-mono">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <h3 className="font-semibold text-sm text-[var(--ink)]">
                       Active Strategy Position (BTC Strangle)
                     </h3>
                     <span className="text-[10px] font-mono bg-[var(--paper-2)] text-[var(--grey)] px-2 py-0.5 rounded border border-[var(--hair)]">
@@ -764,21 +758,21 @@ export default function Dashboard() {
                   </div>
 
                   {/* 4 Defense States Pipeline */}
-                  <div className="flex items-center gap-1 text-[10px] font-mono font-bold">
-                    <span className="px-2 py-1 rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/30">
-                      1. HARVEST (Active)
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-medium">
+                      1. Harvest (Active)
                     </span>
                     <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-1 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      2. DEFEND
+                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
+                      2. Defend
                     </span>
                     <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-1 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      3. PROTECT
+                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
+                      3. Protect
                     </span>
                     <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-1 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      4. LOCKDOWN
+                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
+                      4. Lockdown
                     </span>
                   </div>
                 </div>
@@ -787,71 +781,71 @@ export default function Dashboard() {
                   openPositions.map(pos => (
                     <div key={pos.id} className="space-y-4">
                       
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="fintech-card-subtle p-3.5 space-y-1">
-                          <div className="text-[10px] font-mono text-[var(--grey)] uppercase">Instruments</div>
-                          <div className="font-bold font-mono text-sm text-[var(--ink)]">{pos.short_call_symbol || 'BTC-CALL'}</div>
-                          <div className="font-bold font-mono text-sm text-[var(--grey)]">{pos.short_put_symbol || 'BTC-PUT'}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="fintech-card-subtle p-3 space-y-1">
+                          <div className="text-[11px] text-[var(--grey)]">Instruments</div>
+                          <div className="font-mono text-xs font-semibold text-[var(--ink)]">{pos.short_call_symbol || 'BTC-CALL'}</div>
+                          <div className="font-mono text-xs font-semibold text-[var(--grey)]">{pos.short_put_symbol || 'BTC-PUT'}</div>
                         </div>
 
-                        <div className="fintech-card-subtle p-3.5 space-y-1">
-                          <div className="text-[10px] font-mono text-[var(--grey)] uppercase">Position Sizing &amp; Fills</div>
-                          <div className="font-bold font-mono text-sm text-[var(--ink)]">{(pos.lots * 0.001).toFixed(3)} BTC ({pos.lots} Lots)</div>
-                          <div className="text-[11px] font-mono text-[var(--grey)]">C: {pos.callEntry} | P: {pos.putEntry}</div>
+                        <div className="fintech-card-subtle p-3 space-y-1">
+                          <div className="text-[11px] text-[var(--grey)]">Position sizing &amp; fills</div>
+                          <div className="font-mono text-xs font-semibold text-[var(--ink)]">{(pos.lots * 0.001).toFixed(3)} BTC ({pos.lots} Lots)</div>
+                          <div className="font-mono text-[11px] text-[var(--grey)]">C: {pos.callEntry} | P: {pos.putEntry}</div>
                         </div>
 
-                        <div className="fintech-card-subtle p-3.5 space-y-1">
-                          <div className="text-[10px] font-mono text-[var(--grey)] uppercase">Actual Mark P&amp;L</div>
-                          <div className={`text-lg font-black font-mono ${pos.actualPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                        <div className="fintech-card-subtle p-3 space-y-1">
+                          <div className="text-[11px] text-[var(--grey)]">Actual Mark P&amp;L</div>
+                          <div className={`font-mono text-base font-semibold ${pos.actualPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
                             {pos.actualPnl >= 0 ? '+' : ''}{fmt(pos.actualPnl)}
                           </div>
-                          <div className="text-[10px] font-mono text-emerald-600">Peak: +{fmt(pos.peakPnl)}</div>
+                          <div className="font-mono text-[11px] text-emerald-600">Peak: +{fmt(pos.peakPnl)}</div>
                         </div>
 
-                        <div className="fintech-card-subtle p-3.5 flex flex-col justify-between">
-                          <div className="text-[10px] font-mono text-[var(--grey)] uppercase">Emergency Override</div>
+                        <div className="fintech-card-subtle p-3 flex flex-col justify-between">
+                          <div className="text-[11px] text-[var(--grey)]">Emergency override</div>
                           {pos.manual_exit_requested ? (
-                            <span className="text-rose-600 font-bold text-xs font-mono animate-pulse">
-                              KILL ORDER SENT
+                            <span className="text-rose-600 font-semibold text-xs animate-pulse">
+                              Kill order sent
                             </span>
                           ) : (
                             <button 
                               onClick={() => handleKillSwitch(pos.id)}
-                              className="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-mono font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+                              className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-subtle"
                             >
-                              <ShieldAlert className="w-3.5 h-3.5" /> Emergency Market Kill
+                              <ShieldAlert className="w-3.5 h-3.5" /> Emergency market kill
                             </button>
                           )}
                         </div>
                       </div>
 
-                      {/* POSITION CHANGE DETECTOR: Entry vs Current */}
-                      <div className="bg-[var(--paper-2)] border border-[var(--hair)] rounded-xl p-4 space-y-3 font-mono text-xs">
+                      {/* POSITION CHANGE DETECTOR */}
+                      <div className="bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg p-3.5 space-y-2.5 text-xs">
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-[var(--ink)] flex items-center gap-1.5">
+                          <span className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
                             <Crosshair className="w-3.5 h-3.5 text-[#d97706]" /> Position Change Detector
                           </span>
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded">
-                            ENGINE RESPONSE: HARVEST MODE (NOMINAL)
+                          <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded">
+                            Engine response: Harvest mode (Nominal)
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
-                          <div className="p-2 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[var(--grey)] block">Implied Vol (IV):</span>
-                            <span className="font-bold text-[var(--ink)]">54% &rarr; {calculatedModel.iv.toFixed(0)}%</span>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                            <span className="text-[11px] text-[var(--grey)] block">Implied Vol (IV):</span>
+                            <span className="font-mono font-medium text-[var(--ink)]">54% &rarr; {calculatedModel.iv.toFixed(0)}%</span>
                           </div>
-                          <div className="p-2 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[var(--grey)] block">NATR Level:</span>
-                            <span className="font-bold text-[var(--ink)]">3.2% &rarr; {calculatedModel.natr}%</span>
+                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                            <span className="text-[11px] text-[var(--grey)] block">NATR Level:</span>
+                            <span className="font-mono font-medium text-[var(--ink)]">3.2% &rarr; {calculatedModel.natr}%</span>
                           </div>
-                          <div className="p-2 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[var(--grey)] block">Threatened Delta:</span>
-                            <span className="font-bold text-emerald-600">0.15 &rarr; 0.16 (Safe &lt; 0.35)</span>
+                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                            <span className="text-[11px] text-[var(--grey)] block">Threatened Delta:</span>
+                            <span className="font-mono font-medium text-emerald-600">0.15 &rarr; 0.16 (Safe &lt; 0.35)</span>
                           </div>
-                          <div className="p-2 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[var(--grey)] block">Wing Activation:</span>
-                            <span className="font-bold text-[var(--grey)]">STANDBY (Armed)</span>
+                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                            <span className="text-[11px] text-[var(--grey)] block">Wing Activation:</span>
+                            <span className="font-mono font-medium text-[var(--grey)]">Standby (Armed)</span>
                           </div>
                         </div>
                       </div>
@@ -859,79 +853,72 @@ export default function Dashboard() {
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-[var(--grey)] font-mono text-xs">
-                    No active positions open right now. Engine is evaluating orderbook deltas on Delta Exchange.
+                  <div className="p-8 text-center text-[var(--grey)] text-xs">
+                    No active positions open right now. Engine is scanning orderbook deltas on Delta Exchange.
                   </div>
                 )}
 
               </div>
 
-              {/* WHY DIDN'T THE BOT TRADE? Diagnostic Interface */}
-              <div className="fintech-card p-4 sm:p-6 space-y-4">
+              {/* WHY DIDN'T THE BOT TRADE? AUDIT TRAIL FORMAT */}
+              <div className="fintech-card p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
                   <div>
-                    <h3 className="font-bold text-base text-[var(--ink)] font-mono flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-[#d97706]" /> "WHY DIDN'T THE BOT TRADE?" &mdash; Decision Diagnostic Matrix
+                    <h3 className="font-semibold text-sm text-[var(--ink)] flex items-center gap-2">
+                      <Brain className="w-4 h-4 text-[#d97706]" /> "Why Didn't the Bot Trade?" &mdash; Quantitative Audit Trail
                     </h3>
-                    <p className="text-xs text-[var(--grey)] font-mono mt-0.5">
-                      Transparent explainability engine auditing all quantitative preconditions before live capital entry.
+                    <p className="text-xs text-[var(--grey)] mt-0.5">
+                      Audited checklist of all mathematical preconditions evaluated before capital allocation.
                     </p>
                   </div>
-                  <span className="text-[10px] font-mono bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-1 rounded font-bold border border-emerald-200">
-                    EVALUATION: PASS
+                  <span className="text-[11px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-medium border border-emerald-200">
+                    Overall: Pass
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 font-mono text-xs">
-                  
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Strategy Filter</span>
-                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Favorable
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">Score: 82/100</span>
-                  </div>
-
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Liquidity Filter</span>
-                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Sufficient
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">Bid-Ask spread &lt; 2%</span>
-                  </div>
-
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Margin Reserve</span>
-                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> 40% Preserved
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">Wing buffer clear</span>
-                  </div>
-
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Volatility Gate</span>
-                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> IV &gt; RV (+12.2)
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">Premium harvest open</span>
-                  </div>
-
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Cooldown Status</span>
-                    <div className="flex items-center gap-1.5 text-emerald-600 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Clear
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">No stop triggered in 4h</span>
-                  </div>
-
-                  <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-1">
-                    <span className="text-[10px] text-[var(--grey)] block uppercase">Final Gate</span>
-                    <div className="text-emerald-600 font-bold text-xs">
-                      ● APPROVED
-                    </div>
-                    <span className="text-[9px] text-[var(--faint)]">Ready on next cycle</span>
-                  </div>
-
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="border-b border-[var(--hair)] text-[var(--grey)] font-medium">
+                      <tr>
+                        <th className="py-2">Condition</th>
+                        <th className="py-2">Status</th>
+                        <th className="py-2">Current Value</th>
+                        <th className="py-2">Explanation</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--hair)]">
+                      <tr>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Volatility Gate</td>
+                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
+                        <td className="font-mono py-2.5 text-[var(--ink)]">IV &gt; RV +12.2%</td>
+                        <td className="py-2.5 text-[var(--grey)]">Premium environment remains statistically favorable.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Strategy Fit</td>
+                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
+                        <td className="font-mono py-2.5 text-[var(--ink)]">82 / 100</td>
+                        <td className="py-2.5 text-[var(--grey)]">High volatility regime favors Out-of-the-Money strangle harvest.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Orderbook Liquidity</td>
+                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
+                        <td className="font-mono py-2.5 text-[var(--ink)]">Spread &lt; 2.0%</td>
+                        <td className="py-2.5 text-[var(--grey)]">Sufficient market depth on Delta Exchange to fill candidate legs.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Margin Buffer</td>
+                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
+                        <td className="font-mono py-2.5 text-[var(--ink)]">40% Free Margin</td>
+                        <td className="py-2.5 text-[var(--grey)]">Unallocated reserve preserved for dynamic Iron Condor wing triggers.</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Stop-Loss Cooldown</td>
+                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
+                        <td className="font-mono py-2.5 text-[var(--ink)]">0 Active Locks</td>
+                        <td className="py-2.5 text-[var(--grey)]">No recent stop-loss quarantine active on BTC underlying.</td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
@@ -940,56 +927,56 @@ export default function Dashboard() {
 
           {/* SECTION 2: MARKETS INTELLIGENCE MATRIX (01) */}
           {section === 'markets_intel' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 01 &middot; Regime Classification
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)]">
+                <h2 className="text-xl font-bold text-[var(--ink)]">
                   Market Regime &amp; Intelligence Matrix
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
+                <p className="text-xs text-[var(--grey)] mt-0.5">
                   Multi-factor quantitative observation analyzing Trend, Volatility, Liquidity, Momentum, and Options Surface positioning.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 
-                <div className="space-y-4">
-                  <h4 className="font-mono text-sm font-bold text-[var(--ink)]">Component Sub-Factor Scores</h4>
+                <div className="space-y-3">
+                  <h4 className="text-xs font-semibold text-[var(--ink)]">Component Sub-Factor Scores</h4>
                   
                   {[
-                    { label: 'Trend Strength (ADX / Moving Averages)', score: 82, note: 'Bullish Momentum Structure' },
-                    { label: 'Volatility State (IV / RV Spread & NATR)', score: 91, note: 'Elevated Short Premium Environment' },
-                    { label: 'Orderbook Liquidity & Market Depth', score: 67, note: 'Sufficient Depth for 10-Lot Sizing' },
-                    { label: 'Short-term Momentum Acceleration', score: 78, note: 'Consolidation in Upper Range' },
-                    { label: 'Options Positioning & Gamma Exposure', score: 84, note: 'Positive Dealer Gamma Buffer' },
+                    { label: 'Trend Strength (ADX / Moving Averages)', score: 82, note: 'Bullish momentum structure' },
+                    { label: 'Volatility State (IV / RV Spread & NATR)', score: 91, note: 'Elevated short premium environment' },
+                    { label: 'Orderbook Liquidity & Market Depth', score: 67, note: 'Sufficient depth for 10-lot sizing' },
+                    { label: 'Short-term Momentum Acceleration', score: 78, note: 'Consolidation in upper range' },
+                    { label: 'Options Positioning & Gamma Exposure', score: 84, note: 'Positive dealer gamma cushion' },
                   ].map((factor, idx) => (
-                    <div key={idx} className="bg-[var(--paper-2)] p-3.5 rounded-xl border border-[var(--hair)] space-y-2">
-                      <div className="flex justify-between font-mono text-xs">
-                        <span className="font-bold text-[var(--ink)]">{factor.label}</span>
-                        <span className="font-black text-[#d97706]">{factor.score} / 100</span>
+                    <div key={idx} className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)] space-y-1.5 text-xs">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-[var(--ink)]">{factor.label}</span>
+                        <span className="font-mono font-semibold text-[#d97706]">{factor.score} / 100</span>
                       </div>
-                      <div className="w-full h-2 bg-[var(--hair)] rounded-full overflow-hidden">
+                      <div className="w-full h-1.5 bg-[var(--hair)] rounded-full overflow-hidden">
                         <div className="h-full bg-[#d97706]" style={{ width: `${factor.score}%` }} />
                       </div>
-                      <div className="text-[10px] text-[var(--grey)] font-mono">{factor.note}</div>
+                      <div className="text-[11px] text-[var(--grey)]">{factor.note}</div>
                     </div>
                   ))}
                 </div>
 
-                <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] flex flex-col justify-between space-y-6">
+                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] flex flex-col justify-between space-y-4">
                   <div>
-                    <div className="text-[11px] font-mono text-[var(--grey)] uppercase">Overall Market Intelligence</div>
-                    <div className="text-4xl font-black font-mono text-[var(--ink)] mt-2">
-                      78 <span className="text-base font-normal text-[var(--grey)]">/ 100</span>
+                    <div className="text-xs text-[var(--grey)]">Overall Market Intelligence</div>
+                    <div className="font-mono text-3xl font-semibold text-[var(--ink)] mt-1">
+                      78 <span className="text-xs font-normal text-[var(--grey)]">/ 100</span>
                     </div>
-                    <div className="inline-block mt-2 px-3 py-1 bg-[var(--orange-tint)] text-[#d97706] font-mono font-bold text-xs rounded-full border border-[#d97706]/20">
-                      CURRENT REGIME: HIGH VOLATILITY / BULLISH
+                    <div className="inline-block mt-2 px-2.5 py-0.5 bg-[var(--orange-tint)] text-[#d97706] font-semibold text-xs rounded-full border border-[#d97706]/20">
+                      High Volatility / Bullish Regime
                     </div>
                   </div>
 
-                  <div className="space-y-3 text-xs font-mono text-[var(--grey)] leading-relaxed border-t border-[var(--hair)] pt-4">
+                  <div className="space-y-2.5 text-xs text-[var(--grey)] leading-relaxed border-t border-[var(--hair)] pt-3">
                     <p>
                       <strong>Regime Assessment:</strong> Bitcoin is currently trading with elevated implied volatility relative to 30-day realized moves. While trend momentum is bullish, the standard deviation width of $68k Call / $61k Put provides robust cushion.
                     </p>
@@ -1005,67 +992,67 @@ export default function Dashboard() {
 
           {/* SECTION 3: VOLATILITY ENGINE (02) */}
           {section === 'markets_vol' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 02 &middot; Volatility Diagnostics
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)]">
+                <h2 className="text-xl font-bold text-[var(--ink)]">
                   Volatility Engine &amp; Entry Gate
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
+                <p className="text-xs text-[var(--grey)] mt-0.5">
                   Measures ATR, NATR, Realized vs Implied Volatility spreads, and Expected Moves to gate entry.
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Implied Vol (IV)</span>
-                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">{calculatedModel.iv.toFixed(1)}%</span>
-                  <span className="text-[10px] text-emerald-600">Delta 30D Surface</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] text-[var(--grey)] block">Implied Vol (IV)</span>
+                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">{calculatedModel.iv.toFixed(1)}%</span>
+                  <span className="text-[11px] text-emerald-600">Delta 30D surface</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Realized Vol (RV)</span>
-                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">{calculatedModel.rv}%</span>
-                  <span className="text-[10px] text-[var(--grey)]">30-day Historical</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] text-[var(--grey)] block">Realized Vol (RV)</span>
+                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">{calculatedModel.rv}%</span>
+                  <span className="text-[11px] text-[var(--grey)]">30-day historical</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">IV / RV Spread</span>
-                  <span className="text-2xl font-black text-emerald-600 mt-1 block">+{(calculatedModel.iv - calculatedModel.rv).toFixed(1)}%</span>
-                  <span className="text-[10px] text-emerald-600 font-bold">Premium Premium Rich</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] text-[var(--grey)] block">IV / RV Spread</span>
+                  <span className="font-mono text-xl font-semibold text-emerald-600 mt-1 block num-tabular">+{(calculatedModel.iv - calculatedModel.rv).toFixed(1)}%</span>
+                  <span className="text-[11px] text-emerald-600 font-medium">Premium rich</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Expected Move (1D)</span>
-                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">&plusmn;{calculatedModel.expectedMovePct.toFixed(1)}%</span>
-                  <span className="text-[10px] text-[var(--grey)]">&plusmn;${(btcPrice * calculatedModel.expectedMovePct / 100).toFixed(0)}</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] text-[var(--grey)] block">Expected Move (1D)</span>
+                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">&plusmn;{calculatedModel.expectedMovePct.toFixed(1)}%</span>
+                  <span className="font-mono text-[11px] text-[var(--grey)]">&plusmn;${(btcPrice * calculatedModel.expectedMovePct / 100).toFixed(0)}</span>
                 </div>
               </div>
 
               {/* Volatility Regime Timeline */}
-              <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-4">
-                <div className="font-mono text-xs font-bold text-[var(--ink)] uppercase">
+              <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
+                <div className="text-xs font-semibold text-[var(--ink)]">
                   Volatility State Spectrum
                 </div>
-                <div className="grid grid-cols-5 gap-2 text-center font-mono text-xs">
-                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block">LOW</span>
-                    &lt; 35%
+                <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
+                    <span className="text-[10px] block font-medium">LOW</span>
+                    <span className="font-mono text-[11px]">&lt; 35%</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block">NORMAL</span>
-                    35%–50%
+                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
+                    <span className="text-[10px] block font-medium">NORMAL</span>
+                    <span className="font-mono text-[11px]">35%–50%</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block">ELEVATED</span>
-                    50%–60%
+                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
+                    <span className="text-[10px] block font-medium">ELEVATED</span>
+                    <span className="font-mono text-[11px]">50%–60%</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[#d97706] text-white font-bold shadow-md">
+                  <div className="p-2.5 rounded-lg bg-[#d97706] text-white font-medium shadow-subtle">
                     <span className="text-[10px] block text-white/80">HIGH (CURRENT)</span>
-                    60%–75%
+                    <span className="font-mono text-[11px]">60%–75%</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-[var(--card)] border border-[var(--hair)] text-rose-500">
-                    <span className="text-[10px] block">EXTREME</span>
-                    &gt; 75%
+                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-rose-600">
+                    <span className="text-[10px] block font-medium">EXTREME</span>
+                    <span className="font-mono text-[11px]">&gt; 75%</span>
                   </div>
                 </div>
               </div>
@@ -1075,22 +1062,22 @@ export default function Dashboard() {
 
           {/* SECTION 4: SCENARIO STRESS LAB */}
           {section === 'scenario_lab' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 04 &middot; Scenario Stress Sandbox
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)]">
+                <h2 className="text-xl font-bold text-[var(--ink)]">
                   Scenario Stress Lab
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
+                <p className="text-xs text-[var(--grey)] mt-0.5">
                   Modelled P&amp;L based on simulated Bitcoin price shocks, implied volatility shifts, and time decay.
                 </p>
               </div>
 
               {/* Stress Quick Buttons */}
-              <div className="space-y-2">
-                <span className="text-xs font-mono font-bold text-[var(--grey)]">Quick Stress Scenarios:</span>
+              <div className="space-y-2 text-xs">
+                <span className="font-medium text-[var(--grey)]">Quick stress scenarios:</span>
                 <div className="flex flex-wrap gap-2">
                   {[
                     { label: 'BTC +2%', btc: 2, iv: 0 },
@@ -1105,14 +1092,14 @@ export default function Dashboard() {
                     <button
                       key={i}
                       onClick={() => { setScenarioBtcShift(s.btc); setScenarioIvShift(s.iv); }}
-                      className="px-3 py-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono hover:bg-[#d97706] hover:text-white transition"
+                      className="px-2.5 py-1 rounded-md bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono font-medium hover:bg-[#d97706] hover:text-white transition"
                     >
                       {s.label}
                     </button>
                   ))}
                   <button
                     onClick={() => { setScenarioBtcShift(0); setScenarioIvShift(0); setScenarioHoursPassed(6); }}
-                    className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 text-xs font-mono hover:bg-rose-100 transition"
+                    className="px-2.5 py-1 rounded-md bg-rose-50 text-rose-600 border border-rose-200 text-xs font-medium hover:bg-rose-100 transition"
                   >
                     Reset
                   </button>
@@ -1120,12 +1107,12 @@ export default function Dashboard() {
               </div>
 
               {/* Controls */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)]">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] text-xs">
                 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-[var(--grey)]">BTC Price Shift:</span>
-                    <span className="font-bold text-[var(--ink)]">{scenarioBtcShift >= 0 ? '+' : ''}{scenarioBtcShift}% (${calculatedModel.simulatedSpot.toFixed(0)})</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">BTC price shift:</span>
+                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioBtcShift >= 0 ? '+' : ''}{scenarioBtcShift}% (${calculatedModel.simulatedSpot.toFixed(0)})</span>
                   </div>
                   <input 
                     type="range" 
@@ -1138,10 +1125,10 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-[var(--grey)]">IV Shift:</span>
-                    <span className="font-bold text-[var(--ink)]">{scenarioIvShift >= 0 ? '+' : ''}{scenarioIvShift}% ({calculatedModel.iv.toFixed(0)}% IV)</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">IV shift:</span>
+                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioIvShift >= 0 ? '+' : ''}{scenarioIvShift}% ({calculatedModel.iv.toFixed(0)}% IV)</span>
                   </div>
                   <input 
                     type="range" 
@@ -1154,10 +1141,10 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs font-mono">
-                    <span className="text-[var(--grey)]">Time Passed (Hours):</span>
-                    <span className="font-bold text-[var(--ink)]">{scenarioHoursPassed}h / 24h</span>
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">Time passed:</span>
+                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioHoursPassed}h / 24h</span>
                   </div>
                   <input 
                     type="range" 
@@ -1173,20 +1160,20 @@ export default function Dashboard() {
               </div>
 
               {/* Output Result Card */}
-              <div className="bg-[var(--card)] p-6 rounded-2xl border border-[var(--hair)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="bg-[var(--card)] p-5 rounded-lg border border-[var(--hair)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <span className="text-[11px] font-mono text-[var(--grey)] uppercase block">Modelled Scenario P&amp;L (1 BTC Contract)</span>
-                  <div className={`text-3xl font-black font-mono mt-1 ${calculatedModel.modelledPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  <span className="text-[11px] text-[var(--grey)] font-medium uppercase block">Modelled Scenario P&amp;L (1 BTC Contract)</span>
+                  <div className={`font-mono text-2xl sm:text-3xl font-semibold mt-1 num-tabular ${calculatedModel.modelledPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                     {calculatedModel.modelledPnl >= 0 ? '+' : ''}{fmt(calculatedModel.modelledPnl)}
                   </div>
-                  <p className="text-[10px] text-[var(--grey)] font-mono mt-1">
+                  <p className="text-[11px] text-[var(--grey)] mt-0.5">
                     Based on selected underlying price, implied volatility, and time decay assumptions.
                   </p>
                 </div>
 
-                <div className="text-right font-mono text-xs space-y-1">
-                  <div>Breakevens: <strong className="text-[var(--ink)]">$60,150 &mdash; $68,850</strong></div>
-                  <div>Max Defined Wing Risk: <strong className="text-rose-600">-$1,250</strong></div>
+                <div className="text-right text-xs space-y-1">
+                  <div>Breakevens: <strong className="font-mono text-[var(--ink)] font-medium">$60,150 &mdash; $68,850</strong></div>
+                  <div>Max defined wing risk: <strong className="font-mono text-rose-600 font-medium">-$1,250</strong></div>
                 </div>
               </div>
 
@@ -1195,41 +1182,41 @@ export default function Dashboard() {
 
           {/* SECTION 5: "TRADES WE DIDN'T TAKE" (No-Trade Analytics) */}
           {section === 'analytics_notrade' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Signature Analytics &middot; Quantitative Discipline
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)]">
+                <h2 className="text-xl font-bold text-[var(--ink)]">
                   The Trades We Didn't Take
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
+                <p className="text-xs text-[var(--grey)] mt-0.5">
                   "Discipline is not only knowing when to trade. It is knowing when not to."
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
                 
-                <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-4">
-                  <div className="text-xs font-mono font-bold text-[var(--grey)] uppercase">Summary Statistics</div>
-                  <div className="space-y-3 font-mono text-xs divide-y divide-[var(--hair)]">
-                    <div className="flex justify-between pt-2">
-                      <span className="text-[var(--grey)]">Total Scanned Cycles:</span>
-                      <span className="font-bold text-[var(--ink)]">500</span>
+                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
+                  <div className="text-xs font-semibold text-[var(--grey)]">Summary Statistics</div>
+                  <div className="space-y-2.5 text-xs divide-y divide-[var(--hair)]">
+                    <div className="flex justify-between pt-1">
+                      <span className="text-[var(--grey)]">Total scanned cycles:</span>
+                      <span className="font-mono font-medium text-[var(--ink)]">500</span>
                     </div>
                     <div className="flex justify-between pt-2">
-                      <span className="text-[var(--grey)]">Trades Executed:</span>
-                      <span className="font-bold text-emerald-600">316 (63.2%)</span>
+                      <span className="text-[var(--grey)]">Trades executed:</span>
+                      <span className="font-mono font-medium text-emerald-600">316 (63.2%)</span>
                     </div>
                     <div className="flex justify-between pt-2">
-                      <span className="text-[var(--grey)]">Trades Filtered (Avoided):</span>
-                      <span className="font-bold text-[#d97706]">184 (36.8%)</span>
+                      <span className="text-[var(--grey)]">Trades filtered (avoided):</span>
+                      <span className="font-mono font-medium text-[#d97706]">184 (36.8%)</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="lg:col-span-2 space-y-3">
-                  <h4 className="font-mono text-xs font-bold text-[var(--ink)] uppercase">Breakdown of Avoided Trades</h4>
+                <div className="lg:col-span-2 space-y-2.5 text-xs">
+                  <h4 className="font-semibold text-[var(--ink)]">Breakdown of Avoided Trades</h4>
                   
                   {[
                     { reason: 'Volatility Gate Trigger (IV < RV or NATR Spike)', count: 71, pct: '38.6%' },
@@ -1239,9 +1226,9 @@ export default function Dashboard() {
                     { reason: 'Stop-Loss Cooldown Lock (4-Hour Quarantine)', count: 15, pct: '8.2%' },
                     { reason: 'Portfolio Greeks Concentration Ceiling', count: 11, pct: '6.0%' },
                   ].map((item, idx) => (
-                    <div key={idx} className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)] flex items-center justify-between font-mono text-xs">
-                      <span className="text-[var(--ink)]">{item.reason}</span>
-                      <span className="font-bold text-[#d97706]">{item.count} ({item.pct})</span>
+                    <div key={idx} className="bg-[var(--paper-2)] p-2.5 rounded-lg border border-[var(--hair)] flex items-center justify-between">
+                      <span className="text-[var(--ink)] font-medium">{item.reason}</span>
+                      <span className="font-mono font-medium text-[#d97706] num-tabular">{item.count} ({item.pct})</span>
                     </div>
                   ))}
                 </div>
@@ -1252,25 +1239,25 @@ export default function Dashboard() {
 
           {/* SECTION 6: CONTEXTUAL "WHY?" AI ANALYST (07) */}
           {section === 'intel_ai' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 07 &middot; Contextual Diagnostics
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)] flex items-center gap-2.5">
-                  <Brain className="w-6 h-6 text-[#d97706]" /> "WHY?" Explainability Engine
+                <h2 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-[#d97706]" /> "WHY?" Explainability Engine
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
-                  Click any query below to audit the platform's quantitative decision tree using real-time system metrics.
+                <p className="text-xs text-[var(--grey)] mt-0.5">
+                  Select any diagnostic query below to audit the platform's decision tree using real-time system metrics.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
                 {aiQueries.map((item, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveAiQuery(item.q)}
-                    className={`p-4 rounded-xl border text-left font-mono text-xs transition-all ${activeAiQuery === item.q ? 'bg-[var(--orange-tint)] border-[#d97706] text-[#d97706] font-bold shadow-sm' : 'bg-[var(--paper-2)] border-[var(--hair)] text-[var(--ink)] hover:border-[#d97706]'}`}
+                    className={`p-3.5 rounded-lg border text-left transition-all ${activeAiQuery === item.q ? 'bg-[var(--orange-tint)] border-[#d97706] text-[#d97706] font-semibold shadow-subtle' : 'bg-[var(--paper-2)] border-[var(--hair)] text-[var(--ink)] hover:border-[#d97706]'}`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{item.q}</span>
@@ -1281,11 +1268,11 @@ export default function Dashboard() {
               </div>
 
               {activeAiQuery && (
-                <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-3 font-mono text-xs leading-relaxed animate-in fade-in duration-200">
-                  <div className="flex items-center gap-2 text-[#d97706] font-bold">
+                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-2 text-xs leading-relaxed">
+                  <div className="flex items-center gap-1.5 text-[#d97706] font-semibold">
                     <Activity className="w-4 h-4" /> Quantitative Audit Rationale:
                   </div>
-                  <div className="text-[var(--ink)] bg-[var(--card)] p-4 rounded-xl border border-[var(--hair)]">
+                  <div className="text-[var(--ink)] bg-[var(--card)] p-3.5 rounded-lg border border-[var(--hair)] font-mono">
                     {aiQueries.find(x => x.q === activeAiQuery)?.a}
                   </div>
                 </div>
@@ -1295,83 +1282,83 @@ export default function Dashboard() {
 
           {/* SECTION 7: BACKTEST BY REGIME */}
           {section === 'analytics_backtest' && (
-            <div className="fintech-card p-6 space-y-6">
-              <div className="border-b border-[var(--hair)] pb-4">
-                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider mb-1">
+            <div className="fintech-card p-5 sm:p-6 space-y-6">
+              <div className="border-b border-[var(--hair)] pb-3">
+                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Historical Simulation &middot; Methodological Transparency
                 </div>
-                <h2 className="text-2xl font-black font-mono text-[var(--ink)]">
+                <h2 className="text-xl font-bold text-[var(--ink)]">
                   Strategy Backtest Performance
                 </h2>
-                <p className="text-xs text-[var(--grey)] font-mono mt-1">
+                <p className="text-xs text-[var(--grey)] mt-0.5">
                   Simulation Period: Aug 2025 &ndash; Aug 2026 &middot; Capital: $5,000 USD &middot; Taker Fees + 18% GST: Included &middot; Slippage Model: 0.15% per leg
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 font-mono">
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">CAGR</span>
-                  <span className="text-2xl font-black text-emerald-600 mt-1 block">227.4%</span>
-                  <span className="text-[10px] text-[var(--grey)]">Compounded Annual</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] font-medium text-[var(--grey)] block">CAGR</span>
+                  <span className="font-mono text-xl sm:text-2xl font-semibold text-emerald-600 mt-1 block num-tabular">227.4%</span>
+                  <span className="text-[11px] text-[var(--grey)]">Compounded annual</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Win Rate</span>
-                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">68.3%</span>
-                  <span className="text-[10px] text-emerald-600">386 / 565 Trades</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] font-medium text-[var(--grey)] block">Win Rate</span>
+                  <span className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 block num-tabular">68.3%</span>
+                  <span className="text-[11px] text-emerald-600">386 / 565 trades</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Sharpe Ratio</span>
-                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">1.93</span>
-                  <span className="text-[10px] text-[var(--grey)]">Risk-Adjusted</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] font-medium text-[var(--grey)] block">Sharpe Ratio</span>
+                  <span className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 block num-tabular">1.93</span>
+                  <span className="text-[11px] text-[var(--grey)]">Risk-adjusted</span>
                 </div>
-                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
-                  <span className="text-[10px] text-[var(--grey)] uppercase block">Max Drawdown</span>
-                  <span className="text-2xl font-black text-rose-600 mt-1 block">-11.4%</span>
-                  <span className="text-[10px] text-[var(--grey)]">Peak to Trough</span>
+                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
+                  <span className="text-[11px] font-medium text-[var(--grey)] block">Max Drawdown</span>
+                  <span className="font-mono text-xl sm:text-2xl font-semibold text-rose-600 mt-1 block num-tabular">-11.4%</span>
+                  <span className="text-[11px] text-[var(--grey)]">Peak to trough</span>
                 </div>
               </div>
 
-              <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-4">
-                <h4 className="font-mono text-xs font-bold text-[var(--ink)] uppercase">Performance by Market Regime</h4>
+              <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
+                <h4 className="text-xs font-semibold text-[var(--ink)]">Performance by Market Regime</h4>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs font-mono text-left">
-                    <thead className="border-b border-[var(--hair)] text-[var(--grey)]">
+                  <table className="w-full text-xs text-left">
+                    <thead className="border-b border-[var(--hair)] text-[var(--grey)] font-medium">
                       <tr>
-                        <th className="py-2.5">Market Regime</th>
-                        <th className="py-2.5">Cycles</th>
-                        <th className="py-2.5">Win Rate</th>
-                        <th className="py-2.5">Avg Return / Cycle</th>
-                        <th className="py-2.5">Defense Activation</th>
+                        <th className="py-2">Market Regime</th>
+                        <th className="py-2">Cycles</th>
+                        <th className="py-2">Win Rate</th>
+                        <th className="py-2">Avg Return / Cycle</th>
+                        <th className="py-2">Defense Activation</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--hair)]">
                       <tr>
-                        <td className="py-2.5 font-bold text-[var(--ink)]">Normal Volatility (35-50%)</td>
-                        <td className="py-2.5">214</td>
-                        <td className="py-2.5 text-emerald-600 font-bold">78.5%</td>
-                        <td className="py-2.5 text-emerald-600">+1.8%</td>
-                        <td className="py-2.5 text-[var(--grey)]">4.2%</td>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Normal Volatility (35-50%)</td>
+                        <td className="font-mono py-2.5">214</td>
+                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">78.5%</td>
+                        <td className="font-mono py-2.5 text-emerald-600">+1.8%</td>
+                        <td className="font-mono py-2.5 text-[var(--grey)]">4.2%</td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 font-bold text-[var(--ink)]">High Volatility (50-75%)</td>
-                        <td className="py-2.5">182</td>
-                        <td className="py-2.5 text-emerald-600 font-bold">65.4%</td>
-                        <td className="py-2.5 text-emerald-600">+2.4%</td>
-                        <td className="py-2.5 text-amber-600 font-bold">14.8%</td>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">High Volatility (50-75%)</td>
+                        <td className="font-mono py-2.5">182</td>
+                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">65.4%</td>
+                        <td className="font-mono py-2.5 text-emerald-600">+2.4%</td>
+                        <td className="font-mono py-2.5 text-amber-600 font-semibold">14.8%</td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 font-bold text-[var(--ink)]">Range-Bound Market</td>
-                        <td className="py-2.5">112</td>
-                        <td className="py-2.5 text-emerald-600 font-bold">84.8%</td>
-                        <td className="py-2.5 text-emerald-600">+1.9%</td>
-                        <td className="py-2.5 text-[var(--grey)]">1.8%</td>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Range-Bound Market</td>
+                        <td className="font-mono py-2.5">112</td>
+                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">84.8%</td>
+                        <td className="font-mono py-2.5 text-emerald-600">+1.9%</td>
+                        <td className="font-mono py-2.5 text-[var(--grey)]">1.8%</td>
                       </tr>
                       <tr>
-                        <td className="py-2.5 font-bold text-[var(--ink)]">Extreme Volatility (&gt;75%)</td>
-                        <td className="py-2.5">57</td>
-                        <td className="py-2.5 text-rose-600 font-bold">47.3%</td>
-                        <td className="py-2.5 text-rose-600">-0.8%</td>
-                        <td className="py-2.5 text-rose-600 font-bold">38.6% (Wings Capped)</td>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">Extreme Volatility (&gt;75%)</td>
+                        <td className="font-mono py-2.5">57</td>
+                        <td className="font-mono py-2.5 text-rose-600 font-semibold">47.3%</td>
+                        <td className="font-mono py-2.5 text-rose-600">-0.8%</td>
+                        <td className="font-mono py-2.5 text-rose-600 font-semibold">38.6% (Wings Capped)</td>
                       </tr>
                     </tbody>
                   </table>
