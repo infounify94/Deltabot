@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import GlassmorphismTrustHero from '@/components/ui/glassmorphism-trust-hero';
 import { 
   Shield, 
   Activity, 
@@ -194,7 +195,7 @@ export default function Home() {
           </div>
         </Link>
 
-        {/* Desktop Navigation Links (Clean Inter text) */}
+        {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium text-[var(--grey)]">
           <a href="#pipeline" className="hover:text-[var(--ink)] transition-colors">Pipeline</a>
           <a href="#regime" className="hover:text-[var(--ink)] transition-colors">Market Regime</a>
@@ -304,148 +305,11 @@ export default function Home() {
 
       <main className="flex-1">
         
-        {/* 3. HERO SECTION (Inter 700 Headline: 56-64px desktop / 34-38px mobile) */}
-        <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-              
-              {/* Left Hero Column */}
-              <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
-                
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-medium text-[var(--grey)] shadow-subtle">
-                  <span className="w-2 h-2 rounded-full bg-[#d97706]" />
-                  <span>Quantitative Crypto Options Intelligence</span>
-                </div>
-
-                <h1 className="text-[34px] sm:text-[44px] lg:text-[58px] font-bold tracking-tight text-[var(--ink)] leading-[1.08]">
-                  Quantitative Options Trading.<br className="hidden sm:inline" /> Built Around Risk.
-                </h1>
-
-                <p className="text-[17px] sm:text-[18px] text-[var(--grey)] max-w-xl leading-[1.6] mx-auto lg:mx-0">
-                  ProfitPilot continuously evaluates market regime, volatility, option structure and portfolio risk before deciding when to enter, when to defend and when to stay out.
-                </p>
-
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 justify-center lg:justify-start">
-                  <a 
-                    href="#pipeline" 
-                    className="w-full sm:w-auto px-5 py-3 rounded-lg bg-[#d97706] hover:bg-[#b45309] text-white font-medium text-sm shadow-subtle transition-all text-center"
-                  >
-                    Explore the engine &rarr;
-                  </a>
-                  <a 
-                    href="#backtest" 
-                    className="w-full sm:w-auto px-5 py-3 rounded-lg bg-[var(--card)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-medium text-sm transition-all text-center shadow-subtle"
-                  >
-                    View strategy backtest
-                  </a>
-                </div>
-
-                <div className="pt-6 border-t border-[var(--hair)] grid grid-cols-3 gap-4 text-center lg:text-left">
-                  <div>
-                    <div className="font-mono text-2xl font-semibold text-[var(--ink)] num-tabular">227.4%</div>
-                    <div className="text-xs text-[var(--grey)] font-medium mt-0.5">Backtest CAGR</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-2xl font-semibold text-emerald-600 num-tabular">68.3%</div>
-                    <div className="text-xs text-[var(--grey)] font-medium mt-0.5">Win rate</div>
-                  </div>
-                  <div>
-                    <div className="font-mono text-2xl font-semibold text-[#d97706] num-tabular">36.8%</div>
-                    <div className="text-xs text-[var(--grey)] font-medium mt-0.5">Trades avoided</div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Right Hero Column: REALISTIC COMMAND-CENTER HERO DASHBOARD */}
-              <div className="lg:col-span-6">
-                <div className="fintech-card p-5 sm:p-6 space-y-4 shadow-subtle-md">
-                  
-                  {/* Top Bar with Labels */}
-                  <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                      <span className="text-xs font-semibold text-[var(--ink)]">
-                        Command Center Overview
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-medium border border-emerald-200">
-                      LIVE QUANT MODEL
-                    </span>
-                  </div>
-
-                  {/* Top 4 Metrics Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)]">
-                      <span className="text-[11px] font-medium text-[var(--grey)] block">BTC / USD</span>
-                      <span className="font-mono text-base font-semibold text-[var(--ink)] mt-0.5 block num-tabular">${btcPrice.toFixed(0)}</span>
-                      <span className="text-[10px] text-emerald-600 font-medium">Live feed</span>
-                    </div>
-
-                    <div className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)]">
-                      <span className="text-[11px] font-medium text-[var(--grey)] block">Market regime</span>
-                      <span className="text-xs font-semibold text-[#d97706] block mt-1">High Vol / Bull</span>
-                      <span className="font-mono text-[10px] text-[var(--grey)] block">Score: 78/100</span>
-                    </div>
-
-                    <div className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)]">
-                      <span className="text-[11px] font-medium text-[var(--grey)] block">Strategy fit</span>
-                      <span className="font-mono text-base font-semibold text-[var(--ink)] mt-0.5 block">82 <span className="text-xs font-normal text-[var(--grey)]">/100</span></span>
-                      <span className="text-[10px] text-emerald-600 font-medium block">Favorable</span>
-                    </div>
-
-                    <div className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)]">
-                      <span className="text-[11px] font-medium text-[var(--grey)] block">Entry gate</span>
-                      <span className="text-xs font-semibold text-emerald-600 block mt-1">Approved</span>
-                      <span className="text-[10px] text-[var(--grey)] block">Confidence: High</span>
-                    </div>
-                  </div>
-
-                  {/* Active Structure Preview Card */}
-                  <div className="bg-[var(--paper-2)] p-4 rounded-lg border border-[var(--hair)] space-y-3 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-[var(--ink)]">Active Short Strangle Structure</span>
-                      <span className="text-[10px] font-mono bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--hair)] text-[var(--grey)]">
-                        Delta Exchange 1D
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                        <div className="text-[11px] text-rose-500 font-medium">Short Call</div>
-                        <div className="font-mono text-sm font-semibold text-[var(--ink)] mt-0.5">$68,000 Strike</div>
-                        <div className="font-mono text-[10px] text-[var(--grey)] mt-0.5">&Delta; 0.14 &middot; Theta: +$42.50</div>
-                      </div>
-                      <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                        <div className="text-[11px] text-emerald-600 font-medium">Short Put</div>
-                        <div className="font-mono text-sm font-semibold text-[var(--ink)] mt-0.5">$61,000 Strike</div>
-                        <div className="font-mono text-[10px] text-[var(--grey)] mt-0.5">&Delta; -0.13 &middot; Theta: +$38.80</div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1 text-[11px] border-t border-[var(--hair)]">
-                      <span className="text-[var(--grey)]">Defense wings state: <strong className="text-emerald-600 font-medium">Armed (&Delta; &ge; 0.35)</strong></span>
-                      <span className="text-[var(--grey)]">Buffer: <strong className="font-mono text-[var(--ink)]">2.4&sigma; standard dev</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Data Source Footnote */}
-                  <div className="flex items-center justify-between text-[11px] text-[var(--faint)]">
-                    <span>Data: Binance WebSocket + Quantitative Models</span>
-                    <Link href="/dashboard" className="text-[#d97706] hover:underline font-medium">
-                      Open live dashboard &rarr;
-                    </Link>
-                  </div>
-
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
+        {/* 3. HERO SECTION (Using Modular GlassmorphismTrustHero Component) */}
+        <GlassmorphismTrustHero btcPrice={btcPrice} ethPrice={ethPrice} />
 
         {/* 4. THE 10-STEP QUANTITATIVE ENGINE PIPELINE */}
-        <section id="pipeline" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        <section id="pipeline" className="py-16 bg-[var(--paper-2)] border-b border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
