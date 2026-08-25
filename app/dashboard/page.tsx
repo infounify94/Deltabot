@@ -228,8 +228,11 @@ export default function Dashboard() {
   };
 
   const handleKillSwitch = async (id: string | number) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     if (confirm("Are you sure you want to trigger an emergency market close for this position?")) {
-      await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id);
+      await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id).eq('user_id', user.id);
       fetchData();
     }
   };
