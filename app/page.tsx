@@ -20,7 +20,9 @@ import {
   Moon, 
   Sun,
   Layers,
-  AlertTriangle
+  AlertTriangle,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function Home() {
@@ -31,6 +33,7 @@ export default function Home() {
   const [sliderBalance, setSliderBalance] = useState<number>(5000); // USD base
   const [payoffSpot, setPayoffSpot] = useState<number>(64250); // Spot slider for payoff diagram
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // FX Rate: 1 USD = 86.5 INR (approximate for display conversion)
   const fxRate = 86.5;
@@ -147,7 +150,7 @@ export default function Home() {
           </nav>
 
           {/* Right Action Controls */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             
             {/* Currency Toggle */}
             <div className="bg-[var(--paper-2)] p-1 rounded-lg border border-[var(--hair)] flex items-center text-xs font-semibold">
@@ -183,19 +186,83 @@ export default function Home() {
             </Link>
             <Link 
               href="/login" 
-              className="bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-bold text-xs sm:text-sm px-4 py-2 rounded-xl shadow-md hover:brightness-105 active:scale-95 transition-all"
+              className="bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 rounded-xl shadow-md hover:brightness-105 active:scale-95 transition-all"
             >
-              Start 30 Days Free
+              Start Free
             </Link>
+
+            {/* Mobile Hamburger Button */}
+            <button 
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
+              aria-label="Toggle navigation"
+            >
+              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Dropdown Drawer */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-3 font-medium text-sm">
+            <a 
+              href="#backtest" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              01 &middot; Backtest Results
+            </a>
+            <a 
+              href="#strategy" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              02 &middot; The Algo &amp; Wings
+            </a>
+            <a 
+              href="#calculator" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              03 &middot; Profit Calculator
+            </a>
+            <a 
+              href="#how" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              04 &middot; How It Works
+            </a>
+            <a 
+              href="#pricing" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              05 &middot; Pricing
+            </a>
+            <a 
+              href="#faq" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
+            >
+              06 &middot; FAQ
+            </a>
+            <Link 
+              href="/login" 
+              onClick={() => setMobileMenuOpen(false)}
+              className="block py-1.5 text-[#f09455] font-bold"
+            >
+              Log in to Dashboard &rarr;
+            </Link>
+          </div>
+        )}
       </header>
 
-      {/* Real-time Crypto Market Marquee Bar */}
-      <div className="w-full bg-[var(--paper-2)] border-b border-[var(--hair)] py-2.5 overflow-hidden text-xs font-mono">
+      {/* Clean Real-time Crypto Market Marquee Bar */}
+      <div className="w-full bg-[var(--paper-2)] border-b border-[var(--hair)] py-2 overflow-hidden text-xs font-mono">
         <div className="animate-ticker-marquee flex items-center whitespace-nowrap gap-12 text-[var(--grey)]">
           {Array(8).fill(0).map((_, i) => (
-            <div key={i} className="flex items-center gap-10 shrink-0">
+            <div key={i} className="flex items-center gap-8 shrink-0">
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
                 <span className="font-bold text-[var(--ink)]">BTC/USDT</span>
@@ -207,12 +274,12 @@ export default function Home() {
                 <span className="text-blue-400 font-semibold num-tabular">${ethPrice.toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded border border-amber-500/20 font-bold uppercase">Delta Ex Engine</span>
-                <span className="text-slate-300">Target Delta: 0.15 - 0.18</span>
+                <span className="text-[var(--grey)]">SOL/USDT:</span>
+                <span className="text-purple-400 font-semibold num-tabular">${(btcPrice * 0.0022).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase">Dynamic Wings</span>
-                <span className="text-slate-300">Armed &amp; Monitored 24/7</span>
+                <span className="text-[var(--grey)]">DVOL Index:</span>
+                <span className="text-amber-400 font-semibold num-tabular">54.2%</span>
               </div>
             </div>
           ))}

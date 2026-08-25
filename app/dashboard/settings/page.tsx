@@ -16,11 +16,14 @@ import {
   Lock, 
   RefreshCw,
   ExternalLink,
-  Shield
+  Shield,
+  Menu,
+  X
 } from 'lucide-react';
 
 export default function Settings() {
   const [activeTab, setActiveTab] = useState<'trading' | 'risk' | 'billing' | 'security' | 'profile'>('trading');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
@@ -157,8 +160,8 @@ export default function Settings() {
           </div>
         </Link>
 
-        {/* Dashboard Nav Links */}
-        <div className="flex items-center gap-6 text-sm font-medium">
+        {/* Desktop Dashboard Nav Links */}
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/dashboard" className="text-slate-400 hover:text-white transition">
             Live Terminal
           </Link>
@@ -170,17 +173,64 @@ export default function Settings() {
           </Link>
         </div>
 
-        {/* Sign Out */}
-        <button 
-          onClick={async () => {
-            await supabase.auth.signOut();
-            window.location.href = '/';
-          }}
-          className="text-xs font-medium text-rose-400 hover:text-rose-300 transition bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20"
-        >
-          Sign Out
-        </button>
+        {/* Right Controls */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }}
+            className="hidden sm:block text-xs font-medium text-rose-400 hover:text-rose-300 transition bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20"
+          >
+            Sign Out
+          </button>
+
+          {/* Mobile Menu Hamburger Button */}
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg bg-[#1B1E24] border border-white/10 text-slate-300 hover:text-white"
+            aria-label="Toggle Navigation"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
       </nav>
+
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[#15171C] border-b border-white/10 px-4 py-4 space-y-3 font-mono text-sm">
+          <Link 
+            href="/dashboard" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-slate-300 hover:text-white border-b border-white/5"
+          >
+            ● Live Terminal
+          </Link>
+          <Link 
+            href="/dashboard/settings" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-[#f09455] font-bold border-b border-white/5"
+          >
+            ⚙ Settings &amp; API Keys
+          </Link>
+          <Link 
+            href="/dashboard/help" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="block py-2 text-slate-300 hover:text-white border-b border-white/5"
+          >
+            💬 Support &amp; Docs
+          </Link>
+          <button 
+            onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }}
+            className="w-full text-left py-2 text-rose-400 font-bold"
+          >
+            🚪 Sign Out
+          </button>
+        </div>
+      )}
 
       {/* Main Container */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 w-full flex-1 space-y-8">
