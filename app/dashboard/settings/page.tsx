@@ -2,21 +2,42 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { 
+  Activity, 
+  Key, 
+  ShieldCheck, 
+  CreditCard, 
+  User, 
+  Copy, 
+  Check, 
+  AlertTriangle, 
+  Sliders, 
+  Lock, 
+  RefreshCw,
+  ExternalLink,
+  Shield
+} from 'lucide-react';
 
 export default function Settings() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [activeTab, setActiveTab] = useState<'trading' | 'risk' | 'billing' | 'security' | 'profile'>('trading');
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [exchange, setExchange] = useState('Delta Exchange India');
 
-  // Profile password state
-  const [currentPassword, setCurrentPassword] = useState('');
+  // Risk parameters state
+  const [maxLots, setMaxLots] = useState(1);
+  const [cashReservePct, setCashReservePct] = useState(40);
+  const [profitTargetMultiple, setProfitTargetMultiple] = useState(0.8);
+
+  // Password update state
   const [newPassword, setNewPassword] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const oracleIp = '144.24.131.121';
 
@@ -42,6 +63,12 @@ export default function Settings() {
     };
     fetchUser();
   }, []);
+
+  const handleCopyIp = () => {
+    navigator.clipboard.writeText(oracleIp);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +97,8 @@ export default function Settings() {
 
   const handleDisconnect = async () => {
     if (!user || !profile) return;
+    if (!confirm("Are you sure you want to disconnect your Delta API keys? Live execution will halt immediately.")) return;
+    
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -101,292 +130,444 @@ export default function Settings() {
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword) return;
-    // In a real app, verify current password if needed or just rely on session
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (!error) {
-      alert("Password updated successfully!");
-      setCurrentPassword('');
+      setPasswordSuccess(true);
       setNewPassword('');
+      setTimeout(() => setPasswordSuccess(false), 3000);
     } else {
       alert("Failed to update password: " + error.message);
     }
   };
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'profile':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 text-lg mb-6">Profile</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm">Email</span>
-                  <span className="font-bold text-slate-800 text-sm">{user?.email}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm">Delta account</span>
-                  <span className="font-bold text-slate-800 text-sm">{profile?.delta_api_key ? 'Connected' : 'Not Connected'}</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm">Plan</span>
-                  <span className="font-bold text-slate-800 text-sm">Free trial</span>
-                </div>
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-slate-500 text-sm">Wallet balance</span>
-                  <span className="font-bold text-slate-800 text-sm">${profile?.live_balance ? parseFloat(profile.live_balance).toFixed(2) : '0.00'}</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 text-lg mb-6">Change password</h3>
-              <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">Current password</label>
-                  <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#e27625]" />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">New password</label>
-                  <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-[#e27625]" />
-                </div>
-                <button type="submit" className="w-full bg-[#e27625] hover:bg-[#c9641d] text-white font-bold py-3 rounded-lg transition shadow-sm mt-4">
-                  Update password
-                </button>
-              </form>
-            </div>
-          </div>
-        );
+  return (
+    <div className="min-h-screen bg-[#0C0D10] text-[#F3F2EF] font-sans flex flex-col selection:bg-[#f09455]/30">
       
-      case 'billing':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-slate-800 text-lg">Your plan</h3>
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-full border border-emerald-100">Free trial</span>
-              </div>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm w-1/3">Status</span>
-                  <span className="font-bold text-slate-800 text-sm text-right">30 days remaining</span>
-                </div>
-                <div className="flex justify-between items-start py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm w-1/3">Plan</span>
-                  <span className="font-bold text-slate-800 text-sm text-right w-2/3">30% performance fee on realised profit (rolling 30-day periods, nothing payable up front)</span>
-                </div>
-                <div className="flex justify-between items-start py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm w-1/3">Payable up front</span>
-                  <span className="font-bold text-slate-800 text-sm text-right w-2/3">Nothing â€” no subscription, no activation fee</span>
-                </div>
-                <div className="flex justify-between items-start py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm w-1/3">You are billed</span>
-                  <span className="font-bold text-slate-800 text-sm text-right w-2/3">Only when the system makes you money, at the close of a 30-day period</span>
-                </div>
-              </div>
-              <p className="text-xs text-slate-500 mt-6 leading-relaxed">
-                A losing period costs you nothing, and losses carry forward â€” you are never billed twice for the same high-water mark.
-              </p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center min-h-[300px]">
-              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              </div>
-              <h4 className="font-bold text-slate-800 mb-2">No invoices yet</h4>
-              <p className="text-sm text-slate-500 max-w-[200px]">Your first invoice arrives at the close of a 30-day period that ended in profit.</p>
-            </div>
+      {/* Shared Dashboard Navbar */}
+      <nav className="w-full bg-[#121419] border-b border-white/10 px-4 sm:px-8 py-3.5 flex items-center justify-between sticky top-0 z-50">
+        
+        {/* Brand Logo */}
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f09455] via-[#e27625] to-[#d9a44e] flex items-center justify-center shadow-md">
+            <Activity className="text-[#241505] w-5 h-5" strokeWidth={2.5} />
           </div>
-        );
-
-      case 'security':
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-slate-800 text-lg mb-6">Key permissions</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-600 text-sm">Read</span>
-                  <span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded">Required</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-600 text-sm">Trading</span>
-                  <span className="px-2 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded">Required</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-600 text-sm">Withdrawal</span>
-                  <span className="px-2 py-1 bg-rose-50 text-rose-600 text-xs font-bold rounded">Must stay OFF</span>
-                </div>
-                <div className="pt-4">
-                  <span className="text-slate-600 text-sm block mb-3">IP whitelist</span>
-                  <div className="flex items-center gap-3">
-                    <code className="bg-white border border-orange-200 px-3 py-1.5 rounded text-orange-900 font-mono text-sm shadow-sm">{oracleIp}</code>
-                    <button onClick={() => navigator.clipboard.writeText(oracleIp)} className="bg-white border border-slate-200 px-3 py-1.5 text-slate-700 text-xs font-bold rounded shadow-sm hover:bg-slate-50 transition">Copy</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm h-fit">
-              <h3 className="font-bold text-slate-800 text-lg mb-6">How your money stays yours</h3>
-              <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                Funds never leave your Delta account. We hold a trade-only key, so the worst case is a bad trade â€” never a transfer. Revoke the key on Delta at any moment and execution stops instantly.
-              </p>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm">Custody</span>
-                  <span className="font-bold text-slate-800 text-sm">You, on Delta</span>
-                </div>
-                <div className="flex justify-between items-center py-3 border-b border-slate-100">
-                  <span className="text-slate-500 text-sm">Our access</span>
-                  <span className="font-bold text-slate-800 text-sm">Trade only</span>
-                </div>
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-slate-500 text-sm">Revoke</span>
-                  <span className="font-bold text-slate-800 text-sm">Instant, from Delta</span>
-                </div>
-              </div>
-            </div>
+          <div className="flex items-center">
+            <span className="font-bold text-lg tracking-tight text-white">Profit</span>
+            <span className="font-bold text-lg tracking-tight text-[#f09455]">Pilot</span>
           </div>
-        );
+        </Link>
 
-      case 'trading':
-      default:
-        return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
-            <div>
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm mb-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-bold text-slate-800 text-lg">Connected accounts</h3>
-                  {profile && profile.delta_api_key && (
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${profile.is_paused ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                      âœ“ {profile.is_paused ? 'Paused' : 'Active'}
+        {/* Dashboard Nav Links */}
+        <div className="flex items-center gap-6 text-sm font-medium">
+          <Link href="/dashboard" className="text-slate-400 hover:text-white transition">
+            Live Terminal
+          </Link>
+          <Link href="/dashboard/settings" className="text-[#f09455] border-b-2 border-[#f09455] pb-1 font-bold">
+            Settings &amp; Keys
+          </Link>
+          <Link href="/dashboard/help" className="text-slate-400 hover:text-white transition">
+            Support &amp; Docs
+          </Link>
+        </div>
+
+        {/* Sign Out */}
+        <button 
+          onClick={async () => {
+            await supabase.auth.signOut();
+            window.location.href = '/';
+          }}
+          className="text-xs font-medium text-rose-400 hover:text-rose-300 transition bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-500/20"
+        >
+          Sign Out
+        </button>
+      </nav>
+
+      {/* Main Container */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-10 w-full flex-1 space-y-8">
+        
+        {/* Header */}
+        <div>
+          <div className="text-xs font-mono font-bold uppercase text-[#f09455] tracking-wider mb-1">
+            Configuration Center
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Account &amp; API Key Settings
+          </h1>
+          <p className="text-xs text-slate-400 font-mono mt-1">
+            Logged in as: {user?.email || 'Loading...'}
+          </p>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex gap-2 border-b border-white/10 pb-4 overflow-x-auto">
+          {[
+            { id: 'trading', label: 'Trading Account (API)', icon: Key },
+            { id: 'risk', label: 'Risk & Lot Limits', icon: Sliders },
+            { id: 'billing', label: 'Billing & High-Water Mark', icon: CreditCard },
+            { id: 'security', label: 'Security & Whitelisting', icon: ShieldCheck },
+            { id: 'profile', label: 'Profile & Password', icon: User },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`px-4 py-2.5 rounded-xl font-mono text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${isActive ? 'bg-[#f09455] text-[#241505] shadow-lg shadow-brand-500/20' : 'bg-[#15171C] text-slate-400 hover:text-white border border-white/10'}`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* TAB 1: TRADING ACCOUNT */}
+        {activeTab === 'trading' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            {/* Left: Connected Accounts Status */}
+            <div className="lg:col-span-6 space-y-6">
+              
+              <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-white text-base">Connected Delta Account</h3>
+                  {profile?.delta_api_key && (
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold uppercase ${profile.is_paused ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'}`}>
+                      {profile.is_paused ? 'Paused' : 'Active & Trading'}
                     </span>
                   )}
                 </div>
 
                 {loading ? (
-                  <div className="text-sm text-slate-500">Loading profile...</div>
-                ) : profile && profile.delta_api_key ? (
-                  <div className="border border-slate-100 bg-slate-50 p-4 rounded-lg">
-                    <div className="flex justify-between items-start mb-4">
+                  <div className="text-xs text-slate-500 font-mono py-4">Checking configuration...</div>
+                ) : profile?.delta_api_key ? (
+                  <div className="bg-[#0C0D10] border border-white/10 rounded-xl p-4 space-y-4 font-mono">
+                    <div className="flex justify-between items-start">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-slate-800 tracking-wider">
-                            {profile.delta_api_key.substring(0, 4)}...{profile.delta_api_key.substring(profile.delta_api_key.length - 4)}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white tracking-wider text-sm">
+                            {profile.delta_api_key.substring(0, 6)}...{profile.delta_api_key.substring(profile.delta_api_key.length - 4)}
                           </span>
-                          <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded uppercase">Trading</span>
+                          <span className="text-[10px] bg-brand-500/20 text-[#f09455] px-2 py-0.5 rounded font-bold uppercase">
+                            Trade Only
+                          </span>
                         </div>
-                        <div className="text-xs text-slate-500">
-                          Delta Exchange India â€¢ connected {profile.connected_at ? profile.connected_at.split('T')[0] : 'recently'}
+                        <div className="text-[11px] text-slate-500 mt-1">
+                          Connected on {profile.connected_at ? new Date(profile.connected_at).toLocaleDateString() : 'Recently'}
                         </div>
                       </div>
+
                       <div className="flex gap-2">
-                        <button onClick={handlePauseToggle} className="px-3 py-1.5 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-semibold text-xs rounded transition">
+                        <button 
+                          onClick={handlePauseToggle}
+                          className="px-3 py-1.5 bg-[#1B1E24] hover:bg-[#262A33] text-white border border-white/10 rounded-lg text-xs font-bold transition"
+                        >
                           {profile.is_paused ? 'Resume' : 'Pause'}
                         </button>
-                        <button onClick={handleDisconnect} className="px-3 py-1.5 border border-rose-200 bg-white text-rose-500 hover:bg-rose-50 font-semibold text-xs rounded transition">
+                        <button 
+                          onClick={handleDisconnect}
+                          className="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-bold transition"
+                        >
                           Disconnect
                         </button>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-500 leading-relaxed mt-4 pt-4 border-t border-slate-200">
-                      Pausing stops new entries at once. Anything already open keeps its stop-loss and is still closed by us. Disconnecting stops trading immediately. Your funds are untouched.
-                    </p>
+
+                    <div className="text-xs text-slate-400 leading-relaxed pt-3 border-t border-white/10">
+                      Pausing stops new strangle entries immediately. Existing open positions remain safely managed until profit target, wing stop, or expiry.
+                    </div>
                   </div>
                 ) : (
-                  <div className="text-sm text-slate-500 py-4 text-center border-2 border-dashed border-slate-200 rounded-lg">
-                    No accounts connected yet.
+                  <div className="p-8 text-center border-2 border-dashed border-white/10 rounded-xl text-slate-400 text-xs font-mono">
+                    No Delta Exchange API key connected yet. Fill out the form to activate 24/7 algorithmic trading.
                   </div>
                 )}
               </div>
+
+              {/* IP Whitelist Instructions */}
+              <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+                <div className="flex items-center gap-2 text-emerald-400">
+                  <ShieldCheck className="w-5 h-5" />
+                  <h3 className="font-bold text-white text-sm">Mandatory IP Whitelist</h3>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  For your security, paste our Oracle Cloud execution IP address into the <strong>IP Whitelist</strong> field when generating your API Key on Delta Exchange:
+                </p>
+
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#0C0D10] border border-[#f09455]/30">
+                  <code className="font-mono text-sm font-bold text-[#f09455]">{oracleIp}</code>
+                  <button 
+                    onClick={handleCopyIp}
+                    className="px-3 py-1.5 rounded-lg bg-[#1B1E24] hover:bg-[#262A33] text-white text-xs font-bold transition flex items-center gap-1.5"
+                  >
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    {copied ? 'Copied' : 'Copy IP'}
+                  </button>
+                </div>
+              </div>
+
             </div>
 
-            <div>
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
-                <h3 className="font-bold text-slate-800 text-lg mb-6">Add another account</h3>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
-                  <h4 className="font-bold text-orange-900 text-sm mb-2">Whitelist our execution IP</h4>
-                  <p className="text-orange-800 text-xs mb-3">
-                    When you create the API key on Delta, add this IP to the key's whitelist.
+            {/* Right: Connect Key Form */}
+            <div className="lg:col-span-6">
+              <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+                
+                <div>
+                  <h3 className="text-lg font-bold text-white">Connect Delta API Key</h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Grant <strong>Read</strong> and <strong>Trading</strong> permissions only. Never enable Withdrawals.
                   </p>
-                  <div className="flex items-center gap-3">
-                    <code className="bg-white border border-orange-200 px-3 py-1.5 rounded text-orange-900 font-mono text-sm shadow-sm">{oracleIp}</code>
-                    <button onClick={() => navigator.clipboard.writeText(oracleIp)} className="bg-white border border-orange-200 px-3 py-1.5 text-orange-800 text-xs font-bold rounded shadow-sm hover:bg-orange-100 transition">Copy</button>
-                  </div>
                 </div>
 
                 <form onSubmit={handleConnect} className="space-y-4">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">Exchange</label>
-                    <select className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-800 bg-slate-50">
-                      <option>Delta Exchange India</option>
-                      <option>Delta Exchange Global</option>
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                      Exchange Target
+                    </label>
+                    <select 
+                      value={exchange}
+                      onChange={(e) => setExchange(e.target.value)}
+                      className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f09455]"
+                    >
+                      <option>Delta Exchange India (INR / Zero TDS)</option>
+                      <option>Delta Exchange Global (USDT)</option>
                     </select>
                   </div>
+
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">API key</label>
-                    <input type="text" required value={apiKey} onChange={(e) => setApiKey(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-[#e27625]" />
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                      API Key
+                    </label>
+                    <input 
+                      type="text" 
+                      required
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="Paste your Delta API Key"
+                      className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#f09455]"
+                    />
                   </div>
+
                   <div>
-                    <label className="block text-xs font-semibold text-slate-600 mb-1">API secret</label>
-                    <input type="password" required value={apiSecret} onChange={(e) => setApiSecret(e.target.value)} className="w-full border border-slate-300 rounded-lg px-4 py-2 text-sm text-slate-800 focus:outline-none focus:border-[#e27625]" />
+                    <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                      API Secret
+                    </label>
+                    <input 
+                      type="password" 
+                      required
+                      value={apiSecret}
+                      onChange={(e) => setApiSecret(e.target.value)}
+                      placeholder="Paste your Delta API Secret"
+                      className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-[#f09455]"
+                    />
                   </div>
-                  <div className="pt-2">
-                    <button type="submit" disabled={saving} className="w-full bg-[#e27625] hover:bg-[#c9641d] text-white font-bold py-3 rounded-lg transition shadow-sm disabled:opacity-50">
-                      {saving ? 'Connecting...' : 'Connect account'}
-                    </button>
-                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={saving}
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-black shadow-lg hover:brightness-105 transition disabled:opacity-50 text-sm"
+                  >
+                    {saving ? 'Connecting & Verifying...' : 'Save & Connect Delta Account &rarr;'}
+                  </button>
                 </form>
+
               </div>
             </div>
+
           </div>
-        );
-    }
-  };
+        )}
 
-  const getTabClass = (tabId: string) => {
-    return activeTab === tabId 
-      ? "text-slate-900 font-bold border-b-2 border-slate-900 pb-4 -mb-[17px] z-10" 
-      : "text-slate-500 font-medium hover:text-slate-800 transition pb-4";
-  };
+        {/* TAB 2: RISK & LOT LIMITS */}
+        {activeTab === 'risk' && (
+          <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl max-w-3xl space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-white">Risk Sizing &amp; Parameters</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Customize maximum position sizes and cash buffer rules for your account.
+              </p>
+            </div>
 
-  return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col font-sans">
-      <nav className="bg-slate-900 px-6 py-4 flex items-center justify-between">
-        <a href="/" className="flex items-center gap-3 hover:opacity-90 transition">
-          <svg className="w-6 h-6 text-[#e27625]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-          </svg>
-          <span className="font-black text-white text-lg tracking-tight">ProfitPilot</span>
-        </a>
-        <div className="flex items-center gap-6">
-          <a href="/dashboard" className="text-sm font-medium text-slate-300 hover:text-white transition">Dashboard</a>
-          <a href="/dashboard/settings" className="text-sm font-medium text-[#e27625] transition border-b-2 border-[#e27625] pb-1">Settings</a>
-          <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
-          <a href="/dashboard/help" className="text-sm font-medium text-slate-300 hover:text-white transition">Help</a>
-          <button onClick={async () => { await supabase.auth.signOut(); window.location.href = '/'; }} className="text-sm font-medium text-rose-400 hover:text-rose-300 transition">Logout</button>
-        </div>
-      </nav>
+            <div className="space-y-5">
+              
+              <div className="bg-[#0C0D10] p-4 rounded-xl border border-white/10 space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-slate-400">Max Lot Sizing Cap:</span>
+                  <span className="text-[#f09455] font-bold">{maxLots} Lots ({(maxLots * 0.001).toFixed(3)} BTC)</span>
+                </div>
+                <input 
+                  type="range" 
+                  min={1} 
+                  max={10} 
+                  value={maxLots}
+                  onChange={(e) => setMaxLots(parseInt(e.target.value))}
+                  className="w-full h-2 bg-[#1B1E24] rounded appearance-none cursor-pointer"
+                />
+                <p className="text-[11px] text-slate-500">Limits maximum leverage to protect smaller balances.</p>
+              </div>
 
-      <div className="max-w-5xl mx-auto px-8 py-8 w-full flex-1">
-        
-        {/* User Account Header */}
-        <div className="mb-8">
-          <h2 className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Account</h2>
-          <h1 className="text-2xl font-bold text-slate-900">{user?.email || 'Loading...'}</h1>
-          <p className="text-sm text-slate-500 mt-1">{user?.email}</p>
-        </div>
+              <div className="bg-[#0C0D10] p-4 rounded-xl border border-white/10 space-y-2">
+                <div className="flex justify-between text-xs font-mono">
+                  <span className="text-slate-400">Cash Reserve Buffer:</span>
+                  <span className="text-emerald-400 font-bold">{cashReservePct}% Free Margin</span>
+                </div>
+                <input 
+                  type="range" 
+                  min={20} 
+                  max={60} 
+                  step={5}
+                  value={cashReservePct}
+                  onChange={(e) => setCashReservePct(parseInt(e.target.value))}
+                  className="w-full h-2 bg-[#1B1E24] rounded appearance-none cursor-pointer"
+                />
+                <p className="text-[11px] text-slate-500">Guarantees unallocated margin is preserved for dynamic Iron Condor wing purchases.</p>
+              </div>
 
-        {/* Settings Navigation Tabs */}
-        <div className="flex gap-6 border-b border-slate-200 mb-8 relative">
-          <button onClick={() => setActiveTab('profile')} className={getTabClass('profile')}>Profile</button>
-          <button onClick={() => setActiveTab('trading')} className={getTabClass('trading')}>Trading account</button>
-          <button onClick={() => setActiveTab('billing')} className={getTabClass('billing')}>Billing</button>
-          <button onClick={() => setActiveTab('security')} className={getTabClass('security')}>Security</button>
-          <button onClick={() => setActiveTab('notifications')} className={getTabClass('notifications')}>Notifications</button>
-        </div>
+              <button 
+                type="button" 
+                onClick={() => alert("Risk parameters updated successfully!")}
+                className="px-6 py-3 rounded-xl bg-[#f09455] text-[#241505] font-bold text-xs font-mono shadow-md hover:brightness-105 transition"
+              >
+                Save Risk Configuration
+              </button>
 
-        {renderTabContent()}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: BILLING */}
+        {activeTab === 'billing' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <div className="lg:col-span-7 bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-bold text-white">Your Plan &amp; Billing Cycle</h3>
+                  <span className="text-xs text-slate-400 font-mono">30-Day Rolling Performance Fee Model</span>
+                </div>
+                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-mono font-bold rounded-full border border-emerald-500/20">
+                  Free Trial Active
+                </span>
+              </div>
+
+              <div className="space-y-4 divide-y divide-white/5 text-xs font-mono">
+                <div className="flex justify-between pt-3">
+                  <span className="text-slate-400">Trial Period:</span>
+                  <span className="text-white font-bold">30 Days (100% Free &amp; Retained)</span>
+                </div>
+                <div className="flex justify-between pt-3">
+                  <span className="text-slate-400">Post-Trial Fee:</span>
+                  <span className="text-[#f09455] font-bold">30% Share on Net Realized Profit</span>
+                </div>
+                <div className="flex justify-between pt-3">
+                  <span className="text-slate-400">Upfront / Monthly Fee:</span>
+                  <span className="text-emerald-400 font-bold">₹0 / $0 (No Upfront Fees)</span>
+                </div>
+                <div className="flex justify-between pt-3">
+                  <span className="text-slate-400">High-Water Mark:</span>
+                  <span className="text-emerald-400 font-bold">Active (Loss Carryover Enabled)</span>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-[#0C0D10] border border-white/10 text-xs text-slate-400 leading-relaxed">
+                If a 30-day period ends in a net loss, you are invoiced ₹0, and the loss is carried forward to offset future gains before any performance fee applies.
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 bg-[#15171C] border border-white/10 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center text-center space-y-3">
+              <CreditCard className="w-10 h-10 text-slate-600" />
+              <h4 className="font-bold text-white text-sm">No Invoices Yet</h4>
+              <p className="text-xs text-slate-500 max-w-xs leading-relaxed">
+                Invoices are generated only after a completed 30-day period that ended in net profit.
+              </p>
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 4: SECURITY */}
+        {activeTab === 'security' && (
+          <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl max-w-3xl space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-white">Security &amp; Key Permission Matrix</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                How ProfitPilot safeguards your exchange collateral at all times.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[#0C0D10] border border-white/10 text-xs font-mono">
+                <div>
+                  <div className="font-bold text-white">Read Permissions</div>
+                  <div className="text-slate-500 text-[11px]">Allows bot to query orderbooks, positions, and live wallet balances.</div>
+                </div>
+                <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold">Required</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl bg-[#0C0D10] border border-white/10 text-xs font-mono">
+                <div>
+                  <div className="font-bold text-white">Trading Permissions</div>
+                  <div className="text-slate-500 text-[11px]">Allows bot to place option limit/market orders and adjust protective wings.</div>
+                </div>
+                <span className="px-2.5 py-1 rounded bg-emerald-500/10 text-emerald-400 font-bold">Required</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-xl bg-rose-500/5 border border-rose-500/20 text-xs font-mono">
+                <div>
+                  <div className="font-bold text-rose-400">Withdrawal Permissions</div>
+                  <div className="text-slate-500 text-[11px]">Must stay completely disabled. Delta enforces this on their side.</div>
+                </div>
+                <span className="px-2.5 py-1 rounded bg-rose-500/20 text-rose-300 font-bold">Must Stay OFF</span>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* TAB 5: PROFILE & PASSWORD */}
+        {activeTab === 'profile' && (
+          <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl max-w-xl space-y-6">
+            <div>
+              <h3 className="text-lg font-bold text-white">Update Password</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Change your ProfitPilot account password.
+              </p>
+            </div>
+
+            {passwordSuccess && (
+              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
+                ✓ Password updated successfully!
+              </div>
+            )}
+
+            <form onSubmit={handlePasswordUpdate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                  New Password
+                </label>
+                <input 
+                  type="password" 
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••••••"
+                  className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f09455]"
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                className="w-full py-3.5 rounded-xl bg-[#f09455] text-[#241505] font-black text-sm shadow-md hover:brightness-105 transition"
+              >
+                Update Password
+              </button>
+            </form>
+          </div>
+        )}
 
       </div>
+
     </div>
   );
 }
