@@ -527,42 +527,71 @@ export default function Settings() {
 
         {/* TAB 5: PROFILE & PASSWORD */}
         {activeTab === 'profile' && (
-          <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-xl max-w-xl space-y-6">
-            <div>
-              <h3 className="text-lg font-bold text-white">Update Password</h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Change your ProfitPilot account password.
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
+            
+            {/* User Details Box */}
+            <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+              <h3 className="text-base font-bold text-white">Account Details</h3>
+              
+              <div className="space-y-3 font-mono text-xs divide-y divide-white/5">
+                <div className="pt-2 flex justify-between">
+                  <span className="text-slate-400">Full Name:</span>
+                  <span className="text-white font-bold">{profile?.full_name || user?.user_metadata?.full_name || 'Not Provided'}</span>
+                </div>
+                <div className="pt-3 flex justify-between">
+                  <span className="text-slate-400">Mobile Number:</span>
+                  <span className="text-white font-bold">{profile?.phone || user?.user_metadata?.phone || 'Not Provided'}</span>
+                </div>
+                <div className="pt-3 flex justify-between">
+                  <span className="text-slate-400">Email ID:</span>
+                  <span className="text-white font-bold">{user?.email || 'N/A'}</span>
+                </div>
+                <div className="pt-3 flex justify-between">
+                  <span className="text-slate-400">User ID:</span>
+                  <span className="text-slate-400 text-[10px] truncate max-w-[180px]">{user?.id || 'N/A'}</span>
+                </div>
+              </div>
             </div>
 
-            {passwordSuccess && (
-              <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
-                ✓ Password updated successfully!
-              </div>
-            )}
-
-            <form onSubmit={handlePasswordUpdate} className="space-y-4">
+            {/* Change Password Box */}
+            <div className="bg-[#15171C] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
-                  New Password
-                </label>
-                <input 
-                  type="password" 
-                  required
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••••••"
-                  className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-[#f09455]"
-                />
+                <h3 className="text-base font-bold text-white">Update Password</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Change your ProfitPilot account password.
+                </p>
               </div>
 
-              <button 
-                type="submit" 
-                className="w-full py-3.5 rounded-xl bg-[#f09455] text-[#241505] font-black text-sm shadow-md hover:brightness-105 transition"
-              >
-                Update Password
-              </button>
-            </form>
+              {passwordSuccess && (
+                <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
+                  ✓ Password updated successfully!
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                    New Password
+                  </label>
+                  <input 
+                    type="password" 
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="••••••••••••"
+                    className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#f09455]"
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="w-full py-3 rounded-xl bg-[#f09455] text-[#241505] font-black text-xs font-mono shadow-md hover:brightness-105 transition"
+                >
+                  Update Password
+                </button>
+              </form>
+            </div>
+
           </div>
         )}
 
