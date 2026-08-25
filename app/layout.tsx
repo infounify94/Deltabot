@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], display: "swap" });
 
 export const metadata: Metadata = {
-  title: "ProfitPilot — Automated BTC Options on Delta Exchange",
-  description: "Institutional-grade, self-custodial BTC options selling engine. Sells volatility, manages dynamic wings, enforces liquidation buffers on Delta Exchange India & Global.",
+  title: "ProfitPilot 2.0 — Quantitative Crypto Options Intelligence & Execution",
+  description: "Quantitative crypto options intelligence and automated execution platform for Delta Exchange. Systematic volatility analysis, dynamic defense, and risk-controlled options architecture.",
   icons: {
     icon: "/icon.svg",
   },
@@ -18,8 +18,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" data-theme="dark">
-      <body className={`${inter.className} min-h-screen bg-[#0C0D10] text-[#F3F2EF] antialiased selection:bg-brand-500/30 selection:text-white`}>
+    <html lang="en" data-theme="light" suppressHydrationWarning>
+      <body className={`${inter.className} min-h-screen bg-[var(--paper)] text-[var(--ink)] antialiased selection:bg-[#f59e0b]/20 selection:text-[#0f172a]`}>
         {children}
       </body>
     </html>

@@ -2,7 +2,7 @@
 
 import { useState, Suspense } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Shield, Activity, ArrowLeft, Lock, CheckCircle2, AlertCircle, User, Phone, Mail, KeyRound } from 'lucide-react';
+import { Shield, Activity, ArrowLeft, Lock, CheckCircle2, AlertCircle, User, Phone, Mail, KeyRound, Sun, Moon } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -22,6 +22,18 @@ function LoginContent() {
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState<{ type: 'error' | 'success'; text: string } | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    document.documentElement.setAttribute('data-theme', next);
+    if (next === 'light') {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -88,7 +100,6 @@ function LoginContent() {
         if (error) {
           setMsg({ type: 'error', text: error.message });
         } else if (data.user) {
-          // Store user details into profiles table
           try {
             await supabase.from('profiles').upsert({
               id: data.user.id,
@@ -107,7 +118,7 @@ function LoginContent() {
           } else {
             setMsg({ 
               type: 'success', 
-              text: 'Account registered! If confirmation is required, please check your inbox, or sign in now.' 
+              text: 'Account registered! You can now proceed to sign in.' 
             });
             setIsSignUp(false);
           }
@@ -132,41 +143,51 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0C0D10] text-[#F3F2EF] flex flex-col font-sans selection:bg-[#f09455]/30">
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col font-sans selection:bg-[#f59e0b]/20">
       
       {/* Top Navbar */}
-      <nav className="w-full border-b border-white/10 bg-[#0C0D10]/80 backdrop-blur-xl py-4 px-6 flex items-center justify-between">
+      <nav className="w-full glass-header py-4 px-6 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f09455] via-[#e27625] to-[#d9a44e] flex items-center justify-center shadow-md">
-            <Activity className="text-[#241505] w-5 h-5" strokeWidth={2.5} />
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-md">
+            <Activity className="text-white w-5 h-5" strokeWidth={2.5} />
           </div>
           <div className="flex items-center">
-            <span className="font-bold text-lg tracking-tight text-white">Profit</span>
-            <span className="font-bold text-lg tracking-tight text-[#f09455]">Pilot</span>
+            <span className="font-bold text-lg tracking-tight text-[var(--ink)]">Profit</span>
+            <span className="font-bold text-lg tracking-tight text-[#d97706]">Pilot</span>
           </div>
         </Link>
 
-        <Link href="/" className="text-sm font-medium text-slate-400 hover:text-white flex items-center gap-2 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> Back to Home
-        </Link>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <Link href="/" className="text-xs font-mono font-medium text-[var(--grey)] hover:text-[var(--ink)] flex items-center gap-1.5 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> Back to Home
+          </Link>
+        </div>
       </nav>
 
       {/* Main Container */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-6 my-6">
-        <div className="max-w-md w-full bg-[#15171C] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
+        <div className="max-w-md w-full fintech-card p-6 sm:p-8 shadow-2xl relative overflow-hidden space-y-6">
           
-          {/* Top subtle accent gradient */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-[#f09455] via-[#f7b27c] to-[#d9a44e]" />
+          {/* Accent top line */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#f59e0b] to-[#d97706]" />
 
           {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-2 bg-[#0C0D10] p-1 rounded-xl border border-white/10 text-xs font-mono font-bold">
+          <div className="grid grid-cols-2 bg-[var(--paper-2)] p-1 rounded-xl border border-[var(--hair)] text-xs font-mono font-bold">
             <button
               type="button"
               onClick={() => {
                 setIsSignUp(false);
                 setMsg(null);
               }}
-              className={`py-2 rounded-lg transition-all ${!isSignUp ? 'bg-[#f09455] text-[#241505] shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2 rounded-lg transition-all ${!isSignUp ? 'bg-[#d97706] text-white shadow-sm' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
             >
               Sign In
             </button>
@@ -176,45 +197,44 @@ function LoginContent() {
                 setIsSignUp(true);
                 setMsg(null);
               }}
-              className={`py-2 rounded-lg transition-all ${isSignUp ? 'bg-[#f09455] text-[#241505] shadow' : 'text-slate-400 hover:text-white'}`}
+              className={`py-2 rounded-lg transition-all ${isSignUp ? 'bg-[#d97706] text-white shadow-sm' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
             >
               Create Account
             </button>
           </div>
 
           {/* Card Header */}
-          <div className="text-center space-y-1.5">
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <div className="text-center space-y-1">
+            <h2 className="text-2xl font-black font-mono text-[var(--ink)] tracking-tight">
               {isSignUp ? 'Create Free Account' : 'Welcome Back'}
             </h2>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[var(--grey)] font-mono">
               {isSignUp 
-                ? 'Fill details below to start your 30-day free trial on Delta Exchange' 
-                : 'Sign in to access your automated trading dashboard'}
+                ? 'Start your 30-day free trial on Delta Exchange' 
+                : 'Sign in to access your quantitative dashboard'}
             </p>
           </div>
 
-          {/* URL Error Alerts */}
+          {/* Error / Feedback alerts */}
           {errorParam === 'auth-failed' && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2.5 font-mono">
+            <div className="p-3.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 text-xs font-mono flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>Authentication session expired or failed. Please try again.</span>
+              <span>Authentication session expired. Please sign in again.</span>
             </div>
           )}
 
-          {/* Dynamic Action Messages */}
           {msg && (
-            <div className={`p-4 rounded-xl text-xs flex items-center gap-2.5 font-mono ${msg.type === 'error' ? 'bg-red-500/10 border border-red-500/20 text-red-400' : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'}`}>
+            <div className={`p-3.5 rounded-xl text-xs font-mono flex items-center gap-2 ${msg.type === 'error' ? 'bg-rose-50 text-rose-600 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
               {msg.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <CheckCircle2 className="w-4 h-4 shrink-0" />}
               <span>{msg.text}</span>
             </div>
           )}
 
-          {/* Google 1-Click Auth */}
+          {/* Google Auth */}
           <button 
             type="button"
             onClick={handleGoogleLogin}
-            className="w-full bg-white hover:bg-slate-100 text-slate-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition shadow-md active:scale-95 text-xs sm:text-sm font-sans"
+            className="w-full bg-[var(--paper)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 transition shadow-sm text-xs font-mono"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -227,24 +247,21 @@ function LoginContent() {
 
           {/* Divider */}
           <div className="relative flex items-center justify-center">
-            <div className="absolute w-full border-t border-white/10" />
-            <div className="relative bg-[#15171C] px-3">
-              <span className="text-[10px] text-slate-400 uppercase font-mono font-semibold">
+            <div className="absolute w-full border-t border-[var(--hair)]" />
+            <div className="relative bg-[var(--card)] px-3">
+              <span className="text-[10px] text-[var(--grey)] uppercase font-mono font-semibold">
                 Or with email
               </span>
             </div>
           </div>
 
           {/* Form */}
-          <form onSubmit={handleEmailAuth} className="space-y-3.5">
-            
-            {/* SIGN UP ONLY FIELDS: Full Name & Mobile */}
+          <form onSubmit={handleEmailAuth} className="space-y-3 font-mono text-xs">
             {isSignUp && (
               <>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <User className="w-3.5 h-3.5 text-[#f09455]" />
-                    Full Name
+                  <label className="block text-[11px] font-bold text-[var(--grey)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#d97706]" /> Full Name
                   </label>
                   <input 
                     type="text" 
@@ -252,14 +269,13 @@ function LoginContent() {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="e.g. Rahul Sharma" 
-                    className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-[#f09455] text-xs sm:text-sm transition" 
+                    className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-xl px-3.5 py-2.5 text-[var(--ink)] placeholder:text-[var(--faint)] focus:outline-none focus:border-[#d97706] transition" 
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 text-[#f09455]" />
-                    Mobile Number
+                  <label className="block text-[11px] font-bold text-[var(--grey)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                    <Phone className="w-3.5 h-3.5 text-[#d97706]" /> Mobile Number
                   </label>
                   <input 
                     type="tel" 
@@ -267,17 +283,15 @@ function LoginContent() {
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="e.g. +91 98765 43210" 
-                    className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-[#f09455] text-xs sm:text-sm font-mono transition" 
+                    className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-xl px-3.5 py-2.5 text-[var(--ink)] placeholder:text-[var(--faint)] focus:outline-none focus:border-[#d97706] transition" 
                   />
                 </div>
               </>
             )}
 
-            {/* Email Address */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Mail className="w-3.5 h-3.5 text-[#f09455]" />
-                Email Address
+              <label className="block text-[11px] font-bold text-[var(--grey)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-[#d97706]" /> Email Address
               </label>
               <input 
                 type="email" 
@@ -285,15 +299,13 @@ function LoginContent() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="trader@example.com" 
-                className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-[#f09455] text-xs sm:text-sm transition" 
+                className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-xl px-3.5 py-2.5 text-[var(--ink)] placeholder:text-[var(--faint)] focus:outline-none focus:border-[#d97706] transition" 
               />
             </div>
 
-            {/* Password */}
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#f09455]" />
-                Password {isSignUp && <span className="text-[10px] text-slate-500 font-normal lowercase">(min 6 chars)</span>}
+              <label className="block text-[11px] font-bold text-[var(--grey)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-[#d97706]" /> Password {isSignUp && <span className="text-[10px] text-[var(--grey)] font-normal">(min 6 chars)</span>}
               </label>
               <input 
                 type="password" 
@@ -301,16 +313,14 @@ function LoginContent() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••" 
-                className="w-full bg-[#0C0D10] border border-white/10 rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-600 focus:outline-none focus:border-[#f09455] text-xs sm:text-sm font-mono transition" 
+                className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-xl px-3.5 py-2.5 text-[var(--ink)] placeholder:text-[var(--faint)] focus:outline-none focus:border-[#d97706] transition" 
               />
             </div>
 
-            {/* Confirm Password (SIGN UP ONLY) */}
             {isSignUp && (
               <div>
-                <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <KeyRound className="w-3.5 h-3.5 text-[#f09455]" />
-                  Confirm Password
+                <label className="block text-[11px] font-bold text-[var(--grey)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <KeyRound className="w-3.5 h-3.5 text-[#d97706]" /> Confirm Password
                 </label>
                 <input 
                   type="password" 
@@ -318,53 +328,29 @@ function LoginContent() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Re-enter password to confirm" 
-                  className={`w-full bg-[#0C0D10] border rounded-xl px-3.5 py-2.5 text-white placeholder:text-slate-600 focus:outline-none text-xs sm:text-sm font-mono transition ${confirmPassword && password !== confirmPassword ? 'border-rose-500/60 focus:border-rose-500' : 'border-white/10 focus:border-[#f09455]'}`} 
+                  className={`w-full bg-[var(--paper-2)] border rounded-xl px-3.5 py-2.5 text-[var(--ink)] placeholder:text-[var(--faint)] focus:outline-none transition ${confirmPassword && password !== confirmPassword ? 'border-rose-500' : 'border-[var(--hair)] focus:border-[#d97706]'}`} 
                 />
                 {confirmPassword && password !== confirmPassword && (
-                  <span className="text-[10px] text-rose-400 mt-1 block font-mono">
-                    Passwords do not match
-                  </span>
+                  <span className="text-[10px] text-rose-500 mt-1 block">Passwords do not match</span>
                 )}
               </div>
             )}
 
-            {/* Submit Button with direct UTF-8 arrow */}
             <div className="pt-2">
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-black py-3.5 px-4 rounded-xl shadow-lg hover:brightness-105 active:scale-95 transition disabled:opacity-50 text-xs sm:text-sm"
+                className="w-full bg-[#d97706] hover:bg-[#b45309] text-white font-bold py-3.5 px-4 rounded-xl shadow-sm transition disabled:opacity-50 text-xs"
               >
-                {loading 
-                  ? 'Processing...' 
-                  : isSignUp 
-                    ? 'Create Account & Start Free Trial →' 
-                    : 'Sign In to Dashboard →'}
+                {loading ? 'Processing...' : isSignUp ? 'Create Account & Start Free Trial →' : 'Sign In to Command Center →'}
               </button>
             </div>
-
           </form>
 
-          {/* Toggle between Login and Signup */}
-          <div className="text-center pt-1">
-            <button 
-              type="button"
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setMsg(null);
-              }}
-              className="text-xs text-slate-400 hover:text-white transition"
-            >
-              {isSignUp 
-                ? 'Already have an account? Sign in here' 
-                : "Don't have an account? Create one (30-day free trial)"}
-            </button>
-          </div>
-
-          {/* Security Guarantee Box */}
-          <div className="p-3 rounded-2xl bg-white/5 border border-white/5 flex items-center gap-3 text-xs text-slate-400">
-            <Shield className="w-4 h-4 text-[#f09455] shrink-0" />
-            <span className="text-[11px] leading-tight">Funds remain in your Delta Exchange account. Trade-only API connection.</span>
+          {/* Guarantee */}
+          <div className="p-3 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] flex items-center gap-2.5 text-[11px] text-[var(--grey)] font-mono">
+            <Shield className="w-4 h-4 text-[#d97706] shrink-0" />
+            <span>Funds remain in your Delta Exchange account. Trade-only API architecture.</span>
           </div>
 
         </div>
@@ -376,7 +362,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0C0D10] text-white flex items-center justify-center font-mono text-sm">Loading...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex items-center justify-center font-mono text-xs">Loading...</div>}>
       <LoginContent />
     </Suspense>
   );

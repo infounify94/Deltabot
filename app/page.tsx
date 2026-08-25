@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { 
   Shield, 
@@ -16,29 +16,44 @@ import {
   Cpu, 
   Clock, 
   Eye, 
-  Coins, 
   Moon, 
   Sun,
   Layers,
   AlertTriangle,
   Menu,
-  X
+  X,
+  Compass,
+  Crosshair,
+  BarChart3,
+  Brain,
+  ShieldAlert,
+  HelpCircle,
+  ExternalLink,
+  ChevronRight
 } from 'lucide-react';
 
 export default function Home() {
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [btcPrice, setBtcPrice] = useState<number>(64250);
   const [ethPrice, setEthPrice] = useState<number>(3480);
-  const [sliderBalance, setSliderBalance] = useState<number>(5000); // USD base
-  const [payoffSpot, setPayoffSpot] = useState<number>(64250); // Spot slider for payoff diagram
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // FX Rate: 1 USD = 86.5 INR (approximate for display conversion)
+  // Active Interactive 10-Step Pipeline Step
+  const [activePipelineStep, setActivePipelineStep] = useState<number>(2); // Default to Volatility
+
+  // Scenario Lab Interactive Controls
+  const [scenarioBtcShift, setScenarioBtcShift] = useState<number>(0);
+  const [scenarioIvShift, setScenarioIvShift] = useState<number>(0);
+  const [scenarioHoursPassed, setScenarioHoursPassed] = useState<number>(8);
+
+  // Profit Calculator Slider
+  const [sliderBalance, setSliderBalance] = useState<number>(5000); // USD base
+
+  // FX Rate: 1 USD = 86.5 INR
   const fxRate = 86.5;
 
-  // Format currency helper
   const fmt = (usdAmount: number, forceDecimals = false) => {
     if (currency === 'INR') {
       const inr = usdAmount * fxRate;
@@ -46,16 +61,14 @@ export default function Home() {
         return `₹${(inr / 10000000).toFixed(2)} Cr`;
       }
       if (Math.abs(inr) >= 100000) {
-        return `₹${(inr / 100000).toFixed(2)} L`;
+        return `₹${(inr / 100000).toFixed(2)} Lakh`;
       }
       return `₹${Math.round(inr).toLocaleString('en-IN')}`;
     }
-    return forceDecimals 
-      ? `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
-      : `$${Math.round(usdAmount).toLocaleString('en-US')}`;
+    return `$${Math.round(usdAmount).toLocaleString('en-US')}`;
   };
 
-  // Live WebSocket for BTC & ETH real prices
+  // Real-time WebSocket for spot market prices
   useEffect(() => {
     let wsBtc: WebSocket;
     let wsEth: WebSocket;
@@ -72,7 +85,7 @@ export default function Home() {
         if (data.p) setEthPrice(parseFloat(data.p));
       };
     } catch (e) {
-      console.error('WebSocket connection error', e);
+      console.error(e);
     }
     return () => {
       if (wsBtc) wsBtc.close();
@@ -81,7 +94,7 @@ export default function Home() {
   }, []);
 
   const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
+    const next = theme === 'light' ? 'dark' : 'light';
     setTheme(next);
     document.documentElement.setAttribute('data-theme', next);
     if (next === 'light') {
@@ -91,195 +104,198 @@ export default function Home() {
     }
   };
 
-  // Calculator calculations (based on 12-mo average +11.5% net monthly return)
+  // 10-Step Quantitative Pipeline Data
+  const pipelineSteps = [
+    { num: '01', name: 'Market Data', tag: 'INPUT', desc: 'Real-time WebSocket tick streams, orderbook depth, funding rates, and index volatility feeds.' },
+    { num: '02', name: 'Market Regime', tag: 'CLASSIFICATION', desc: 'Multi-factor evaluation: Trend (82), Volatility (91), Liquidity (67), Momentum (78) → Overall 78/100.' },
+    { num: '03', name: 'Volatility Engine', tag: 'GATING', desc: 'Measures ATR ($2,450), NATR (3.8%), IV (58.4%), RV (46.2%), IV Rank (74%) to open/block entry gates.' },
+    { num: '04', name: 'Strategy Engine', tag: 'FIT SCORING', desc: 'Evaluates BTC Short Strangle fit against current regime. Current Strategy Fit Score: 82 / 100 (Favorable).' },
+    { num: '05', name: 'Structure Engine', tag: 'SELECTION', desc: 'Selects optimal 0.15–0.18 Delta strikes ($68k Call / $61k Put), calculates POP, Greeks, and margin requirements.' },
+    { num: '06', name: 'Risk Gate', tag: 'VALIDATION', desc: 'Enforces 40% free cash reserve buffer, max lot caps, portfolio Greeks limits, and drawdown stop gates.' },
+    { num: '07', name: 'Execution', tag: 'ORDER ROUTING', desc: 'Non-custodial REST/WebSocket limit and market order execution via trade-only API keys on Delta Exchange.' },
+    { num: '08', name: 'Defense Engine', tag: 'MONITORING', desc: 'Continuous 5s liquidation & Delta monitoring. Automatically buys protective wings when threatened leg reaches Delta ≥ 0.35.' },
+    { num: '09', name: 'Exit Engine', tag: 'HARVEST', desc: 'Executes profit taking at 50%–80% max credit, time-based expiry closes, or ratchet trailing stop lock-ins.' },
+    { num: '10', name: 'Learning & Journal', tag: 'EXPLAINABILITY', desc: 'Logs trade rationale: Why Entered, Why Blocked, Why Defended, fee audits, and regime performance updates.' },
+  ];
+
+  // Scenario Lab Modelled Calculations
+  const scenarioModel = useMemo(() => {
+    const simulatedSpot = btcPrice * (1 + scenarioBtcShift / 100);
+    const callStrike = 68000;
+    const putStrike = 61000;
+    const maxCredit = 1250;
+    const wingWidth = 2500;
+    
+    // Theta decay factor
+    const decayReward = maxCredit * (scenarioHoursPassed / 24) * 0.70;
+    // Price movement penalty
+    let pricePenalty = 0;
+    if (simulatedSpot > callStrike) pricePenalty = (simulatedSpot - callStrike) * 0.45;
+    if (simulatedSpot < putStrike) pricePenalty = (putStrike - simulatedSpot) * 0.45;
+    // Vega impact
+    const vegaImpact = scenarioIvShift * 18.5;
+
+    const modelledPnl = Math.max(-wingWidth + maxCredit, maxCredit + decayReward - pricePenalty - vegaImpact);
+
+    return {
+      simulatedSpot,
+      modelledPnl,
+      iv: 58.4 + scenarioIvShift
+    };
+  }, [btcPrice, scenarioBtcShift, scenarioIvShift, scenarioHoursPassed]);
+
+  // Profit Calculator Modelled Economics
   const calcGrossMonthly = sliderBalance * 0.145; // ~14.5% gross
   const calcFeesAndGst = sliderBalance * 0.015; // ~1.5% broker taker fees + 18% GST
   const calcNetBeforeShare = calcGrossMonthly - calcFeesAndGst; // ~13.0%
   const calcPerformanceFee = calcNetBeforeShare * 0.30; // 30% performance fee
   const calcClientNetProfit = calcNetBeforeShare - calcPerformanceFee; // ~9.1% client net take-home
-  const calcAnnualCompounded = sliderBalance * 2.274; // 227.4% 12-mo CAGR
 
-  // Strangle Payoff dynamic points
-  const callStrike = 67000;
-  const putStrike = 61500;
-  const premiumCollected = 1200;
-  const wingWidth = 2500;
-  const maxLoss = wingWidth - premiumCollected; // defined risk with protective wings
-
-  const calculatePayoffPnl = (spot: number) => {
-    let pnl = premiumCollected;
-    if (spot > callStrike) {
-      const callLoss = spot - callStrike;
-      pnl -= callLoss;
-    } else if (spot < putStrike) {
-      const putLoss = putStrike - spot;
-      pnl -= putLoss;
+  const faqs = [
+    {
+      q: "How does ProfitPilot execute trades on my account?",
+      a: "ProfitPilot connects to your Delta Exchange India or Global account via trade-only API keys. Funds and collateral remain 100% inside your Delta wallet at all times. Withdrawal permissions are never requested or supported."
+    },
+    {
+      q: "What is the core quantitative strategy?",
+      a: "The primary strategy is short volatility / premium harvesting on Bitcoin daily options, selling Out-of-the-Money (OTM) calls and puts at 0.15–0.18 target Delta. The engine uses quantitative volatility filters (NATR, IV/RV spread) to only enter when edge is statistically favorable."
+    },
+    {
+      q: "How does the Dynamic Defense Engine manage sharp market moves?",
+      a: "If Bitcoin moves aggressively toward a short strike and the threatened leg's Delta breaches 0.35, the Defense Engine triggers within 5 seconds, purchasing an outer protective wing to transform the trade into a risk-defined Iron Condor. This limits tail risk."
+    },
+    {
+      q: "What are 'The Trades We Didn't Take'?",
+      a: "Discipline means avoiding low-probability setups. When implied volatility is cheaper than realized volatility, when orderbook liquidity is thin, or when margin buffers are tight, our gate engines block entries. We publish these avoided trades transparently in the dashboard."
+    },
+    {
+      q: "How does the 30% performance fee with High-Water Mark work?",
+      a: "You start with a 30-Day 100% Free Trial. Afterwards, we charge a 30% performance fee only on net realized profits (after deducting exchange taker fees and 18% GST). If a month ends in a loss, you owe $0/₹0, and the loss is carried forward to offset future gains."
     }
-    // Capped by protective wings at stop level
-    return Math.max(pnl, -maxLoss);
-  };
-
-  const currentPayoffPnl = calculatePayoffPnl(payoffSpot);
+  ];
 
   return (
-    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] transition-colors duration-200 font-sans flex flex-col selection:bg-[#f09455]/30">
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#f59e0b]/20">
       
-      {/* Sticky Header Navigation */}
-      <header className="sticky top-0 z-50 bg-[var(--paper)]/85 backdrop-blur-xl border-b border-[var(--hair)] transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      {/* 1. STICKY HEADER NAVIGATION */}
+      <header className="sticky top-0 z-50 glass-header px-4 sm:px-8 py-3.5 flex items-center justify-between transition-colors">
+        
+        {/* Brand Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform">
+            <Activity className="w-5 h-5 text-white" strokeWidth={2.5} />
+          </div>
+          <div className="flex items-center">
+            <span className="font-bold text-lg tracking-tight text-[var(--ink)]">Profit</span>
+            <span className="font-bold text-lg tracking-tight text-[#d97706]">Pilot</span>
+            <span className="ml-2 text-[10px] font-mono font-bold bg-[var(--orange-tint)] text-[var(--orange)] px-2 py-0.5 rounded-full border border-[var(--orange)]/20">
+              2.0 QUANT
+            </span>
+          </div>
+        </Link>
+
+        {/* Desktop Navigation Links */}
+        <nav className="hidden md:flex items-center gap-7 text-xs font-mono font-bold text-[var(--grey)]">
+          <a href="#pipeline" className="hover:text-[var(--ink)] transition-colors">Engine Pipeline</a>
+          <a href="#regime" className="hover:text-[var(--ink)] transition-colors">Market Regime</a>
+          <a href="#volatility" className="hover:text-[var(--ink)] transition-colors">Volatility</a>
+          <a href="#defense" className="hover:text-[var(--ink)] transition-colors">Dynamic Defense</a>
+          <a href="#scenario" className="hover:text-[var(--ink)] transition-colors">Scenario Lab</a>
+          <a href="#notrade" className="hover:text-[var(--ink)] transition-colors">No-Trade Analytics</a>
+          <a href="#backtest" className="hover:text-[var(--ink)] transition-colors">Backtest</a>
+          <a href="#pricing" className="hover:text-[var(--ink)] transition-colors">Pricing</a>
+        </nav>
+
+        {/* Right Controls */}
+        <div className="flex items-center gap-2.5">
           
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f09455] via-[#e27625] to-[#d9a44e] flex items-center justify-center shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-              <Activity className="w-5 h-5 text-[#241505]" strokeWidth={2.5} />
-            </div>
-            <div className="flex items-center">
-              <span className="font-bold text-lg tracking-tight text-[var(--ink)]">Profit</span>
-              <span className="font-bold text-lg tracking-tight text-[#f09455]">Pilot</span>
-            </div>
+          {/* Currency Toggle */}
+          <div className="bg-[var(--paper-2)] p-0.5 rounded-lg border border-[var(--hair)] flex items-center text-xs font-semibold">
+            <button 
+              onClick={() => setCurrency('INR')}
+              className={`px-2 py-1 rounded transition-all ${currency === 'INR' ? 'bg-[#d97706] text-white shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
+            >
+              ₹ INR
+            </button>
+            <button 
+              onClick={() => setCurrency('USD')}
+              className={`px-2 py-1 rounded transition-all ${currency === 'USD' ? 'bg-[#d97706] text-white shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
+            >
+              $ USD
+            </button>
+          </div>
+
+          {/* Theme Toggle */}
+          <button 
+            onClick={toggleTheme}
+            className="w-8 h-8 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
+            title="Toggle Light/Dark Theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          {/* Auth CTAs */}
+          <Link 
+            href="/login" 
+            className="text-xs font-mono font-bold text-[var(--grey)] hover:text-[var(--ink)] px-2 py-1 hidden sm:block"
+          >
+            Log in
+          </Link>
+          <Link 
+            href="/login" 
+            className="bg-[#d97706] hover:bg-[#b45309] text-white font-mono font-bold text-xs px-3.5 py-2 rounded-xl shadow-sm transition-all active:scale-95"
+          >
+            Start Free Trial &rarr;
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[var(--grey)]">
-            <a href="#backtest" className="hover:text-[var(--ink)] transition-colors">Backtest</a>
-            <a href="#strategy" className="hover:text-[var(--ink)] transition-colors">The Algo</a>
-            <a href="#calculator" className="hover:text-[var(--ink)] transition-colors">Profit Simulator</a>
-            <a href="#how" className="hover:text-[var(--ink)] transition-colors">How It Works</a>
-            <a href="#pricing" className="hover:text-[var(--ink)] transition-colors">Pricing</a>
-            <a href="#faq" className="hover:text-[var(--ink)] transition-colors">FAQ</a>
-          </nav>
-
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            
-            {/* Currency Toggle */}
-            <div className="bg-[var(--paper-2)] p-1 rounded-lg border border-[var(--hair)] flex items-center text-xs font-semibold">
-              <button 
-                onClick={() => setCurrency('INR')}
-                className={`px-2 py-1 rounded transition-all ${currency === 'INR' ? 'bg-[#f09455] text-[#241505] shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
-              >
-                ₹ INR
-              </button>
-              <button 
-                onClick={() => setCurrency('USD')}
-                className={`px-2 py-1 rounded transition-all ${currency === 'USD' ? 'bg-[#f09455] text-[#241505] shadow-sm font-bold' : 'text-[var(--grey)] hover:text-[var(--ink)]'}`}
-              >
-                $ USD
-              </button>
-            </div>
-
-            {/* Theme Toggle */}
-            <button 
-              onClick={toggleTheme}
-              className="w-8 h-8 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
-              title="Toggle Light/Dark Theme"
-            >
-              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            {/* Auth CTA Buttons */}
-            <Link 
-              href="/login" 
-              className="text-sm font-medium text-[var(--grey)] hover:text-[var(--ink)] px-2 py-1 transition-colors hidden sm:block"
-            >
-              Log in
-            </Link>
-            <Link 
-              href="/login" 
-              className="bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-bold text-xs sm:text-sm px-3.5 sm:px-4 py-2 rounded-xl shadow-md hover:brightness-105 active:scale-95 transition-all"
-            >
-              Start Free
-            </Link>
-
-            {/* Mobile Hamburger Button */}
-            <button 
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
-              aria-label="Toggle navigation"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
-          </div>
+          {/* Mobile Hamburger */}
+          <button 
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="md:hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
+            aria-label="Toggle Navigation"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
         </div>
-
-        {/* Mobile Dropdown Drawer */}
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-3 font-medium text-sm">
-            <a 
-              href="#backtest" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              01 &middot; Backtest Results
-            </a>
-            <a 
-              href="#strategy" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              02 &middot; The Algo &amp; Wings
-            </a>
-            <a 
-              href="#calculator" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              03 &middot; Profit Calculator
-            </a>
-            <a 
-              href="#how" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              04 &middot; How It Works
-            </a>
-            <a 
-              href="#pricing" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              05 &middot; Pricing
-            </a>
-            <a 
-              href="#faq" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]"
-            >
-              06 &middot; FAQ
-            </a>
-            <Link 
-              href="/login" 
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-1.5 text-[#f09455] font-bold"
-            >
-              Log in to Dashboard &rarr;
-            </Link>
-          </div>
-        )}
       </header>
 
-      {/* Clean Real-time Crypto Market Marquee Bar */}
+      {/* Mobile Drawer Dropdown */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-3 font-mono text-xs">
+          <a href="#pipeline" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">01 &middot; 10-Step Engine Pipeline</a>
+          <a href="#regime" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">02 &middot; Market Regime Matrix</a>
+          <a href="#volatility" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">03 &middot; Volatility Engine</a>
+          <a href="#defense" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">04 &middot; Dynamic Defense Wings</a>
+          <a href="#scenario" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">05 &middot; Scenario Stress Lab</a>
+          <a href="#notrade" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">06 &middot; No-Trade Analytics</a>
+          <a href="#backtest" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">07 &middot; Backtest Performance</a>
+          <a href="#pricing" onClick={() => setMobileMenuOpen(false)} className="block py-1 text-[var(--ink)] border-b border-[var(--hair)]">08 &middot; Pricing</a>
+          <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[#d97706] font-bold">Log in to Terminal &rarr;</Link>
+        </div>
+      )}
+
+      {/* 2. REAL-TIME MARKET TICKER BAR */}
       <div className="w-full bg-[var(--paper-2)] border-b border-[var(--hair)] py-2 overflow-hidden text-xs font-mono">
         <div className="animate-ticker-marquee flex items-center whitespace-nowrap gap-12 text-[var(--grey)]">
           {Array(8).fill(0).map((_, i) => (
             <div key={i} className="flex items-center gap-8 shrink-0">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="font-bold text-[var(--ink)]">BTC/USDT</span>
-                <span className="text-emerald-400 font-semibold num-tabular">${btcPrice.toFixed(2)}</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-semibold num-tabular">${btcPrice.toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
                 <span className="font-bold text-[var(--ink)]">ETH/USDT</span>
-                <span className="text-blue-400 font-semibold num-tabular">${ethPrice.toFixed(2)}</span>
+                <span className="text-blue-600 dark:text-blue-400 font-semibold num-tabular">${ethPrice.toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[var(--grey)]">SOL/USDT:</span>
-                <span className="text-purple-400 font-semibold num-tabular">${(btcPrice * 0.0022).toFixed(2)}</span>
+                <span className="text-purple-600 dark:text-purple-400 font-semibold num-tabular">${(btcPrice * 0.0022).toFixed(2)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[var(--grey)]">DVOL Index:</span>
-                <span className="text-amber-400 font-semibold num-tabular">54.2%</span>
+                <span className="text-[#d97706] font-semibold num-tabular">54.2%</span>
               </div>
             </div>
           ))}
@@ -288,150 +304,139 @@ export default function Home() {
 
       <main className="flex-1">
         
-        {/* HERO SECTION */}
+        {/* 3. HERO SECTION */}
         <section className="relative overflow-hidden pt-16 pb-20 md:pt-24 md:pb-28">
-          
-          {/* Ambient Glow */}
-          <div className="absolute top-0 right-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-          <div className="absolute top-20 left-10 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
-
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               
-              {/* Hero Left Column */}
-              <div className="lg:col-span-7 space-y-6 text-center lg:text-left">
+              {/* Left Hero Column */}
+              <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
                 
-                {/* Pill Badge */}
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[var(--orange-tint)] border border-[#f09455]/30 text-[#f09455] text-xs font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-[#f09455] animate-pulse" />
-                  Automated BTC Options &middot; Delta Exchange India &amp; Global
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono text-[var(--grey)] shadow-sm">
+                  <span className="w-2 h-2 rounded-full bg-[#d97706]" />
+                  <span>Quantitative Crypto Options Intelligence</span>
                 </div>
 
-                {/* Main Headline */}
-                <h1 className="text-4xl sm:text-6xl font-black tracking-tight leading-[1.1] text-[var(--ink)]">
-                  Sell volatility.<br />
-                  Collect premium.<br />
-                  <span className="bg-gradient-to-r from-[#f09455] via-[#f7b27c] to-[#d9a44e] bg-clip-text text-transparent">
-                    On autopilot.
-                  </span>
+                <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[var(--ink)] font-mono leading-[1.1]">
+                  Quantitative Options Trading. Built Around Risk.
                 </h1>
 
-                {/* Subtitle */}
-                <p className="text-base sm:text-lg text-[var(--grey)] max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                  ProfitPilot runs a disciplined, quantitative options selling engine directly on your Delta Exchange account. Your capital never leaves your custody. We execute non-directional strangles, defend positions with dynamic Iron Condor wings, and enforce strict liquidation buffers.
+                <p className="text-sm sm:text-base text-[var(--grey)] max-w-xl font-mono leading-relaxed mx-auto lg:mx-0">
+                  ProfitPilot continuously evaluates market regime, volatility, option structure and portfolio risk before deciding when to enter, when to defend and when to stay out.
                 </p>
 
-                {/* CTA Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
-                  <Link 
-                    href="/login" 
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-bold text-base shadow-lg shadow-brand-500/20 hover:brightness-105 active:scale-95 transition-all flex items-center justify-center gap-2"
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 justify-center lg:justify-start">
+                  <a 
+                    href="#pipeline" 
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#d97706] hover:bg-[#b45309] text-white font-mono font-bold text-xs sm:text-sm shadow-md transition-all text-center"
                   >
-                    Start 30 Days Free <ArrowRight className="w-4 h-4" />
-                  </Link>
+                    Explore the Engine &rarr;
+                  </a>
                   <a 
                     href="#backtest" 
-                    className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-[var(--card)] border border-[var(--hair-2)] hover:border-[#f09455] text-[var(--ink)] font-semibold text-base transition-all flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[var(--paper-2)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-mono font-bold text-xs sm:text-sm transition-all text-center"
                   >
-                    Explore Backtest Data
+                    View Strategy Backtest
                   </a>
                 </div>
 
-                {/* Trust Micro-Badges */}
-                <div className="pt-6 border-t border-[var(--hair)] grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-[var(--grey)]">
-                  <div className="flex items-center justify-center lg:justify-start gap-2">
-                    <Shield className="w-4 h-4 text-[#f09455] shrink-0" />
-                    <span>Non-Custodial (Trade-Only)</span>
+                <div className="pt-4 border-t border-[var(--hair)] grid grid-cols-3 gap-4 text-center lg:text-left font-mono">
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-[var(--ink)]">227.4%</div>
+                    <div className="text-[10px] text-[var(--grey)] uppercase">Backtest CAGR</div>
                   </div>
-                  <div className="flex items-center justify-center lg:justify-start gap-2">
-                    <Lock className="w-4 h-4 text-[#f09455] shrink-0" />
-                    <span>Dynamic Greek Hedging</span>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-emerald-600">68.3%</div>
+                    <div className="text-[10px] text-[var(--grey)] uppercase">Historical Win Rate</div>
                   </div>
-                  <div className="flex items-center justify-center lg:justify-start gap-2">
-                    <Zap className="w-4 h-4 text-[#f09455] shrink-0" />
-                    <span>24&times;7 Execution Engine</span>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-[#d97706]">36.8%</div>
+                    <div className="text-[10px] text-[var(--grey)] uppercase">Trades Avoided</div>
                   </div>
                 </div>
 
               </div>
 
-              {/* Hero Right Column: Signature Terminal Preview Tile */}
-              <div className="lg:col-span-5">
-                <div className="relative group">
-                  <div className="absolute -inset-1 bg-gradient-to-r from-[#f09455] to-emerald-500 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition duration-500" />
+              {/* Right Hero Column: REALISTIC COMMAND-CENTER HERO DASHBOARD */}
+              <div className="lg:col-span-6">
+                <div className="fintech-card p-5 sm:p-7 space-y-5 shadow-2xl relative">
                   
-                  <div className="relative bg-[var(--card)] border border-[var(--hair-2)] rounded-2xl p-6 shadow-2xl space-y-5">
-                    
-                    {/* Terminal Header */}
-                    <div className="flex items-center justify-between pb-4 border-b border-[var(--hair)]">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span className="text-xs font-bold font-mono tracking-wide text-emerald-400">BTC STRANGLE &middot; LIVE</span>
-                      </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Defined Risk
+                  {/* Top Bar with Labels */}
+                  <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                      <span className="font-mono text-xs font-bold text-[var(--ink)] uppercase">
+                        ProfitPilot Command Center
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono bg-emerald-50 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-bold border border-emerald-200">
+                      LIVE QUANT MODEL
+                    </span>
+                  </div>
+
+                  {/* Top 4 Metrics Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono">
+                    <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                      <span className="text-[9px] text-[var(--grey)] block uppercase">BTC / USD</span>
+                      <span className="text-base font-black text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</span>
+                      <span className="text-[9px] text-emerald-600 block">Live Feed</span>
+                    </div>
+
+                    <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                      <span className="text-[9px] text-[var(--grey)] block uppercase">Market Regime</span>
+                      <span className="text-xs font-bold text-[#d97706] block mt-1">HIGH VOL / BULL</span>
+                      <span className="text-[9px] text-[var(--grey)] block">Score: 78/100</span>
+                    </div>
+
+                    <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                      <span className="text-[9px] text-[var(--grey)] block uppercase">Strategy Fit</span>
+                      <span className="text-base font-black text-[var(--ink)] block">82 <span className="text-xs font-normal text-[var(--grey)]">/100</span></span>
+                      <span className="text-[9px] text-emerald-600 font-bold block">Favorable</span>
+                    </div>
+
+                    <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                      <span className="text-[9px] text-[var(--grey)] block uppercase">Entry Gate</span>
+                      <span className="text-xs font-bold text-emerald-600 block mt-1">APPROVED</span>
+                      <span className="text-[9px] text-[var(--grey)] block">Confidence: HIGH</span>
+                    </div>
+                  </div>
+
+                  {/* Active Structure Preview Card */}
+                  <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)] space-y-3 font-mono text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[var(--ink)]">Active Short Strangle Structure</span>
+                      <span className="text-[10px] bg-[var(--card)] px-2 py-0.5 rounded border border-[var(--hair)] text-[var(--grey)]">
+                        Delta Exchange 1D Expiry
                       </span>
                     </div>
 
-                    {/* Terminal Unrealized P&L */}
-                    <div>
-                      <div className="text-[11px] uppercase tracking-wider text-[var(--grey)] font-mono">Unrealized Net P&amp;L</div>
-                      <div className="flex items-baseline justify-between mt-1">
-                        <div className="text-3xl sm:text-4xl font-mono font-bold text-emerald-400 num-tabular">
-                          +{fmt(14.85, true)}
-                        </div>
-                        <div className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">
-                          +74.2% of target
-                        </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                        <div className="text-[10px] text-rose-500 font-bold">SHORT CALL</div>
+                        <div className="text-sm font-black text-[var(--ink)]">$68,000 Strike</div>
+                        <div className="text-[10px] text-[var(--grey)]">&Delta; 0.14 &middot; Theta: +$42.50</div>
+                      </div>
+                      <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
+                        <div className="text-[10px] text-emerald-600 font-bold">SHORT PUT</div>
+                        <div className="text-sm font-black text-[var(--ink)]">$61,000 Strike</div>
+                        <div className="text-[10px] text-[var(--grey)]">&Delta; -0.13 &middot; Theta: +$38.80</div>
                       </div>
                     </div>
 
-                    {/* Sparkline Visual SVG */}
-                    <div className="h-16 w-full pt-2">
-                      <svg className="w-full h-full" viewBox="0 0 300 60" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="heroSpark" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.0" />
-                          </linearGradient>
-                        </defs>
-                        <path d="M0,50 Q40,48 80,38 T160,25 T240,15 L300,8 L300,60 L0,60 Z" fill="url(#heroSpark)" />
-                        <path d="M0,50 Q40,48 80,38 T160,25 T240,15 L300,8" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
-                      </svg>
+                    <div className="flex items-center justify-between pt-1 text-[11px] border-t border-[var(--hair)]">
+                      <span className="text-[var(--grey)]">Defense Wings State: <strong className="text-emerald-600">ARMED (&Delta; &ge; 0.35)</strong></span>
+                      <span className="text-[var(--grey)]">Buffer: <strong className="text-[var(--ink)]">2.4&sigma; standard dev</strong></span>
                     </div>
-
-                    {/* Active Legs Row */}
-                    <div className="space-y-2 pt-2">
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">SELL</span>
-                          <span className="text-[var(--ink)] font-semibold">C-BTC-67000</span>
-                        </div>
-                        <div className="text-emerald-400 font-bold">+{fmt(7.20, true)}</div>
-                      </div>
-
-                      <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono">
-                        <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[10px]">SELL</span>
-                          <span className="text-[var(--ink)] font-semibold">P-BTC-61500</span>
-                        </div>
-                        <div className="text-emerald-400 font-bold">+{fmt(7.65, true)}</div>
-                      </div>
-                    </div>
-
-                    {/* Footer Metrics */}
-                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[var(--hair)] text-xs">
-                      <div className="bg-[var(--paper-2)] p-2.5 rounded-xl border border-[var(--hair)]">
-                        <span className="block text-[10px] uppercase font-mono text-[var(--grey)]">Premium Collected</span>
-                        <span className="font-mono font-bold text-[var(--ink)]">{fmt(20.00)}</span>
-                      </div>
-                      <div className="bg-[var(--paper-2)] p-2.5 rounded-xl border border-[var(--hair)] text-right">
-                        <span className="block text-[10px] uppercase font-mono text-[var(--grey)]">Max Risk at SL</span>
-                        <span className="font-mono font-bold text-rose-400">-{fmt(25.00)}</span>
-                      </div>
-                    </div>
-
                   </div>
+
+                  {/* Honest Data Source Separation Note */}
+                  <div className="flex items-center justify-between text-[10px] font-mono text-[var(--faint)]">
+                    <span>Data: Binance WS + Modelled Greeks</span>
+                    <Link href="/dashboard" className="text-[#d97706] hover:underline font-bold">
+                      Open Live Dashboard &rarr;
+                    </Link>
+                  </div>
+
                 </div>
               </div>
 
@@ -439,712 +444,554 @@ export default function Home() {
           </div>
         </section>
 
-        {/* STATS BAND (Social Proof) */}
-        <section className="bg-[var(--paper-2)] border-y border-[var(--hair)] py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-              
-              <div className="space-y-1">
-                <div className="text-3xl sm:text-4xl font-black font-mono text-[var(--ink)] num-tabular">
-                  240<span className="text-[#f09455]">+</span>
-                </div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-[var(--grey)]">Active Portfolios</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-3xl sm:text-4xl font-black font-mono text-[#f09455] num-tabular">
-                  {currency === 'INR' ? '₹4.2 Cr+' : '$510,000+'}
-                </div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-[var(--grey)]">Premium Harvested</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-3xl sm:text-4xl font-black font-mono text-emerald-400 num-tabular">
-                  99.7%
-                </div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-[var(--grey)]">Execution Uptime</div>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-3xl sm:text-4xl font-black font-mono text-[var(--ink)] num-tabular">
-                  3 mins
-                </div>
-                <div className="text-xs uppercase tracking-wider font-semibold text-[var(--grey)]">Average Setup Time</div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* 01 · BACKTEST SECTION */}
-        <section id="backtest" className="py-20 md:py-28 relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* 4. THE 10-STEP QUANTITATIVE ENGINE PIPELINE (SIGNATURE VISUAL) */}
+        <section id="pipeline" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">01</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Quantitative Proof</span>
-            </div>
-
-            <div className="max-w-3xl space-y-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)]">
-                Twelve months of systematic premium selling.
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                Proprietary Architecture
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                The 10-Step Quantitative Pipeline
               </h2>
-              <p className="text-base sm:text-lg text-[var(--grey)] leading-relaxed">
-                The exact rule set that runs live — delta-targeted strikes, ratchet trailing profit triggers, wing adjustments, and fee + 18% GST deductions — replayed on 12 months of high-resolution Delta 1-minute orderbook marks.
+              <p className="text-xs text-[var(--grey)] font-mono">
+                Click any engine phase below to inspect the mathematical models, risk gates, and decision trees.
               </p>
             </div>
 
-            {/* Metric KPI Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
-              
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-[#f09455] num-tabular">227.4%</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">CAGR (Net of Fees)</div>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 num-tabular">68.3%</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">Win Rate (Round-Trips)</div>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 num-tabular">10 / 13</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">Green Months</div>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-[var(--ink)] num-tabular">1.93</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">Sharpe Ratio</div>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 num-tabular">+11.5%</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">Avg Monthly Return</div>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-5 rounded-2xl">
-                <div className="text-2xl sm:text-3xl font-black font-mono text-[var(--ink)] num-tabular">565</div>
-                <div className="text-xs text-[var(--grey)] font-medium mt-1">Trades Audited</div>
-              </div>
-
-            </div>
-
-            {/* Backtest Equity Curve Box */}
-            <div className="bg-[var(--card)] border border-[var(--hair)] rounded-3xl p-6 sm:p-8 shadow-xl">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[var(--hair)]">
-                <div>
-                  <h3 className="font-bold text-lg text-[var(--ink)]">
-                    Compounded Equity Curve — {fmt(5000)} → {fmt(16532)} Net
-                  </h3>
-                  <p className="text-xs text-[var(--grey)] mt-0.5">Aug 2025 → Aug 2026 · Realized Net P&amp;L after exchange taker fees &amp; GST</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-[#f09455]" />
-                  <span className="text-xs font-mono font-semibold text-[var(--grey)]">Net Strategy Balance</span>
-                </div>
-              </div>
-
-              {/* Responsive SVG Chart */}
-              <div className="overflow-x-auto pt-6">
-                <div className="min-w-[720px] h-64">
-                  <svg className="w-full h-full" viewBox="0 0 900 240" preserveAspectRatio="none">
-                    <defs>
-                      <linearGradient id="backtestGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#f09455" stopOpacity="0.25" />
-                        <stop offset="100%" stopColor="#f09455" stopOpacity="0.0" />
-                      </linearGradient>
-                    </defs>
-
-                    {/* Gridlines */}
-                    <line x1="60" y1="40" x2="880" y2="40" stroke="var(--hair)" strokeDasharray="3 3" />
-                    <line x1="60" y1="100" x2="880" y2="100" stroke="var(--hair)" strokeDasharray="3 3" />
-                    <line x1="60" y1="160" x2="880" y2="160" stroke="var(--hair)" strokeDasharray="3 3" />
-                    <line x1="60" y1="210" x2="880" y2="210" stroke="var(--hair-2)" />
-
-                    {/* Y Labels */}
-                    <text x="50" y="45" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">{fmt(20000)}</text>
-                    <text x="50" y="105" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">{fmt(15000)}</text>
-                    <text x="50" y="165" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">{fmt(10000)}</text>
-                    <text x="50" y="214" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">{fmt(5000)}</text>
-
-                    {/* Area under curve */}
-                    <path 
-                      d="M70,210 L130,205 L195,208 L260,195 L320,165 L380,140 L450,135 L510,120 L570,85 L635,125 L700,105 L760,95 L820,80 L880,72 L880,210 L70,210 Z" 
-                      fill="url(#backtestGradient)" 
-                    />
-
-                    {/* Main Line */}
-                    <path 
-                      d="M70,210 L130,205 L195,208 L260,195 L320,165 L380,140 L450,135 L510,120 L570,85 L635,125 L700,105 L760,95 L820,80 L880,72" 
-                      fill="none" 
-                      stroke="#f09455" 
-                      strokeWidth="3" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                    />
-
-                    {/* Data Points */}
-                    <circle cx="70" cy="210" r="4" fill="#f09455" />
-                    <circle cx="320" cy="165" r="3.5" fill="#f09455" />
-                    <circle cx="570" cy="85" r="3.5" fill="#f09455" />
-                    <circle cx="880" cy="72" r="5" fill="#10b981" />
-
-                    {/* Final value badge */}
-                    <text x="870" y="60" fill="#10b981" fontSize="13" fontWeight="bold" textAnchor="end" fontFamily="monospace">
-                      {fmt(16532)} Net
-                    </text>
-
-                    {/* Month X Labels */}
-                    <text x="70" y="232" fill="var(--grey)" fontSize="11" fontFamily="monospace">Aug &apos;25</text>
-                    <text x="320" y="232" fill="var(--grey)" fontSize="11" fontFamily="monospace">Nov &apos;25</text>
-                    <text x="570" y="232" fill="var(--grey)" fontSize="11" fontFamily="monospace">Feb &apos;26</text>
-                    <text x="880" y="232" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">Aug &apos;26</text>
-                  </svg>
-                </div>
-              </div>
-
-              <div className="text-xs text-[var(--grey)] mt-4 text-center">
-                *Backtested across 368 days of live 1-minute delta exchange candlestick and option mark feeds. Past performance does not guarantee future results.
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* 02 · THE ALGO & DYNAMIC WING SIMULATOR */}
-        <section id="strategy" className="py-20 md:py-28 bg-[var(--paper-2)] border-y border-[var(--hair)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">02</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Algorithmic Mechanics</span>
-            </div>
-
-            <div className="max-w-3xl space-y-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)]">
-                A disciplined, risk-first machine.
-              </h2>
-              <p className="text-base sm:text-lg text-[var(--grey)] leading-relaxed">
-                Most bots blindly place grid orders and suffer catastrophic liquidations in strong trends. ProfitPilot actively evaluates Option Greeks, adjusts short deltas, and enforces defined-risk Iron Condor conversions.
-              </p>
-            </div>
-
-            {/* 3 Pillars */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-brand-500/10 flex items-center justify-center text-[#f09455]">
-                  <Cpu className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Rules, Not Emotions</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  The algorithm calculates Volatility Regimes, NATR, and Efficiency Ratios before executing. It avoids selling into high-momentum breakouts and enforces cool-down buffers.
-                </p>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-                  <Shield className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Dynamic Wing Adjustments</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  If the underlying market trends aggressively towards a short strike (Delta &ge; 0.35), the engine automatically buys protective wings, mathematically capping risk.
-                </p>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Ratchet Trailing Stop</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  As theta decay accumulates and profit hits 30%+, the engine activates trailing stop logic. It locks in peak unrealized gains rather than letting winners turn into losers.
-                </p>
-              </div>
-
-            </div>
-
-            {/* Interactive Payoff Sandbox */}
-            <div className="bg-[var(--card)] border border-[var(--hair)] rounded-3xl p-6 sm:p-8 shadow-xl space-y-6">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--hair)]">
-                <div>
-                  <h3 className="font-bold text-lg text-[var(--ink)] flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-[#f09455]" />
-                    Interactive Strategy Payoff &amp; Wing Simulator
-                  </h3>
-                  <p className="text-xs text-[var(--grey)]">Drag the simulated BTC price slider below to observe how the strategy defends capital at expiry.</p>
-                </div>
-
-                <div className="bg-[var(--paper-2)] px-4 py-2 rounded-xl border border-[var(--hair)] font-mono text-right">
-                  <span className="text-[10px] uppercase text-[var(--grey)] block">Simulated Expiry P&amp;L</span>
-                  <span className={`text-base font-bold num-tabular ${currentPayoffPnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {currentPayoffPnl >= 0 ? '+' : ''}{fmt(currentPayoffPnl, true)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Price Slider Control */}
-              <div className="space-y-2 bg-[var(--paper-2)] p-4 rounded-2xl border border-[var(--hair)]">
-                <div className="flex justify-between text-xs font-mono text-[var(--grey)]">
-                  <span>Downside Breakeven: ${putStrike - premiumCollected}</span>
-                  <span className="text-[var(--ink)] font-bold">Simulated BTC Spot: ${payoffSpot.toLocaleString()}</span>
-                  <span>Upside Breakeven: ${callStrike + premiumCollected}</span>
-                </div>
-                <input 
-                  type="range" 
-                  min={56000} 
-                  max={72000} 
-                  step={100}
-                  value={payoffSpot}
-                  onChange={(e) => setPayoffSpot(parseFloat(e.target.value))}
-                  className="w-full h-2 bg-[var(--paper)] rounded-lg appearance-none cursor-pointer"
-                />
-                <div className="flex justify-between text-[10px] text-[var(--grey)] font-mono">
-                  <span>$56,000 (Bear Extreme)</span>
-                  <span>$64,250 (Center ATM)</span>
-                  <span>$72,000 (Bull Extreme)</span>
-                </div>
-              </div>
-
-              {/* Interactive SVG Payoff Graphic */}
-              <div className="h-56 w-full pt-2">
-                <svg className="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
-                  
-                  {/* Zero Line */}
-                  <line x1="50" y1="100" x2="750" y2="100" stroke="var(--hair-2)" strokeWidth="1.5" />
-                  <text x="45" y="104" fill="var(--grey)" fontSize="11" textAnchor="end" fontFamily="monospace">$0</text>
-
-                  {/* Max profit / Max loss rails */}
-                  <line x1="50" y1="40" x2="750" y2="40" stroke="var(--hair)" strokeDasharray="2 4" />
-                  <text x="45" y="44" fill="#10b981" fontSize="10" textAnchor="end" fontFamily="monospace">+{fmt(premiumCollected)}</text>
-                  
-                  <line x1="50" y1="160" x2="750" y2="160" stroke="var(--hair)" strokeDasharray="2 4" />
-                  <text x="45" y="164" fill="#ef4444" fontSize="10" textAnchor="end" fontFamily="monospace">-{fmt(maxLoss)}</text>
-
-                  {/* Strangle Payoff Shape with Wing Flattening */}
-                  {/* Put Wing flat -> Angle -> Flat Plateau -> Angle -> Call Wing flat */}
-                  <path 
-                    d="M50,160 L180,160 L280,40 L520,40 L620,160 L750,160" 
-                    fill="none" 
-                    stroke="#f09455" 
-                    strokeWidth="3.5" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                  />
-
-                  {/* Profit Green Fill Area */}
-                  <polygon 
-                    points="230,100 280,40 520,40 570,100" 
-                    fill="#10b981" 
-                    fillOpacity="0.15" 
-                  />
-
-                  {/* Loss Red Fill Area */}
-                  <polygon 
-                    points="50,100 50,160 180,160 230,100" 
-                    fill="#ef4444" 
-                    fillOpacity="0.12" 
-                  />
-                  <polygon 
-                    points="570,100 620,160 750,160 750,100" 
-                    fill="#ef4444" 
-                    fillOpacity="0.12" 
-                  />
-
-                  {/* Strike Labels */}
-                  <text x="280" y="30" fill="#10b981" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">Put Strike ($61.5k)</text>
-                  <text x="520" y="30" fill="#10b981" fontSize="11" fontWeight="bold" textAnchor="middle" fontFamily="monospace">Call Strike ($67k)</text>
-                  
-                  <text x="180" y="180" fill="#ef4444" fontSize="10" textAnchor="middle" fontFamily="monospace">Put Wing Cap</text>
-                  <text x="620" y="180" fill="#ef4444" fontSize="10" textAnchor="middle" fontFamily="monospace">Call Wing Cap</text>
-
-                  {/* Current Spot Marker Indicator */}
-                  {(() => {
-                    const spotRatio = (payoffSpot - 56000) / (72000 - 56000);
-                    const markerX = 50 + spotRatio * 700;
-                    let markerY = 40;
-                    if (payoffSpot < 61500) {
-                      const lossDist = 61500 - payoffSpot;
-                      markerY = Math.min(40 + (lossDist / 2500) * 120, 160);
-                    } else if (payoffSpot > 67000) {
-                      const lossDist = payoffSpot - 67000;
-                      markerY = Math.min(40 + (lossDist / 2500) * 120, 160);
-                    }
-                    return (
-                      <g>
-                        <line x1={markerX} y1="20" x2={markerX} y2="190" stroke="#f09455" strokeWidth="1.5" strokeDasharray="3 3" />
-                        <circle cx={markerX} cy={markerY} r="7" fill="#f09455" stroke="var(--card)" strokeWidth="2" />
-                      </g>
-                    );
-                  })()}
-
-                </svg>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[var(--grey)] pt-2 border-t border-[var(--hair)]">
-                <div className="flex items-center gap-4">
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500/40" /> Maximum Profit Zone</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-rose-500/40" /> Wing Floored Loss</span>
-                  <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-[#f09455]" /> Current Spot Marker</span>
-                </div>
-                <span className="text-[11px] text-[var(--grey)]">Protective wings dynamically purchased on Delta breaches &ge; 0.35 Delta.</span>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* 03 · INTERACTIVE RETURNS & FEE SIMULATOR */}
-        <section id="calculator" className="py-20 md:py-28">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">03</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Transparent Economics</span>
-            </div>
-
-            <div className="max-w-3xl space-y-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)]">
-                Live Returns &amp; Profit Calculator.
-              </h2>
-              <p className="text-base sm:text-lg text-[var(--grey)] leading-relaxed">
-                We believe in 100% financial transparency. See exactly how historical performance translates to your specific Delta Exchange collateral, after accounting for all broker taker fees, 18% GST, and our 30% performance fee.
-              </p>
-            </div>
-
-            {/* Calculator Card */}
-            <div className="bg-[var(--card)] border border-[var(--hair)] rounded-3xl p-6 sm:p-10 shadow-2xl">
-              
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-                
-                {/* Left: Sliders & Controls */}
-                <div className="lg:col-span-6 space-y-6">
-                  
-                  <div>
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-[var(--grey)]">
-                        Your Delta Exchange Wallet Balance
-                      </label>
-                      <span className="font-mono text-xl font-bold text-[#f09455] bg-[var(--paper-2)] px-3 py-1 rounded-xl border border-[var(--hair)]">
-                        {fmt(sliderBalance)}
-                      </span>
-                    </div>
-                    
-                    <input 
-                      type="range" 
-                      min={500} 
-                      max={50000} 
-                      step={500}
-                      value={sliderBalance}
-                      onChange={(e) => setSliderBalance(parseFloat(e.target.value))}
-                      className="w-full h-3 bg-[var(--paper-2)] rounded-lg appearance-none cursor-pointer"
-                    />
-
-                    <div className="flex justify-between text-xs text-[var(--grey)] font-mono mt-2">
-                      <span>{fmt(500)} (Minimum)</span>
-                      <span>{fmt(10000)}</span>
-                      <span>{fmt(50000)} (Institutional)</span>
-                    </div>
-                  </div>
-
-                  {/* Fee Breakdown Stack */}
-                  <div className="space-y-3 pt-4 border-t border-[var(--hair)]">
-                    
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-[var(--grey)]">Projected Gross Monthly Return (~14.5%):</span>
-                      <span className="font-mono font-bold text-emerald-400 num-tabular">+{fmt(calcGrossMonthly)}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-[var(--grey)]">Estimated Delta Taker Fees + 18% GST (~1.5%):</span>
-                      <span className="font-mono font-medium text-rose-400 num-tabular">-{fmt(calcFeesAndGst)}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-[var(--grey)]">ProfitPilot 30% Performance Fee (Post-Trial):</span>
-                      <span className="font-mono font-medium text-[#f09455] num-tabular">-{fmt(calcPerformanceFee)}</span>
-                    </div>
-
-                    <div className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] text-xs text-[var(--grey)]">
-                      <span className="font-bold text-[var(--ink)]">High-Water Mark Protection:</span> In losing periods, you pay ₹0 / $0, and losses carry forward so you are never billed twice for the same equity milestone.
-                    </div>
-
-                  </div>
-
-                </div>
-
-                {/* Right: Net Take-Home Output Box */}
-                <div className="lg:col-span-6 bg-gradient-to-br from-[var(--paper-2)] to-[var(--card)] border border-[var(--hair-2)] rounded-2xl p-6 sm:p-8 space-y-6">
-                  
-                  <div>
-                    <div className="text-xs uppercase font-mono tracking-wider text-[var(--grey)]">Your Estimated Net Monthly Take-Home</div>
-                    <div className="text-3xl sm:text-5xl font-black font-mono text-emerald-400 mt-2 num-tabular">
-                      +{fmt(calcClientNetProfit)} <span className="text-sm font-sans font-medium text-[var(--grey)]">/ month</span>
-                    </div>
-                    <div className="text-xs text-[var(--grey)] mt-1">
-                      Pure net profit in your Delta account after ALL fees and revenue share.
-                    </div>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
-                    <div className="text-xs font-bold text-emerald-400 uppercase tracking-wider font-mono">12-Month Net Compounded Projection</div>
-                    <div className="text-xl sm:text-2xl font-mono font-black text-[var(--ink)]">
-                      {fmt(calcAnnualCompounded)} Net Portfolio
-                    </div>
-                    <div className="text-xs text-[var(--grey)]">
-                      Based on audited +227.4% 12-month CAGR backtest data.
-                    </div>
-                  </div>
-
-                  <Link 
-                    href="/login"
-                    className="w-full py-4 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-black text-center block shadow-lg hover:brightness-105 transition-all text-sm"
-                  >
-                    Start 30-Day Free Trial on Delta →
-                  </Link>
-
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* 04 · HOW IT WORKS */}
-        <section id="how" className="py-20 md:py-28 bg-[var(--paper-2)] border-y border-[var(--hair)]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">04</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Setup Process</span>
-            </div>
-
-            <div className="max-w-3xl space-y-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)]">
-                Live in 4 simple steps.
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3 relative">
-                <div className="text-xs font-black font-mono text-[#f09455] bg-brand-500/10 w-8 h-8 rounded-lg flex items-center justify-center border border-brand-500/20">01</div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Start Free</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  Sign up with email or Google. No credit card required. Your first 30 days are 100% free.
-                </p>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3 relative">
-                <div className="text-xs font-black font-mono text-[#f09455] bg-brand-500/10 w-8 h-8 rounded-lg flex items-center justify-center border border-brand-500/20">02</div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Connect Delta API</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  Generate a Trade-Only API Key on Delta Exchange India or Global. Whitelist our execution IP with 1 click.
-                </p>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3 relative">
-                <div className="text-xs font-black font-mono text-[#f09455] bg-brand-500/10 w-8 h-8 rounded-lg flex items-center justify-center border border-brand-500/20">03</div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Algo Executes 24/7</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  The engine identifies optimal OTM strikes, enters strangles, monitors Greeks, and dynamically buys wings.
-                </p>
-              </div>
-
-              <div className="bg-[var(--card)] border border-[var(--hair)] p-6 rounded-2xl space-y-3 relative">
-                <div className="text-xs font-black font-mono text-[#f09455] bg-brand-500/10 w-8 h-8 rounded-lg flex items-center justify-center border border-brand-500/20">04</div>
-                <h3 className="text-lg font-bold text-[var(--ink)]">Monitor Live P&amp;L</h3>
-                <p className="text-sm text-[var(--grey)] leading-relaxed">
-                  Watch live mark P&amp;L, analyze trade fills, or pause entries and trigger manual kill switches at any time.
-                </p>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* 05 · PRICING SECTION */}
-        <section id="pricing" className="py-20 md:py-28">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">05</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Simple Pricing</span>
-            </div>
-
-            <div className="max-w-3xl space-y-4 mb-12">
-              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)]">
-                Zero upfront fees. We only win when you win.
-              </h2>
-              <p className="text-base sm:text-lg text-[var(--grey)] leading-relaxed">
-                No monthly subscriptions, no setup charges, and no hidden spreads.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl">
-              
-              {/* Card 1: 30 Days Free */}
-              <div className="bg-gradient-to-br from-[var(--card)] to-[var(--paper-2)] border-2 border-[#f09455]/50 rounded-3xl p-8 shadow-xl relative overflow-hidden flex flex-col justify-between">
-                <div className="absolute top-0 right-0 bg-[#f09455] text-[#241505] text-[11px] font-black uppercase px-4 py-1 rounded-bl-xl tracking-wider">
-                  Featured
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-xs font-mono font-bold uppercase text-[#f09455]">First 30 Days</span>
-                    <div className="text-4xl sm:text-5xl font-black font-mono text-[var(--ink)] mt-2">
-                      {currency === 'INR' ? '₹0' : '$0'}
-                    </div>
-                    <p className="text-sm text-[var(--grey)] mt-2">
-                      Full access to the institutional trading engine. All profits made during your first 30 days are 100% yours to keep.
-                    </p>
-                  </div>
-
-                  <ul className="space-y-3 text-sm text-[var(--ink)]">
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#f09455] shrink-0" />
-                      <span>Live WebSocket mark P&amp;L dashboard</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#f09455] shrink-0" />
-                      <span>Automated Iron Condor wing defense</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#f09455] shrink-0" />
-                      <span>One-click emergency Kill Switch</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#f09455] shrink-0" />
-                      <span>Continuous liquidation buffer guard</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="pt-8">
-                  <Link 
-                    href="/login" 
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-b from-[#f7b27c] to-[#f09455] text-[#241505] font-bold text-center block shadow-md hover:brightness-105 transition-all text-sm"
-                  >
-                    Start Free Trial (No Card Needed)
-                  </Link>
-                </div>
-              </div>
-
-              {/* Card 2: After 30 Days */}
-              <div className="bg-[var(--card)] border border-[var(--hair)] rounded-3xl p-8 shadow-xl flex flex-col justify-between">
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-xs font-mono font-bold uppercase text-[var(--grey)]">Post 30-Day Period</span>
-                    <div className="text-3xl sm:text-4xl font-black tracking-tight text-[var(--ink)] mt-2">
-                      30% Profit Share
-                    </div>
-                    <p className="text-sm text-[var(--grey)] mt-2">
-                      Performance fee billed strictly on realized net profits at the end of rolling 30-day billing cycles.
-                    </p>
-                  </div>
-
-                  <ul className="space-y-3 text-sm text-[var(--ink)]">
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span><strong>High-Water Mark protection:</strong> No double-charging</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Losing cycles carry forward at ₹0 invoice</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>No long-term commitments &mdash; pause anytime</span>
-                    </li>
-                    <li className="flex items-center gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>Priority WhatsApp &amp; Email support</span>
-                    </li>
-                  </ul>
-                </div>
-
-                <div className="pt-8">
-                  <Link 
-                    href="/login" 
-                    className="w-full py-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair-2)] hover:border-[#f09455] text-[var(--ink)] font-bold text-center block transition-all text-sm"
-                  >
-                    Connect Delta Account
-                  </Link>
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        {/* 06 · FAQ SECTION */}
-        <section id="faq" className="py-20 md:py-28 bg-[var(--paper-2)] border-t border-[var(--hair)]">
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[#f09455] font-black font-mono text-sm">06</span>
-              <span className="w-6 h-[1px] bg-[#f09455]/50" />
-              <span className="text-xs font-bold uppercase tracking-widest text-[#f09455]">Frequently Asked Questions</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-[var(--ink)] mb-10">
-              Questions, answered.
-            </h2>
-
-            <div className="space-y-4">
-              
-              {[
-                {
-                  q: "Do I need to transfer funds or crypto to ProfitPilot?",
-                  a: "No. You keep 100% custody of your funds in your own Delta Exchange account. You only generate an API key with 'Trade' permissions and add our Oracle execution IP (144.24.131.121) to your whitelist. We cannot withdraw your capital under any circumstance."
-                },
-                {
-                  q: "How does the Dynamic Wing (Iron Condor) adjustment protect my account?",
-                  a: "When trading naked strangles, a violent market breakout increases the delta of the threatened leg. If Delta breaches 0.35, our bot buys OTM wings to transform the trade into an Iron Condor, capping your maximum loss and protecting your collateral."
-                },
-                {
-                  q: "How does the High-Water Mark profit share work?",
-                  a: "At the end of every 30 days, we calculate your total net realized profit. If positive, we invoice 30%. If a cycle ends in a net loss, you owe ₹0 / $0, and the loss carries forward so you only ever pay fees when new all-time profit highs are achieved."
-                },
-                {
-                  q: "Can I manually close a trade or pause the bot?",
-                  a: "Yes. In your dashboard, every active position features a 1-click Emergency KILL button that immediately sends market close orders. You can also toggle 'Pause Entries' anytime to prevent the bot from opening new positions."
-                },
-                {
-                  q: "Which exchanges are supported?",
-                  a: "We currently support Delta Exchange India (for INR deposits, zero TDS, and domestic bank transfers) and Delta Exchange Global (USDT)."
-                }
-              ].map((faq, idx) => (
-                <div 
-                  key={idx} 
-                  className="bg-[var(--card)] border border-[var(--hair)] rounded-2xl overflow-hidden transition-colors"
+            {/* Step Navigation Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-10 gap-2">
+              {pipelineSteps.map((step, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActivePipelineStep(idx)}
+                  className={`p-3 rounded-xl border text-left font-mono text-xs transition-all ${activePipelineStep === idx ? 'bg-[#d97706] text-white border-[#d97706] shadow-md font-bold' : 'bg-[var(--card)] border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]'}`}
                 >
-                  <button 
-                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                    className="w-full p-6 text-left font-bold text-base text-[var(--ink)] flex items-center justify-between gap-4"
+                  <div className="text-[10px] opacity-80">{step.num}</div>
+                  <div className="text-[11px] font-bold truncate mt-0.5">{step.name}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Active Pipeline Card */}
+            <div className="fintech-card p-6 sm:p-8 space-y-4 animate-in fade-in duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--hair)] pb-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-lg bg-[var(--orange-tint)] text-[#d97706] font-mono font-bold text-xs flex items-center justify-center border border-[#d97706]/20">
+                    {pipelineSteps[activePipelineStep].num}
+                  </span>
+                  <h3 className="text-lg font-bold font-mono text-[var(--ink)]">
+                    Phase {pipelineSteps[activePipelineStep].num} &middot; {pipelineSteps[activePipelineStep].name}
+                  </h3>
+                </div>
+                <span className="px-2.5 py-1 rounded bg-[var(--paper-2)] text-[var(--grey)] border border-[var(--hair)] text-[10px] font-mono font-bold">
+                  {pipelineSteps[activePipelineStep].tag}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-[var(--ink)] font-mono leading-relaxed">
+                {pipelineSteps[activePipelineStep].desc}
+              </p>
+            </div>
+
+          </div>
+        </section>
+
+        {/* 5. 01 MARKET REGIME & VOLATILITY ENGINES */}
+        <section id="regime" className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              
+              {/* Regime Section Left */}
+              <div className="space-y-4">
+                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                  01 &middot; Market Regime Engine
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                  Observe the market. Understand the regime.
+                </h2>
+                <p className="text-xs sm:text-sm text-[var(--grey)] font-mono leading-relaxed">
+                  Before a single strike is selected, ProfitPilot calculates multi-factor trend strength, realized volatility expansion, and orderbook depth to classify market structure into discrete risk regimes.
+                </p>
+                <div className="space-y-2 font-mono text-xs text-[var(--grey)] pt-2">
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Trend, Range, and Momentum Matrix</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Orderbook Liquidity and Bid-Ask Spread Filters</div>
+                  <div className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Options Surface Gamma and Open Interest Profiling</div>
+                </div>
+              </div>
+
+              {/* Regime Matrix Card Right */}
+              <div className="fintech-card p-6 space-y-4">
+                <div className="flex justify-between items-center border-b border-[var(--hair)] pb-3 font-mono text-xs">
+                  <span className="font-bold text-[var(--ink)]">Quantitative Factor Scores</span>
+                  <span className="text-[#d97706] font-bold">Overall Score: 78 / 100</span>
+                </div>
+
+                <div className="space-y-3 font-mono text-xs">
+                  {[
+                    { name: 'Trend Momentum (ADX / SMA)', score: 82 },
+                    { name: 'Volatility Expansion (IV / RV Spread)', score: 91 },
+                    { name: 'Orderbook Liquidity & Depth', score: 67 },
+                    { name: 'Short-Term Price Acceleration', score: 78 },
+                    { name: 'Options Positioning & Gamma Cushion', score: 84 },
+                  ].map((f, i) => (
+                    <div key={i} className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-[var(--grey)]">{f.name}</span>
+                        <span className="font-bold text-[var(--ink)]">{f.score}/100</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[var(--hair)] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#d97706]" style={{ width: `${f.score}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Volatility Engine Section (02) */}
+            <div id="volatility" className="pt-12 border-t border-[var(--hair)] grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              <div className="lg:col-span-5 space-y-4">
+                <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                  02 &middot; Volatility Engine &amp; Entry Gates
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black font-mono text-[var(--ink)] tracking-tight">
+                  Discipline means gating entry when conditions turn hostile.
+                </h2>
+                <p className="text-xs text-[var(--grey)] font-mono leading-relaxed">
+                  The Volatility Engine tracks ATR, Normalized ATR (NATR), IV Rank, and the IV/RV spread. If realized volatility is accelerating faster than option premiums reward, the Entry Gate automatically locks to <strong>BLOCKED</strong>.
+                </p>
+              </div>
+
+              <div className="lg:col-span-7 fintech-card p-6 space-y-4">
+                <div className="grid grid-cols-3 gap-3 font-mono text-center">
+                  <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                    <span className="text-[10px] text-[var(--grey)] block uppercase">NATR Level</span>
+                    <span className="text-xl font-black text-[var(--ink)] mt-1 block">3.82%</span>
+                    <span className="text-[9px] text-emerald-600">Threshold &lt; 4.5%</span>
+                  </div>
+                  <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                    <span className="text-[10px] text-[var(--grey)] block uppercase">IV / RV Spread</span>
+                    <span className="text-xl font-black text-emerald-600 mt-1 block">+12.2%</span>
+                    <span className="text-[9px] text-emerald-600 font-bold">Premium Rich</span>
+                  </div>
+                  <div className="bg-[var(--paper-2)] p-3 rounded-xl border border-[var(--hair)]">
+                    <span className="text-[10px] text-[var(--grey)] block uppercase">Entry Gate Status</span>
+                    <span className="text-sm font-bold text-emerald-600 mt-2 block">● OPEN</span>
+                    <span className="text-[9px] text-[var(--grey)]">Confidence: HIGH</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* 6. DYNAMIC DEFENSE ENGINE (04) */}
+        <section id="defense" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                04 &middot; Dynamic Defense &amp; Wings
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                Automated Iron Condor Defense
+              </h2>
+              <p className="text-xs text-[var(--grey)] font-mono">
+                When Bitcoin trends aggressively toward a short strike, ProfitPilot automatically purchases protective wings to mathematically define risk.
+              </p>
+            </div>
+
+            {/* Animated Defense Progression Sequence */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3 font-mono text-xs">
+              <div className="bg-[var(--card)] p-4 rounded-xl border border-[var(--hair)] space-y-1 text-center">
+                <span className="text-[10px] text-emerald-600 font-bold uppercase block">1. NORMAL</span>
+                <span className="font-bold text-[var(--ink)]">Theta Harvesting</span>
+                <p className="text-[10px] text-[var(--grey)]">&Delta; Call: 0.15 | &Delta; Put: 0.14</p>
+              </div>
+
+              <div className="bg-[var(--card)] p-4 rounded-xl border border-[var(--hair)] space-y-1 text-center">
+                <span className="text-[10px] text-amber-600 font-bold uppercase block">2. THREAT DETECTED</span>
+                <span className="font-bold text-[var(--ink)]">Spot Approaches Strike</span>
+                <p className="text-[10px] text-[var(--grey)]">&Delta; expands toward 0.35</p>
+              </div>
+
+              <div className="bg-[var(--card)] p-4 rounded-xl border border-[#d97706] bg-[var(--orange-tint)] space-y-1 text-center">
+                <span className="text-[10px] text-[#d97706] font-bold uppercase block">3. DEFENSE MODE</span>
+                <span className="font-bold text-[#d97706]">Trigger Active (&Delta; &ge; 0.35)</span>
+                <p className="text-[10px] text-[#d97706]/80">Evaluates wing liquidity</p>
+              </div>
+
+              <div className="bg-[var(--card)] p-4 rounded-xl border border-blue-400 bg-blue-50 dark:bg-blue-500/10 space-y-1 text-center">
+                <span className="text-[10px] text-blue-600 font-bold uppercase block">4. WING ACTIVATED</span>
+                <span className="font-bold text-blue-700 dark:text-blue-300">Buys Long Wing</span>
+                <p className="text-[10px] text-blue-600/80">Transforms into Iron Condor</p>
+              </div>
+
+              <div className="bg-[var(--card)] p-4 rounded-xl border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 space-y-1 text-center">
+                <span className="text-[10px] text-emerald-600 font-bold uppercase block">5. RISK CONTROLLED</span>
+                <span className="font-bold text-emerald-700 dark:text-emerald-300">Max Loss Capped</span>
+                <p className="text-[10px] text-emerald-600/80">Tail risk eliminated</p>
+              </div>
+            </div>
+
+            <div className="p-4 bg-[var(--card)] border border-[var(--hair)] rounded-xl text-center text-xs font-mono text-[var(--grey)] max-w-2xl mx-auto">
+              <em>Note:</em> Dynamic wing purchases define maximum loss to a fixed boundary. They are designed to mitigate catastrophic tail risk rather than eliminate all drawdowns.
+            </div>
+
+          </div>
+        </section>
+
+        {/* 7. SCENARIO STRESS LAB */}
+        <section id="scenario" className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                05 &middot; Scenario Stress Lab
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                Test Stress Scenarios Interactively
+              </h2>
+              <p className="text-xs text-[var(--grey)] font-mono">
+                Model P&amp;L outcomes under simulated Bitcoin market shocks, implied volatility spikes, and time decay.
+              </p>
+            </div>
+
+            <div className="fintech-card p-6 sm:p-8 space-y-6">
+              
+              {/* Quick Stress Pills */}
+              <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+                <span className="text-[var(--grey)] font-bold">Quick Presets:</span>
+                {[
+                  { label: 'BTC +5%', btc: 5, iv: 5 },
+                  { label: 'BTC +10%', btc: 10, iv: 15 },
+                  { label: 'BTC -5%', btc: -5, iv: 8 },
+                  { label: 'BTC -10%', btc: -10, iv: 20 },
+                  { label: 'IV Spike +20%', btc: 0, iv: 20 },
+                ].map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => { setScenarioBtcShift(s.btc); setScenarioIvShift(s.iv); }}
+                    className="px-3 py-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] hover:bg-[#d97706] hover:text-white transition"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                <button
+                  onClick={() => { setScenarioBtcShift(0); setScenarioIvShift(0); setScenarioHoursPassed(8); }}
+                  className="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition"
+                >
+                  Reset
+                </button>
+              </div>
+
+              {/* Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] font-mono text-xs">
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">BTC Price Shift:</span>
+                    <span className="font-bold text-[var(--ink)]">{scenarioBtcShift >= 0 ? '+' : ''}{scenarioBtcShift}% (${scenarioModel.simulatedSpot.toFixed(0)})</span>
+                  </div>
+                  <input type="range" min={-15} max={15} step={1} value={scenarioBtcShift} onChange={(e) => setScenarioBtcShift(parseFloat(e.target.value))} className="w-full" />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">IV Shift:</span>
+                    <span className="font-bold text-[var(--ink)]">{scenarioIvShift >= 0 ? '+' : ''}{scenarioIvShift}% ({scenarioModel.iv.toFixed(0)}% IV)</span>
+                  </div>
+                  <input type="range" min={-20} max={30} step={2} value={scenarioIvShift} onChange={(e) => setScenarioIvShift(parseFloat(e.target.value))} className="w-full" />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--grey)]">Time Passed:</span>
+                    <span className="font-bold text-[var(--ink)]">{scenarioHoursPassed}h / 24h</span>
+                  </div>
+                  <input type="range" min={0} max={24} step={1} value={scenarioHoursPassed} onChange={(e) => setScenarioHoursPassed(parseInt(e.target.value))} className="w-full" />
+                </div>
+              </div>
+
+              {/* Output Result */}
+              <div className="bg-[var(--card)] p-6 rounded-2xl border border-[var(--hair)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-mono">
+                <div>
+                  <span className="text-[11px] text-[var(--grey)] uppercase block">Modelled Scenario P&amp;L (1 BTC Strangle)</span>
+                  <div className={`text-3xl font-black mt-1 ${scenarioModel.modelledPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {scenarioModel.modelledPnl >= 0 ? '+' : ''}{fmt(scenarioModel.modelledPnl)}
+                  </div>
+                  <p className="text-[10px] text-[var(--grey)] mt-0.5">
+                    Based on selected underlying price, implied volatility, and time assumptions.
+                  </p>
+                </div>
+
+                <div className="text-right text-xs space-y-1">
+                  <div>Breakevens: <strong className="text-[var(--ink)]">$60,150 &mdash; $68,850</strong></div>
+                  <div>Max Wing Loss: <strong className="text-rose-600">-$1,250</strong></div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* 8. "THE TRADES WE DIDN'T TAKE" (NO-TRADE ANALYTICS) */}
+        <section id="notrade" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                Quantitative Discipline
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                The Trades We Didn't Take
+              </h2>
+              <p className="text-xs text-[var(--grey)] font-mono">
+                "Discipline is not only knowing when to trade. It is knowing when not to."
+              </p>
+            </div>
+
+            <div className="fintech-card p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 font-mono">
+              
+              <div className="lg:col-span-5 bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-4">
+                <div className="text-xs font-bold text-[var(--grey)] uppercase">500 Scanned Cycles Audit</div>
+                <div className="text-4xl font-black text-[var(--ink)]">
+                  184 <span className="text-sm font-normal text-[#d97706]">(36.8%)</span>
+                </div>
+                <p className="text-xs text-[var(--grey)] leading-relaxed">
+                  Out of 500 volatility scans, 184 trade entries were actively filtered and blocked by quantitative safety rules, preventing exposure to high-risk market conditions.
+                </p>
+              </div>
+
+              <div className="lg:col-span-7 space-y-2.5 text-xs">
+                {[
+                  { trigger: 'Volatility Gate Spike (NATR / IV < RV)', count: 71, share: '38.6%' },
+                  { trigger: 'Trend Momentum Acceleration Filter', count: 42, share: '22.8%' },
+                  { trigger: 'Orderbook Depth / Liquidity Buffer', count: 26, share: '14.1%' },
+                  { trigger: 'Margin Reserve Buffer Requirement (< 40%)', count: 19, share: '10.3%' },
+                  { trigger: 'Post-Stop Cooldown Lockout (4h quarantine)', count: 15, share: '8.2%' },
+                  { trigger: 'Portfolio Greeks Concentration Ceiling', count: 11, share: '6.0%' },
+                ].map((item, idx) => (
+                  <div key={idx} className="p-3 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] flex justify-between items-center">
+                    <span className="text-[var(--ink)]">{item.trigger}</span>
+                    <span className="font-bold text-[#d97706]">{item.count} ({item.share})</span>
+                  </div>
+                ))}
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* 9. STRATEGY BACKTEST PERFORMANCE & REGIME SPLIT */}
+        <section id="backtest" className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                Historical Simulation
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                Strategy Backtest &amp; Regime Breakdown
+              </h2>
+              <p className="text-xs text-[var(--grey)] font-mono">
+                Simulation Period: Aug 2025 &ndash; Aug 2026 &middot; Capital: $5,000 USD &middot; Taker Fees + 18% GST: Modelled &middot; Slippage: 0.15% per leg
+              </p>
+            </div>
+
+            <div className="fintech-card p-6 sm:p-8 space-y-6 font-mono">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
+                  <span className="text-[10px] text-[var(--grey)] uppercase block">Backtest CAGR</span>
+                  <span className="text-2xl font-black text-emerald-600 mt-1 block">227.4%</span>
+                </div>
+                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
+                  <span className="text-[10px] text-[var(--grey)] uppercase block">Win Rate</span>
+                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">68.3%</span>
+                </div>
+                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
+                  <span className="text-[10px] text-[var(--grey)] uppercase block">Sharpe Ratio</span>
+                  <span className="text-2xl font-black text-[var(--ink)] mt-1 block">1.93</span>
+                </div>
+                <div className="bg-[var(--paper-2)] p-4 rounded-xl border border-[var(--hair)]">
+                  <span className="text-[10px] text-[var(--grey)] uppercase block">Max Drawdown</span>
+                  <span className="text-2xl font-black text-rose-600 mt-1 block">-11.4%</span>
+                </div>
+              </div>
+
+              {/* Performance by Market Regime Table */}
+              <div className="bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-3">
+                <div className="text-xs font-bold text-[var(--ink)] uppercase">Performance by Market Regime</div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left">
+                    <thead className="border-b border-[var(--hair)] text-[var(--grey)]">
+                      <tr>
+                        <th className="py-2.5">Market Regime</th>
+                        <th className="py-2.5">Cycles</th>
+                        <th className="py-2.5">Win Rate</th>
+                        <th className="py-2.5">Avg Return / Cycle</th>
+                        <th className="py-2.5">Wing Defense Triggers</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--hair)]">
+                      <tr>
+                        <td className="py-2.5 font-bold text-[var(--ink)]">Normal Volatility (35&ndash;50%)</td>
+                        <td className="py-2.5">214</td>
+                        <td className="py-2.5 text-emerald-600 font-bold">78.5%</td>
+                        <td className="py-2.5 text-emerald-600">+1.8%</td>
+                        <td className="py-2.5 text-[var(--grey)]">4.2%</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-bold text-[var(--ink)]">High Volatility (50&ndash;75%)</td>
+                        <td className="py-2.5">182</td>
+                        <td className="py-2.5 text-emerald-600 font-bold">65.4%</td>
+                        <td className="py-2.5 text-emerald-600">+2.4%</td>
+                        <td className="py-2.5 text-amber-600 font-bold">14.8%</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-bold text-[var(--ink)]">Range-Bound Consolidations</td>
+                        <td className="py-2.5">112</td>
+                        <td className="py-2.5 text-emerald-600 font-bold">84.8%</td>
+                        <td className="py-2.5 text-emerald-600">+1.9%</td>
+                        <td className="py-2.5 text-[var(--grey)]">1.8%</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2.5 font-bold text-[var(--ink)]">Extreme Volatility (&gt;75%)</td>
+                        <td className="py-2.5">57</td>
+                        <td className="py-2.5 text-rose-600 font-bold">47.3%</td>
+                        <td className="py-2.5 text-rose-600">-0.8%</td>
+                        <td className="py-2.5 text-rose-600 font-bold">38.6% (Wings Capped)</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* 10. PRICING & PROFIT CALCULATOR */}
+        <section id="pricing" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                Transparent Economics
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black font-mono text-[var(--ink)] tracking-tight">
+                30 Days Free &middot; 30% Performance Fee
+              </h2>
+              <p className="text-xs text-[var(--grey)] font-mono">
+                No monthly subscriptions. No upfront costs. We only invoice when you make net realized profit.
+              </p>
+            </div>
+
+            <div className="fintech-card p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 font-mono">
+              
+              {/* Slider Left */}
+              <div className="lg:col-span-6 space-y-6">
+                <div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-[var(--grey)] uppercase">Allocated Collateral:</span>
+                    <span className="text-2xl font-black text-[var(--ink)]">{fmt(sliderBalance)}</span>
+                  </div>
+                  <input 
+                    type="range" 
+                    min={500} 
+                    max={50000} 
+                    step={500} 
+                    value={sliderBalance} 
+                    onChange={(e) => setSliderBalance(parseFloat(e.target.value))} 
+                    className="w-full mt-3"
+                  />
+                  <div className="flex justify-between text-[10px] text-[var(--grey)] mt-1">
+                    <span>$500 (₹43k)</span>
+                    <span>$50,000 (₹43L)</span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-[var(--paper-2)] rounded-xl border border-[var(--hair)] space-y-2 text-xs">
+                  <div className="font-bold text-[var(--ink)]">High-Water Mark Protection</div>
+                  <p className="text-[11px] text-[var(--grey)] leading-relaxed">
+                    If a monthly cycle ends in a net loss, you owe $0/₹0, and that loss is carried forward to offset future profits before any performance fee applies.
+                  </p>
+                </div>
+              </div>
+
+              {/* Economics Breakdown Right */}
+              <div className="lg:col-span-6 bg-[var(--paper-2)] p-6 rounded-2xl border border-[var(--hair)] space-y-4 text-xs">
+                <div className="text-xs font-bold text-[var(--grey)] uppercase">Modelled Monthly Net Output</div>
+                
+                <div className="space-y-3 divide-y divide-[var(--hair)]">
+                  <div className="flex justify-between pt-2">
+                    <span className="text-[var(--grey)]">Modelled Gross Yield (~14.5%):</span>
+                    <span className="font-bold text-[var(--ink)]">+{fmt(calcGrossMonthly)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2">
+                    <span className="text-[var(--grey)]">Exchange Taker Fees + 18% GST:</span>
+                    <span className="text-rose-600 font-bold">-{fmt(calcFeesAndGst)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2">
+                    <span className="text-[var(--grey)]">ProfitPilot 30% Performance Fee:</span>
+                    <span className="text-[#d97706] font-bold">-{fmt(calcPerformanceFee)}</span>
+                  </div>
+                  <div className="flex justify-between pt-3 text-sm">
+                    <span className="font-black text-[var(--ink)]">Client Net Take-Home:</span>
+                    <span className="font-black text-emerald-600">+{fmt(calcClientNetProfit)}</span>
+                  </div>
+                </div>
+
+                <Link
+                  href="/login"
+                  className="w-full py-3.5 rounded-xl bg-[#d97706] hover:bg-[#b45309] text-white font-bold text-center block transition shadow-sm"
+                >
+                  Start 30-Day Free Trial &rarr;
+                </Link>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* 11. FAQ ACCORDION */}
+        <section id="faq" className="py-20">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center space-y-2">
+              <div className="text-xs font-mono font-bold text-[#d97706] uppercase tracking-wider">
+                Institutional Knowledge
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black font-mono text-[var(--ink)] tracking-tight">
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="space-y-3 font-mono text-xs">
+              {faqs.map((faq, i) => (
+                <div key={i} className="fintech-card overflow-hidden">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="w-full p-4 sm:p-5 flex justify-between items-center text-left font-bold text-[var(--ink)] hover:bg-[var(--paper-2)] transition"
                   >
                     <span>{faq.q}</span>
-                    <ChevronDown className={`w-5 h-5 text-[#f09455] shrink-0 transition-transform duration-200 ${openFaq === idx ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-4 h-4 text-[var(--grey)] transition-transform duration-200 ${openFaq === i ? 'rotate-180' : ''}`} />
                   </button>
-                  {openFaq === idx && (
-                    <div className="px-6 pb-6 text-sm text-[var(--grey)] leading-relaxed border-t border-[var(--hair)] pt-4">
+                  {openFaq === i && (
+                    <div className="px-5 pb-5 text-[var(--grey)] leading-relaxed border-t border-[var(--hair)] pt-3 bg-[var(--paper-2)]">
                       {faq.a}
                     </div>
                   )}
                 </div>
               ))}
-
             </div>
 
           </div>
@@ -1153,36 +1000,21 @@ export default function Home() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[var(--paper)] border-t border-[var(--hair)] py-14 text-sm text-[var(--grey)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f09455] to-[#d9a44e] flex items-center justify-center text-[#241505] font-bold text-sm">
-                <Activity className="w-4 h-4" />
-              </div>
-              <span className="font-bold text-lg text-[var(--ink)]">ProfitPilot</span>
+      <footer className="w-full bg-[var(--paper-2)] border-t border-[var(--hair)] py-12 font-mono text-xs text-[var(--grey)]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded bg-[#d97706] flex items-center justify-center text-white font-black text-xs">P</div>
+              <span className="font-bold text-[var(--ink)]">ProfitPilot 2.0</span>
+              <span>&mdash; Quantitative Options Intelligence &amp; Execution</span>
             </div>
-
-            <div className="flex flex-wrap gap-8 text-xs font-medium">
-              <a href="#backtest" className="hover:text-[var(--ink)]">Backtest</a>
-              <a href="#strategy" className="hover:text-[var(--ink)]">The Algo</a>
-              <a href="#calculator" className="hover:text-[var(--ink)]">Profit Simulator</a>
-              <a href="#pricing" className="hover:text-[var(--ink)]">Pricing</a>
-              <a href="#faq" className="hover:text-[var(--ink)]">FAQ</a>
-              <Link href="/login" className="hover:text-[var(--ink)]">Dashboard Login</Link>
+            <div className="text-[10px] text-[var(--faint)]">
+              Self-Custodial &middot; Non-Custodial Delta Exchange Architecture
             </div>
           </div>
-
-          <div className="pt-6 border-t border-[var(--hair)] text-xs leading-relaxed text-[var(--grey)] flex flex-col md:flex-row justify-between gap-4">
-            <p>
-              &copy; {new Date().getFullYear()} ProfitPilot Technologies. All rights reserved. Self-custodial automated trading SaaS for Delta Exchange.
-            </p>
-            <p className="max-w-md">
-              Disclaimer: Cryptocurrency derivatives and options trading involve substantial risk of loss and are not suitable for every investor. Past backtested performance is no guarantee of future returns.
-            </p>
+          <div className="text-[10px] text-[var(--faint)] leading-relaxed border-t border-[var(--hair)] pt-4 text-center sm:text-left">
+            Disclaimer: Options trading involves substantial risk of loss and is not suitable for every investor. Historical backtest performance does not guarantee future results. All figures presented represent quantitative models, simulated parameters, and rule-based executions.
           </div>
-
         </div>
       </footer>
 

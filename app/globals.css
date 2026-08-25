@@ -3,49 +3,57 @@
 @tailwind utilities;
 
 :root {
-  --paper: #0c0d10;
-  --paper-2: #16181d;
-  --card: #15171c;
-  --raise: #1b1e24;
-  --ink: #f3f2ef;
-  --ink-2: #d6d5d1;
-  --grey: #9ba0a9;
-  --faint: #6e737c;
-  --hair: rgba(255, 255, 255, 0.095);
-  --hair-2: rgba(255, 255, 255, 0.19);
-  --orange: #f09455;
-  --orange-hi: #f7b27c;
-  --orange-tint: #2a1c10;
-  --pine: #4fc79b;
-  --pine-tint: #0f2a22;
-  --clay: #e8776a;
-  --clay-tint: #2b1512;
-  --amber: #e0a845;
-  --gold: #d9a44e;
-  --brand-on: #241505;
+  /* LIGHT FIRST DEFAULT (High-contrast, crisp quantitative fintech) */
+  --paper: #ffffff;
+  --paper-2: #f8fafc;
+  --card: #ffffff;
+  --raise: #f1f5f9;
+  --raise-2: #e2e8f0;
+  --ink: #0f172a;
+  --ink-2: #334155;
+  --grey: #64748b;
+  --faint: #94a3b8;
+  --hair: #e2e8f0;
+  --hair-2: #cbd5e1;
+  --orange: #d97706;
+  --orange-hi: #f59e0b;
+  --orange-tint: #fef3c7;
+  --pine: #059669;
+  --pine-tint: #ecfdf5;
+  --clay: #dc2626;
+  --clay-tint: #fef2f2;
+  --amber: #b45309;
+  --amber-tint: #fffbeb;
+  --indigo: #4f46e5;
+  --indigo-tint: #eef2ff;
+  --brand-on: #ffffff;
 }
 
-[data-theme="light"] {
-  --paper: #fbfbfd;
-  --paper-2: #f4f3f1;
-  --card: #ffffff;
-  --raise: #ffffff;
-  --ink: #1d1d1f;
-  --ink-2: #3c3c41;
-  --grey: #6e6e73;
-  --faint: #9a9aa0;
-  --hair: rgba(0, 0, 0, 0.085);
-  --hair-2: rgba(0, 0, 0, 0.17);
-  --orange: #e27625;
-  --orange-hi: #f0a05c;
-  --orange-tint: #fff3e9;
-  --pine: #0b7a5a;
-  --pine-tint: #e9f7f1;
-  --clay: #b3402f;
-  --clay-tint: #fcf1ef;
-  --amber: #b7791f;
-  --gold: #c08a2e;
-  --brand-on: #ffffff;
+[data-theme="dark"] {
+  /* DARK OBSIDIAN MODE */
+  --paper: #090a0f;
+  --paper-2: #111319;
+  --card: #141720;
+  --raise: #1a1e2a;
+  --raise-2: #242938;
+  --ink: #f8fafc;
+  --ink-2: #cbd5e1;
+  --grey: #94a3b8;
+  --faint: #64748b;
+  --hair: rgba(255, 255, 255, 0.08);
+  --hair-2: rgba(255, 255, 255, 0.16);
+  --orange: #f59e0b;
+  --orange-hi: #fbbf24;
+  --orange-tint: rgba(245, 158, 11, 0.12);
+  --pine: #10b981;
+  --pine-tint: rgba(16, 185, 129, 0.12);
+  --clay: #ef4444;
+  --clay-tint: rgba(239, 68, 68, 0.12);
+  --amber: #f59e0b;
+  --amber-tint: rgba(245, 158, 11, 0.1);
+  --indigo: #6366f1;
+  --indigo-tint: rgba(99, 102, 241, 0.12);
+  --brand-on: #0f172a;
 }
 
 body {
@@ -61,13 +69,13 @@ body {
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* Custom scrollbars */
+/* Custom crisp scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--paper);
+  background: var(--paper-2);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--hair-2);
@@ -77,7 +85,7 @@ body {
   background: var(--grey);
 }
 
-/* Ticker marquee */
+/* Ticker marquee animation */
 @keyframes ticker {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
@@ -86,38 +94,44 @@ body {
 .animate-ticker-marquee {
   display: flex;
   width: max-content;
-  animation: ticker 35s linear infinite;
+  animation: ticker 32s linear infinite;
 }
 
 .animate-ticker-marquee:hover {
   animation-play-state: paused;
 }
 
-/* Glassmorphism helpers */
-.glass-panel {
-  background: color-mix(in srgb, var(--card) 85%, transparent);
+/* Quantitative card & panel styling */
+.fintech-card {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+.fintech-card-subtle {
+  background: var(--paper-2);
+  border: 1px solid var(--hair);
+  border-radius: 0.75rem;
+}
+
+/* Glassmorphism helpers for headers/dropdowns only */
+.glass-header {
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--hair);
+  border-bottom: 1px solid var(--hair);
 }
 
 .glass-dropdown {
-  background: color-mix(in srgb, var(--raise) 95%, transparent);
+  background: color-mix(in srgb, var(--card) 96%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--hair-2);
-}
-
-/* Glow effects */
-.glow-orange {
-  box-shadow: 0 0 50px -10px rgba(240, 148, 85, 0.25);
-}
-
-.glow-pine {
-  box-shadow: 0 0 40px -10px rgba(79, 199, 155, 0.25);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 /* Range input styling */
 input[type="range"] {
-  accent-color: #f09455;
+  accent-color: var(--orange-hi);
 }
