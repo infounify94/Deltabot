@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { SpotlightCard } from '@/components/ui/spotlight-card';
+import { CopyButton } from '@/components/ui/copy-button';
 import { 
   Activity, 
   Play, 
@@ -636,79 +638,79 @@ export default function Dashboard() {
           {(section === 'command' || section === 'trading_positions') && (
             <div className="space-y-6">
               
-              {/* Top Operational KPI Row (Inter 500 Labels / IBM Plex Mono 600 Values) */}
-              <div className="fintech-card p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {/* Top Operational KPI Row (SpotlightCard enhanced) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                 
-                <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Delta Balance
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Delta Balance</span>
                     <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
                   </div>
                   <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
                     {fmt(metrics.liveBalance)}
                   </div>
                   <div className="text-[11px] text-[var(--grey)]">Live Collateral</div>
-                </div>
+                </SpotlightCard>
 
-                <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Today Net P&amp;L
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Today Net P&amp;L</span>
                     <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">DB</span>
                   </div>
                   <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${metrics.totalPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
                     {metrics.totalPnl >= 0 ? '+' : ''}{fmt(metrics.totalPnl)}
                   </div>
                   <div className="text-[11px] text-[var(--grey)]">After Fees &amp; GST</div>
-                </div>
+                </SpotlightCard>
 
-                <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Market Regime
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Market Regime</span>
                     <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
                   <div className="text-sm font-semibold text-[#d97706] mt-1.5 truncate">
                     High Vol / Bull
                   </div>
                   <div className="font-mono text-[11px] text-[var(--grey)]">Score: 78/100</div>
-                </div>
+                </SpotlightCard>
 
-                <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Strategy Fit
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Strategy Fit</span>
                     <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
                   <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
                     82 <span className="text-xs font-normal text-[var(--grey)]">/ 100</span>
                   </div>
                   <div className="text-[11px] text-emerald-600 font-medium">Favorable (Short Vol)</div>
-                </div>
+                </SpotlightCard>
 
-                <div className="border-r border-[var(--hair)] pr-3">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Entry Gate
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Entry Gate</span>
                     <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
                   </div>
                   <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded inline-block border border-emerald-200 dark:border-emerald-500/20">
                     ● Approved
                   </div>
                   <div className="text-[11px] text-[var(--grey)] mt-0.5">Confidence: High</div>
-                </div>
+                </SpotlightCard>
 
-                <div>
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center gap-1">
-                    Risk State
+                <SpotlightCard className="p-4 space-y-1 shadow-subtle">
+                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
+                    <span>Risk State</span>
                     <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
                   </div>
                   <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
                     Normal (Buffer 40%)
                   </div>
                   <div className="text-[11px] text-[var(--grey)]">Wings Armed</div>
-                </div>
+                </SpotlightCard>
 
               </div>
 
               {/* Primary Engine Operational Status Bar */}
-              <div className="fintech-card p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div className="fintech-card p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-subtle">
                 <div>
                   <div className="flex items-center gap-2.5">
                     <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
@@ -727,7 +729,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2.5">
                   <button 
                     onClick={handlePauseToggle}
-                    className={`px-3.5 py-2 font-medium rounded-lg text-xs transition flex items-center gap-2 shadow-subtle ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
+                    className={`px-3.5 py-2 font-medium rounded-lg text-xs transition flex items-center gap-2 shadow-subtle active:scale-95 ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
                   >
                     {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
                     {isPaused ? 'Resume strategy entries' : 'Pause new entries'}
@@ -735,7 +737,7 @@ export default function Dashboard() {
 
                   <button 
                     onClick={() => { setLoading(true); fetchData(); }}
-                    className="px-3 py-2 font-medium rounded-lg text-xs bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--ink)] hover:bg-[var(--raise)] transition flex items-center gap-1.5"
+                    className="px-3 py-2 font-medium rounded-lg text-xs bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--ink)] hover:bg-[var(--raise)] transition flex items-center gap-1.5 active:scale-95"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Refresh</span>
@@ -744,7 +746,7 @@ export default function Dashboard() {
               </div>
 
               {/* LIVE ACTIVE POSITION & 4 DEFENSE STATES */}
-              <div className="fintech-card p-4 sm:p-5 space-y-4">
+              <div className="fintech-card p-4 sm:p-5 space-y-4 shadow-subtle">
                 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--hair)] pb-3">
                   <div className="flex items-center gap-2.5">
@@ -783,7 +785,10 @@ export default function Dashboard() {
                       
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div className="fintech-card-subtle p-3 space-y-1">
-                          <div className="text-[11px] text-[var(--grey)]">Instruments</div>
+                          <div className="text-[11px] text-[var(--grey)] flex items-center justify-between">
+                            <span>Instruments</span>
+                            <CopyButton text={`${pos.short_call_symbol} / ${pos.short_put_symbol}`} label="Copy" />
+                          </div>
                           <div className="font-mono text-xs font-semibold text-[var(--ink)]">{pos.short_call_symbol || 'BTC-CALL'}</div>
                           <div className="font-mono text-xs font-semibold text-[var(--grey)]">{pos.short_put_symbol || 'BTC-PUT'}</div>
                         </div>
@@ -811,7 +816,7 @@ export default function Dashboard() {
                           ) : (
                             <button 
                               onClick={() => handleKillSwitch(pos.id)}
-                              className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-subtle"
+                              className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-subtle active:scale-95"
                             >
                               <ShieldAlert className="w-3.5 h-3.5" /> Emergency market kill
                             </button>
@@ -861,7 +866,7 @@ export default function Dashboard() {
               </div>
 
               {/* WHY DIDN'T THE BOT TRADE? AUDIT TRAIL FORMAT */}
-              <div className="fintech-card p-4 sm:p-5 space-y-3">
+              <div className="fintech-card p-4 sm:p-5 space-y-3 shadow-subtle">
                 <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
                   <div>
                     <h3 className="font-semibold text-sm text-[var(--ink)] flex items-center gap-2">
@@ -927,7 +932,7 @@ export default function Dashboard() {
 
           {/* SECTION 2: MARKETS INTELLIGENCE MATRIX (01) */}
           {section === 'markets_intel' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 01 &middot; Regime Classification
@@ -992,7 +997,7 @@ export default function Dashboard() {
 
           {/* SECTION 3: VOLATILITY ENGINE (02) */}
           {section === 'markets_vol' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 02 &middot; Volatility Diagnostics
@@ -1062,7 +1067,7 @@ export default function Dashboard() {
 
           {/* SECTION 4: SCENARIO STRESS LAB */}
           {section === 'scenario_lab' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 04 &middot; Scenario Stress Sandbox
@@ -1182,7 +1187,7 @@ export default function Dashboard() {
 
           {/* SECTION 5: "TRADES WE DIDN'T TAKE" (No-Trade Analytics) */}
           {section === 'analytics_notrade' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Signature Analytics &middot; Quantitative Discipline
@@ -1239,7 +1244,7 @@ export default function Dashboard() {
 
           {/* SECTION 6: CONTEXTUAL "WHY?" AI ANALYST (07) */}
           {section === 'intel_ai' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Engine 07 &middot; Contextual Diagnostics
@@ -1257,7 +1262,7 @@ export default function Dashboard() {
                   <button
                     key={i}
                     onClick={() => setActiveAiQuery(item.q)}
-                    className={`p-3.5 rounded-lg border text-left transition-all ${activeAiQuery === item.q ? 'bg-[var(--orange-tint)] border-[#d97706] text-[#d97706] font-semibold shadow-subtle' : 'bg-[var(--paper-2)] border-[var(--hair)] text-[var(--ink)] hover:border-[#d97706]'}`}
+                    className={`p-3.5 rounded-lg border text-left transition-all active:scale-[0.98] ${activeAiQuery === item.q ? 'bg-[var(--orange-tint)] border-[#d97706] text-[#d97706] font-semibold shadow-subtle' : 'bg-[var(--paper-2)] border-[var(--hair)] text-[var(--ink)] hover:border-[#d97706]'}`}
                   >
                     <div className="flex items-center justify-between">
                       <span>{item.q}</span>
@@ -1268,9 +1273,12 @@ export default function Dashboard() {
               </div>
 
               {activeAiQuery && (
-                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-2 text-xs leading-relaxed">
-                  <div className="flex items-center gap-1.5 text-[#d97706] font-semibold">
-                    <Activity className="w-4 h-4" /> Quantitative Audit Rationale:
+                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-2.5 text-xs leading-relaxed">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[#d97706] font-semibold">
+                      <Activity className="w-4 h-4" /> Quantitative Audit Rationale:
+                    </div>
+                    <CopyButton text={aiQueries.find(x => x.q === activeAiQuery)?.a || ''} label="Copy rationale" />
                   </div>
                   <div className="text-[var(--ink)] bg-[var(--card)] p-3.5 rounded-lg border border-[var(--hair)] font-mono">
                     {aiQueries.find(x => x.q === activeAiQuery)?.a}
@@ -1282,7 +1290,7 @@ export default function Dashboard() {
 
           {/* SECTION 7: BACKTEST BY REGIME */}
           {section === 'analytics_backtest' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6">
+            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
               <div className="border-b border-[var(--hair)] pb-3">
                 <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
                   Historical Simulation &middot; Methodological Transparency

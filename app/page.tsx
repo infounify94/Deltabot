@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import GlassmorphismTrustHero from '@/components/ui/glassmorphism-trust-hero';
+import { InteractiveBentoGrid } from '@/components/ui/interactive-bento-grid';
 import { 
   Shield, 
   Activity, 
@@ -198,8 +199,8 @@ export default function Home() {
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium text-[var(--grey)]">
           <a href="#pipeline" className="hover:text-[var(--ink)] transition-colors">Pipeline</a>
+          <a href="#bento" className="hover:text-[var(--ink)] transition-colors">7 Engines</a>
           <a href="#regime" className="hover:text-[var(--ink)] transition-colors">Market Regime</a>
-          <a href="#volatility" className="hover:text-[var(--ink)] transition-colors">Volatility</a>
           <a href="#defense" className="hover:text-[var(--ink)] transition-colors">Dynamic Defense</a>
           <a href="#scenario" className="hover:text-[var(--ink)] transition-colors">Scenario Lab</a>
           <a href="#notrade" className="hover:text-[var(--ink)] transition-colors">No-Trade Analytics</a>
@@ -264,8 +265,8 @@ export default function Home() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-2.5 text-xs font-medium">
           <a href="#pipeline" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">10-Step Quantitative Pipeline</a>
+          <a href="#bento" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">7 Proprietary Engines (Bento)</a>
           <a href="#regime" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Market Regime Matrix</a>
-          <a href="#volatility" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Volatility Engine</a>
           <a href="#defense" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Dynamic Defense Wings</a>
           <a href="#scenario" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">Scenario Stress Lab</a>
           <a href="#notrade" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] border-b border-[var(--hair)]">No-Trade Analytics</a>
@@ -361,8 +362,29 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 5. 01 MARKET REGIME & VOLATILITY ENGINES */}
-        <section id="regime" className="py-20">
+        {/* 5. 21st.dev STYLE INTERACTIVE BENTO GRID SHOWCASE */}
+        <section id="bento" className="py-20">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            
+            <div className="text-center max-w-2xl mx-auto space-y-2">
+              <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider">
+                Modular Quant Stack
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
+                The 7 Proprietary Quantitative Engines
+              </h2>
+              <p className="text-sm text-[var(--grey)] leading-relaxed">
+                Filter by architecture phase and inspect live formulas, metrics, and quantitative decision logic.
+              </p>
+            </div>
+
+            <InteractiveBentoGrid />
+
+          </div>
+        </section>
+
+        {/* 6. 01 MARKET REGIME & VOLATILITY ENGINES */}
+        <section id="regime" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
@@ -455,8 +477,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 6. DYNAMIC DEFENSE ENGINE (04) */}
-        <section id="defense" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        {/* 7. DYNAMIC DEFENSE ENGINE (04) */}
+        <section id="defense" className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -473,46 +495,46 @@ export default function Home() {
 
             {/* Animated Defense Progression Sequence */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-3 text-xs">
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center">
+              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center shadow-subtle">
                 <span className="text-[11px] text-emerald-600 font-semibold uppercase block">1. Normal</span>
                 <span className="font-medium text-[var(--ink)]">Theta harvesting</span>
                 <p className="font-mono text-[10px] text-[var(--grey)]">&Delta; Call: 0.15 | &Delta; Put: 0.14</p>
               </div>
 
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center">
+              <div className="bg-[var(--card)] p-4 rounded-lg border border-[var(--hair)] space-y-1 text-center shadow-subtle">
                 <span className="text-[11px] text-amber-600 font-semibold uppercase block">2. Threat detected</span>
                 <span className="font-medium text-[var(--ink)]">Spot approaches strike</span>
                 <p className="font-mono text-[10px] text-[var(--grey)]">&Delta; expands toward 0.35</p>
               </div>
 
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-[#d97706] bg-[var(--orange-tint)] space-y-1 text-center">
+              <div className="bg-[var(--card)] p-4 rounded-lg border border-[#d97706] bg-[var(--orange-tint)] space-y-1 text-center shadow-subtle">
                 <span className="text-[11px] text-[#d97706] font-semibold uppercase block">3. Defense mode</span>
                 <span className="font-medium text-[#d97706]">Trigger active (&Delta; &ge; 0.35)</span>
                 <p className="text-[10px] text-[#d97706]/80">Evaluates wing liquidity</p>
               </div>
 
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-blue-400 bg-blue-50 dark:bg-blue-500/10 space-y-1 text-center">
+              <div className="bg-[var(--card)] p-4 rounded-lg border border-blue-400 bg-blue-50 dark:bg-blue-500/10 space-y-1 text-center shadow-subtle">
                 <span className="text-[11px] text-blue-600 font-semibold uppercase block">4. Wing activated</span>
                 <span className="font-medium text-blue-700 dark:text-blue-300">Buys long wing</span>
                 <p className="text-[10px] text-blue-600/80">Converts to Iron Condor</p>
               </div>
 
-              <div className="bg-[var(--card)] p-4 rounded-lg border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 space-y-1 text-center">
+              <div className="bg-[var(--card)] p-4 rounded-lg border border-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 space-y-1 text-center shadow-subtle">
                 <span className="text-[11px] text-emerald-600 font-semibold uppercase block">5. Risk controlled</span>
                 <span className="font-medium text-emerald-700 dark:text-emerald-300">Max loss capped</span>
                 <p className="text-[10px] text-emerald-600/80">Tail risk defined</p>
               </div>
             </div>
 
-            <div className="p-3.5 bg-[var(--card)] border border-[var(--hair)] rounded-lg text-center text-xs text-[var(--grey)] max-w-2xl mx-auto leading-relaxed">
+            <div className="p-3.5 bg-[var(--card)] border border-[var(--hair)] rounded-lg text-center text-xs text-[var(--grey)] max-w-2xl mx-auto leading-relaxed shadow-subtle">
               <em>Note:</em> Dynamic wing purchases define maximum loss to a fixed boundary. They are designed to mitigate catastrophic tail risk rather than eliminate all drawdowns.
             </div>
 
           </div>
         </section>
 
-        {/* 7. SCENARIO STRESS LAB */}
-        <section id="scenario" className="py-20">
+        {/* 8. SCENARIO STRESS LAB */}
+        <section id="scenario" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -605,8 +627,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 8. "THE TRADES WE DIDN'T TAKE" (NO-TRADE ANALYTICS) */}
-        <section id="notrade" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        {/* 9. "THE TRADES WE DIDN'T TAKE" (NO-TRADE ANALYTICS) */}
+        <section id="notrade" className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -621,7 +643,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="fintech-card p-6 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="fintech-card p-6 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-8 shadow-subtle">
               
               <div className="lg:col-span-5 bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
                 <div className="text-xs font-semibold text-[var(--grey)]">500 Scanned Cycles Audit</div>
@@ -654,8 +676,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 9. STRATEGY BACKTEST PERFORMANCE & REGIME SPLIT */}
-        <section id="backtest" className="py-20">
+        {/* 10. STRATEGY BACKTEST PERFORMANCE & REGIME SPLIT */}
+        <section id="backtest" className="py-20 bg-[var(--paper-2)] border-y border-[var(--hair)]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -742,8 +764,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 10. PRICING & PROFIT CALCULATOR */}
-        <section id="pricing" className="py-16 bg-[var(--paper-2)] border-y border-[var(--hair)]">
+        {/* 11. PRICING & PROFIT CALCULATOR */}
+        <section id="pricing" className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center max-w-2xl mx-auto space-y-2">
@@ -758,7 +780,7 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="fintech-card p-6 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="fintech-card p-6 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-8 shadow-subtle">
               
               {/* Slider Left */}
               <div className="lg:col-span-6 space-y-5">
@@ -826,8 +848,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 11. FAQ ACCORDION */}
-        <section id="faq" className="py-20">
+        {/* 12. FAQ ACCORDION */}
+        <section id="faq" className="py-20 bg-[var(--paper-2)] border-t border-[var(--hair)]">
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
             
             <div className="text-center space-y-2">
