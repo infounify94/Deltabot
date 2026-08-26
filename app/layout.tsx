@@ -16,8 +16,8 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ProfitPilot 2.0 — Quantitative Crypto Options Intelligence & Execution",
-  description: "Quantitative crypto options intelligence and automated execution platform for Delta Exchange. Systematic volatility analysis, dynamic defense, and risk-controlled options architecture.",
+  title: "ProfitPilot — Automated Crypto Options Trading",
+  description: "ProfitPilot automates your options trading, monitors your positions, manages risk and gives you a clear view of your account. Non-custodial. Delta Exchange.",
   icons: {
     icon: "/icon.svg",
   },

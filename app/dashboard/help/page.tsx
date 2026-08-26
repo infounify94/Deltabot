@@ -137,7 +137,7 @@ export default function Help() {
             Strategy Operations &amp; Assistance
           </h1>
           <p className="text-xs text-[var(--grey)] mt-0.5 max-w-xl">
-            Direct assistance, technical guides on Delta Exchange dynamic wing management, and 1-click emergency protocols.
+            Direct assistance, technical guides on Delta Exchange automated position management, and 1-click emergency protocols.
           </p>
         </div>
 
@@ -219,11 +219,11 @@ export default function Help() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs pt-1">
             <div className="p-3 bg-[var(--card)] rounded-lg border border-[var(--hair)] space-y-1">
               <div className="text-[var(--ink)] font-semibold">1. Pause New Entries</div>
-              <div className="text-[var(--grey)] text-[11px]">Click "Pause new entries" in Command Center. Open positions will continue to be safely managed until expiry, but no new strangles will be entered.</div>
+              <div className="text-[var(--grey)] text-[11px]">Click "Pause new entries" in Command Center. Open positions will continue to be safely managed until expiry, but no new options positions will be entered.</div>
             </div>
             <div className="p-3 bg-[var(--card)] rounded-lg border border-[var(--hair)] space-y-1">
               <div className="text-[var(--ink)] font-semibold">2. Position Kill Switch</div>
-              <div className="text-[var(--grey)] text-[11px]">Click the red "Emergency market kill" button next to any open position to immediately market-close the legs.</div>
+              <div className="text-[var(--grey)] text-[11px]">Click the red "Emergency market kill" button next to any open position to immediately close positions.</div>
             </div>
             <div className="p-3 bg-[var(--card)] rounded-lg border border-[var(--hair)] space-y-1">
               <div className="text-[var(--ink)] font-semibold">3. Delete API Key</div>

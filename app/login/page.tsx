@@ -350,7 +350,7 @@ function LoginContent() {
           {/* Guarantee */}
           <div className="p-2.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] flex items-center gap-2 text-[11px] text-[var(--grey)]">
             <Shield className="w-3.5 h-3.5 text-[#d97706] shrink-0" />
-            <span>Funds remain in your Delta Exchange account. Trade-only API architecture.</span>
+            <span>Your funds stay in your Delta Exchange account. ProfitPilot uses trade-only API keys with no withdrawal access.</span>
           </div>
 
         </div>

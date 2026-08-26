@@ -252,7 +252,7 @@ export default function Settings() {
         <div className="flex gap-2 border-b border-[var(--hair)] pb-3 overflow-x-auto text-xs">
           {[
             { id: 'trading', label: 'Trading Account (API)', icon: Key },
-            { id: 'risk', label: 'Risk & Lot Limits', icon: Sliders },
+            { id: 'risk', label: 'Trading Limits', icon: Sliders },
             { id: 'billing', label: 'Billing & High-Water Mark', icon: CreditCard },
             { id: 'security', label: 'Security & Whitelisting', icon: ShieldCheck },
             { id: 'profile', label: 'Profile & Password', icon: User },
@@ -448,7 +448,7 @@ export default function Settings() {
                   onChange={(e) => setCashReservePct(parseInt(e.target.value))}
                   className="w-full"
                 />
-                <p className="text-[11px] text-[var(--grey)]">Guarantees unallocated margin is preserved for dynamic Iron Condor wing purchases.</p>
+                <p className="text-[11px] text-[var(--grey)]">Reserve margin to help manage risk during volatile market conditions.</p>
               </div>
 
               <button 

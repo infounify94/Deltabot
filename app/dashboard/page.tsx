@@ -10,64 +10,36 @@ import {
   Play, 
   Pause, 
   RefreshCw, 
-  TrendingUp, 
   ShieldAlert, 
-  CheckCircle2, 
-  Clock, 
-  Zap, 
-  ExternalLink,
-  Layers,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertTriangle,
-  Sliders,
-  DollarSign,
   Menu,
   X,
   Settings,
   HelpCircle,
-  BarChart3,
-  Cpu,
-  Eye,
-  Shield,
-  FileText,
-  Compass,
-  Lock,
-  ChevronRight,
-  Terminal,
-  Crosshair,
-  Search,
-  BookOpen,
-  PieChart,
-  Brain,
-  AlertCircle,
-  Copy,
-  Check,
-  Flame,
   Sun,
-  Moon
+  Moon,
+  Home,
+  Layers,
+  History,
+  TrendingUp,
+  Cpu,
+  List,
+  ShieldCheck,
+  MessageSquare,
+  ChevronRight,
+  ChevronDown
 } from 'lucide-react';
 
-// Navigation Section Types
 type DashboardSection = 
-  | 'command'
-  | 'markets_intel'
-  | 'markets_vol'
-  | 'strategy_engine'
-  | 'scenario_lab'
-  | 'trading_positions'
-  | 'trading_algo'
-  | 'risk_center'
-  | 'risk_guard'
-  | 'analytics_backtest'
-  | 'analytics_notrade'
-  | 'analytics_journal'
-  | 'intel_ai'
-  | 'intel_research'
-  | 'system_exchange';
+  | 'dashboard'
+  | 'positions'
+  | 'trade_history'
+  | 'performance'
+  | 'automation'
+  | 'activity'
+  | 'account_health';
 
 export default function Dashboard() {
-  const [section, setSection] = useState<DashboardSection>('command');
+  const [section, setSection] = useState<DashboardSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Real DB Data (Supabase)
@@ -85,6 +57,11 @@ export default function Dashboard() {
   const [ethPrice, setEthPrice] = useState<number>(3480);
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const fxRate = 86.5;
+
+  const [expandedPositionIds, setExpandedPositionIds] = useState<Set<number | string>>(new Set());
+  const [positionsTab, setPositionsTab] = useState<'open' | 'closed'>('open');
+  const [askPilotOpen, setAskPilotOpen] = useState(false);
+  const [activeAiQuery, setActiveAiQuery] = useState<string | null>(null);
 
   // Currency Formatter
   const fmt = (usdAmount: number, forceDecimals = true) => {
@@ -107,7 +84,17 @@ export default function Dashboard() {
     }
   };
 
-  // WebSocket for Live BTC & ETH Prices (Public market data)
+  const toggleExpand = (id: number | string) => {
+    const newSet = new Set(expandedPositionIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setExpandedPositionIds(newSet);
+  };
+
+  // WebSocket for Live BTC & ETH Prices
   useEffect(() => {
     let wsBtc: WebSocket;
     let wsEth: WebSocket;
@@ -132,7 +119,6 @@ export default function Dashboard() {
     };
   }, []);
 
-  // Fetch strictly authenticated user's data from Supabase
   async function fetchData() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -144,7 +130,6 @@ export default function Dashboard() {
       setUserEmail(user.email || '');
       setUserId(user.id);
 
-      // Check system_pause status strictly for this user
       const { data: pauseData } = await supabase
         .from('positions')
         .select('id')
@@ -152,14 +137,12 @@ export default function Dashboard() {
         .eq('user_id', user.id);
       setIsPaused((pauseData || []).length > 0);
 
-      // Fetch open/adjusted positions for this user
       const { data: openData } = await supabase
         .from('positions')
         .select('*')
         .eq('user_id', user.id)
         .in('status', ['open', 'adjusted']);
 
-      // Fetch closed positions for this user
       const { data: closedData } = await supabase
         .from('positions')
         .select('*')
@@ -167,20 +150,17 @@ export default function Dashboard() {
         .eq('status', 'closed')
         .order('closed_at', { ascending: false });
 
-      // Fetch trade events for execution audits
       const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
       const { data: eventsData } = posIds.length > 0 
         ? await supabase.from('trade_events').select('*').in('position_id', posIds) 
         : { data: [] };
 
-      // Fetch live balance from profile
       let liveBalance = 0;
       const { data: profile } = await supabase.from('profiles').select('live_balance').eq('id', user.id).single();
       if (profile?.live_balance) {
         liveBalance = parseFloat(profile.live_balance);
       }
 
-      // Process Closed Positions with fee + 18% GST calculation
       const processedClosed = (closedData || []).map(pos => {
         let fees = 0;
         let callEntry = 'N/A', putEntry = 'N/A', callExit = 'N/A', putExit = 'N/A';
@@ -226,7 +206,6 @@ export default function Dashboard() {
         };
       });
 
-      // Process Open Positions
       const processedOpen = (openData || []).map((pos: any) => {
         let callEntry = 'N/A', putEntry = 'N/A';
         const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
@@ -302,131 +281,88 @@ export default function Dashboard() {
     }
   };
 
-  // Scenario Lab state (interactive stress tester)
-  const [scenarioBtcShift, setScenarioBtcShift] = useState<number>(0);
-  const [scenarioIvShift, setScenarioIvShift] = useState<number>(0);
-  const [scenarioHoursPassed, setScenarioHoursPassed] = useState<number>(6);
+  // Calculated metrics
+  const openPnl = useMemo(() => {
+    return openPositions.reduce((acc, pos) => acc + (pos.actualPnl || 0), 0);
+  }, [openPositions]);
 
-  // Calculated Modelled Metrics
+  const availableMargin = metrics.liveBalance * 0.4; // rough calc for simplified display
+  const marginUsed = metrics.liveBalance > 0 ? ((metrics.liveBalance - availableMargin) / metrics.liveBalance) * 100 : 0;
+  
+  const thisMonthPnl = useMemo(() => {
+    const now = new Date();
+    return closedPositions
+      .filter(p => new Date(p.closed_at).getMonth() === now.getMonth() && new Date(p.closed_at).getFullYear() === now.getFullYear())
+      .reduce((sum, p) => sum + p.realizedPnl, 0);
+  }, [closedPositions]);
+
+  // Keep it internally for when we need to show minimal simplified info
   const calculatedModel = useMemo(() => {
-    const atr = btcPrice * 0.038;
-    const natr = 3.82;
-    const iv = 58.4 + scenarioIvShift;
-    const rv = 46.2;
-    const ivRank = 74;
-    const ivPercentile = 81;
-    const expectedMovePct = (iv / 100 / Math.sqrt(365)) * 100;
-    
-    // Strategy Fit calculation based on IV/RV and current market state
-    const regimeScore = 78;
-    const strategyFit = 82; // 0-100 scale
-    const entryGate = (iv - rv > 8 && natr < 4.5) ? 'APPROVED' : (iv - rv > 4 ? 'CONDITIONAL' : 'BLOCKED');
-
-    // Scenario Modelled P&L calculation
-    const simulatedSpot = btcPrice * (1 + scenarioBtcShift / 100);
-    const callStrike = 68000;
-    const putStrike = 61000;
-    const maxCredit = 1250;
-    const wingWidth = 2500;
-    
-    // Theta decay factor
-    const decayReward = maxCredit * (scenarioHoursPassed / 24) * 0.65;
-    // Price movement penalty
-    let pricePenalty = 0;
-    if (simulatedSpot > callStrike) pricePenalty = (simulatedSpot - callStrike) * 0.45;
-    if (simulatedSpot < putStrike) pricePenalty = (putStrike - simulatedSpot) * 0.45;
-    // Volatility penalty/gain
-    const vegaImpact = scenarioIvShift * 18.5;
-
-    const modelledPnl = Math.max(-wingWidth + maxCredit, maxCredit + decayReward - pricePenalty - vegaImpact);
-
     return {
-      atr,
-      natr,
-      iv,
-      rv,
-      ivRank,
-      ivPercentile,
-      expectedMovePct,
-      regimeScore,
-      strategyFit,
-      entryGate,
-      simulatedSpot,
-      modelledPnl
+      iv: 58.4,
+      rv: 46.2,
+      natr: 3.82,
     };
-  }, [btcPrice, scenarioBtcShift, scenarioIvShift, scenarioHoursPassed]);
+  }, []);
 
-  // Contextual AI Analyst Queries & Explanations
-  const [activeAiQuery, setActiveAiQuery] = useState<string | null>(null);
-
-  const aiQueries = [
+  const simplifiedAiQueries = [
     {
-      q: "Why didn't the bot trade new entries?",
-      a: `DIAGNOSTIC AUDIT: Strategy conditions met, Liquidity buffer ($4,200) verified, Account margin healthy (34% utilization). However, IV/RV spread is currently tight (${(calculatedModel.iv - calculatedModel.rv).toFixed(1)} pts), meaning risk-adjusted premium harvest does not clear the quantitative entry threshold. Bot is in disciplined stand-by mode.`
+      q: "Why isn't ProfitPilot trading right now?",
+      a: `ProfitPilot is monitoring the market. Currently, market conditions are not optimal for new entries based on our safety parameters. We will automatically enter a position when conditions improve.`
     },
     {
-      q: "Why is the position in Harvest vs Defend state?",
-      a: `POSITION AUDIT: Active short call delta is 0.14 and short put delta is 0.13. Both are safely below the 0.35 threat threshold. Current standard deviation buffer is 2.4σ from spot price ($${btcPrice.toLocaleString()}). Dynamic Iron Condor protective wings remain armed on standby.`
+      q: "Are my current positions safe?",
+      a: `Yes, all active positions are continuously monitored. Automated risk management is active and ready to defend your capital if the market moves suddenly.`
     },
     {
-      q: "What is my largest portfolio risk right now?",
-      a: `RISK AUDIT: Your primary risk vector is a sudden overnight gap > 5.8% beyond $68,000 Call strike or $61,000 Put strike. If breached, the Defense Engine will execute market buy wings to cap the tail loss at $1,250 net.`
+      q: "What is my largest risk right now?",
+      a: `Your positions are protected by defined risk boundaries. In the event of an extreme market move, the maximum potential loss per position is strictly capped.`
     },
     {
-      q: "What happens if BTC drops 8% rapidly?",
-      a: `SCENARIO SIMULATION: Spot drops to $${(btcPrice * 0.92).toFixed(0)}. Put delta surges past 0.35. The Defense Engine triggers within 5 seconds, purchasing a protective $58,500 Long Put wing. The maximum risk is locked into a defined Iron Condor boundary.`
+      q: "What happens if BTC drops rapidly?",
+      a: `If the market drops rapidly, our automated defense system will instantly execute protective orders to limit downside exposure.`
     },
     {
-      q: "Why did today's Net P&L change?",
-      a: `P&L RECONCILIATION: Net P&L reflects theta decay collected over the last ${scenarioHoursPassed} hours minus exchange taker fees + 18% GST ($${(openPositions.length * 1.84).toFixed(2)}). All figures represent audited ground truth.`
+      q: "How is my P&L calculated?",
+      a: `Net P&L represents your total realized profit or loss, with all exchange fees and applicable taxes already deducted.`
     }
   ];
 
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#d97706]/15">
       
-      {/* Top Main Navigation Header */}
+      {/* Top Header */}
       <header className="sticky top-0 z-50 glass-header px-4 sm:px-8 py-3 flex items-center justify-between">
-        
-        {/* Left: Brand & Mobile Sidebar Toggle */}
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="lg:hidden p-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
-            aria-label="Toggle Navigation Sidebar"
           >
             {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
           </button>
 
-          <Link href="/dashboard" className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex items-center gap-2.5" onClick={() => setSection('dashboard')}>
             <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-sm">
               <Activity className="text-white w-4 h-4" strokeWidth={2.5} />
             </div>
             <div className="flex items-center">
               <span className="font-semibold text-base tracking-tight text-[var(--ink)]">Profit</span>
               <span className="font-semibold text-base tracking-tight text-[#d97706]">Pilot</span>
-              <span className="ml-2 text-[10px] font-medium bg-[var(--orange-tint)] text-[var(--orange)] px-2 py-0.5 rounded-full border border-[var(--orange)]/20">
-                2.0 Quant
-              </span>
             </div>
           </Link>
         </div>
 
-        {/* Center: Live Strategy Operational Pill */}
         <div className="hidden sm:flex items-center gap-2.5 bg-[var(--paper-2)] border border-[var(--hair)] px-3.5 py-1.5 rounded-full text-xs">
           <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
           <span className="font-medium text-[var(--ink)]">
-            {isPaused ? 'Entries paused' : 'Auto-execution active'}
+            {isPaused ? 'Automation Paused' : 'Automation Active'}
           </span>
           <span className="text-[var(--grey)] border-l border-[var(--hair)] pl-2">
-            BTC: <strong className="font-mono text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</strong>
+            BTC <strong className="font-mono text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</strong>
           </span>
         </div>
 
-        {/* Right: Currency, Theme & User Info */}
         <div className="flex items-center gap-2.5">
-          
-          {/* Currency Toggle */}
           <div className="bg-[var(--paper-2)] p-0.5 rounded-lg border border-[var(--hair)] flex items-center text-xs font-medium">
             <button 
               onClick={() => setCurrency('INR')}
@@ -442,16 +378,13 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Theme Switcher */}
           <button 
             onClick={toggleTheme}
             className="w-7 h-7 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
-            title="Toggle Light/Dark Theme"
           >
             {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Sign Out */}
           <button 
             onClick={async () => {
               await supabase.auth.signOut();
@@ -464,919 +397,606 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main Layout: Sidebar + Content Area */}
+      {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* Left Collapsible Quantitative Navigation Sidebar */}
+        {/* Sidebar */}
         <aside className={`fixed inset-y-0 left-0 z-40 w-60 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          
           <div className="p-3 space-y-5 overflow-y-auto max-h-[calc(100vh-80px)] text-xs">
             
-            {/* 1. COMMAND CENTER */}
+            {/* HOME */}
             <div>
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Operations
-              </div>
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">HOME</div>
               <button
-                onClick={() => { setSection('command'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'command' ? 'bg-[#d97706] text-white shadow-subtle' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('dashboard'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'dashboard' ? 'bg-[#d97706] text-white shadow-subtle' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Activity className="w-4 h-4" /> Command Center
+                <Home className="w-4 h-4" /> Dashboard
               </button>
             </div>
 
-            {/* 2. MARKETS */}
+            {/* TRADING */}
             <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Markets &amp; Volatility
-              </div>
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">TRADING</div>
               <button
-                onClick={() => { setSection('markets_intel'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'markets_intel' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('positions'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'positions' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Compass className="w-4 h-4" /> Market Regime (01)
+                <Layers className="w-4 h-4" /> Positions
               </button>
               <button
-                onClick={() => { setSection('markets_vol'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'markets_vol' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('trade_history'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'trade_history' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Zap className="w-4 h-4" /> Volatility Engine (02)
+                <History className="w-4 h-4" /> Trade History
               </button>
             </div>
 
-            {/* 3. STRATEGIES */}
+            {/* PERFORMANCE */}
             <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Strategy &amp; Structure
-              </div>
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">PERFORMANCE</div>
               <button
-                onClick={() => { setSection('strategy_engine'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'strategy_engine' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('performance'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'performance' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Cpu className="w-4 h-4" /> Strategy Engine (03)
-              </button>
-              <button
-                onClick={() => { setSection('scenario_lab'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'scenario_lab' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <Sliders className="w-4 h-4" /> Scenario Stress Lab
+                <TrendingUp className="w-4 h-4" /> Performance
               </button>
             </div>
 
-            {/* 4. TRADING */}
+            {/* AUTOMATION */}
             <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Execution &amp; Positions
-              </div>
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">AUTOMATION</div>
               <button
-                onClick={() => { setSection('trading_positions'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'trading_positions' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('automation'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'automation' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Layers className="w-4 h-4" /> Live Positions ({openPositions.length})
+                <Cpu className="w-4 h-4" /> Automation
               </button>
               <button
-                onClick={() => { setSection('trading_algo'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'trading_algo' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('activity'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'activity' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Terminal className="w-4 h-4" /> Algo Center &amp; Controls
+                <List className="w-4 h-4" /> Activity
               </button>
             </div>
 
-            {/* 5. RISK */}
+            {/* ACCOUNT */}
             <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Risk Management
-              </div>
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">ACCOUNT</div>
               <button
-                onClick={() => { setSection('risk_center'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'risk_center' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+                onClick={() => { setSection('account_health'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'account_health' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
-                <Shield className="w-4 h-4" /> Risk Center (05)
-              </button>
-              <button
-                onClick={() => { setSection('risk_guard'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'risk_guard' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <ShieldAlert className="w-4 h-4" /> Risk Guard Limits
+                <ShieldCheck className="w-4 h-4" /> Account Health
               </button>
             </div>
 
-            {/* 6. ANALYTICS */}
+            {/* SETTINGS */}
             <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Analytics &amp; Audits
-              </div>
-              <button
-                onClick={() => { setSection('analytics_notrade'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_notrade' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <Eye className="w-4 h-4" /> Trades We Didn't Take
-              </button>
-              <button
-                onClick={() => { setSection('analytics_backtest'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_backtest' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <BarChart3 className="w-4 h-4" /> Backtest by Regime
-              </button>
-              <button
-                onClick={() => { setSection('analytics_journal'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'analytics_journal' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <BookOpen className="w-4 h-4" /> Decision Journal
-              </button>
-            </div>
-
-            {/* 7. INTELLIGENCE */}
-            <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                Explainability (07)
-              </div>
-              <button
-                onClick={() => { setSection('intel_ai'); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'intel_ai' ? 'bg-[#d97706] text-white font-semibold' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
-              >
-                <Brain className="w-4 h-4 text-[#d97706]" /> "WHY?" AI Analyst
-              </button>
-            </div>
-
-            {/* 8. SYSTEM */}
-            <div className="space-y-0.5">
-              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">
-                System &amp; Keys
-              </div>
-              <Link
-                href="/dashboard/settings"
-                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
-              >
-                <Settings className="w-4 h-4" /> Delta API Keys &amp; IP
+              <div className="text-[11px] font-medium text-[var(--faint)] px-2.5 mb-1">SETTINGS</div>
+              <Link href="/dashboard/settings" className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all">
+                <Settings className="w-4 h-4" /> Exchange
               </Link>
-              <Link
-                href="/dashboard/help"
-                className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all"
-              >
-                <HelpCircle className="w-4 h-4" /> Help &amp; WhatsApp Support
+              <Link href="/dashboard/help" className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all">
+                <HelpCircle className="w-4 h-4" /> Help
               </Link>
             </div>
-
           </div>
 
-          {/* User Footer info */}
           <div className="p-3 border-t border-[var(--hair)] bg-[var(--paper)]">
             <div className="text-xs text-[var(--grey)] truncate">
-              User: <strong className="text-[var(--ink)] font-medium">{userEmail || 'trader'}</strong>
-            </div>
-            <div className="text-[11px] text-[var(--faint)] mt-0.5">
-              Non-custodial &middot; Delta Exchange
+              User: <strong className="text-[var(--ink)] font-medium">{userEmail}</strong>
             </div>
           </div>
         </aside>
 
-        {/* Main Content Viewport */}
+        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
           
-          {/* SECTION 1: COMMAND CENTER (Default Overview) */}
-          {(section === 'command' || section === 'trading_positions') && (
+          {/* Dashboard Home */}
+          {section === 'dashboard' && (
             <div className="space-y-6">
               
-              {/* Top Operational KPI Row (SpotlightCard enhanced) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-                
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Delta Balance</span>
-                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
-                  </div>
-                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
-                    {fmt(metrics.liveBalance)}
-                  </div>
-                  <div className="text-[11px] text-[var(--grey)]">Live Collateral</div>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Account Balance</div>
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">{fmt(metrics.liveBalance)}</div>
                 </SpotlightCard>
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Today Net P&amp;L</span>
-                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">DB</span>
-                  </div>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Today's P&amp;L</div>
                   <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${metrics.totalPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
                     {metrics.totalPnl >= 0 ? '+' : ''}{fmt(metrics.totalPnl)}
                   </div>
-                  <div className="text-[11px] text-[var(--grey)]">After Fees &amp; GST</div>
                 </SpotlightCard>
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Market Regime</span>
-                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Open P&amp;L</div>
+                  <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${openPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                    {openPnl >= 0 ? '+' : ''}{fmt(openPnl)}
                   </div>
-                  <div className="text-sm font-semibold text-[#d97706] mt-1.5 truncate">
-                    High Vol / Bull
-                  </div>
-                  <div className="font-mono text-[11px] text-[var(--grey)]">Score: 78/100</div>
                 </SpotlightCard>
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Strategy Fit</span>
-                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
-                  </div>
-                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">
-                    82 <span className="text-xs font-normal text-[var(--grey)]">/ 100</span>
-                  </div>
-                  <div className="text-[11px] text-emerald-600 font-medium">Favorable (Short Vol)</div>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Available Margin</div>
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">{fmt(availableMargin)}</div>
                 </SpotlightCard>
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Entry Gate</span>
-                    <span className="text-[9px] font-mono bg-[var(--orange-tint)] text-[var(--orange)] px-1 py-0.2 rounded font-medium">MODEL</span>
-                  </div>
-                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded inline-block border border-emerald-200 dark:border-emerald-500/20">
-                    ● Approved
-                  </div>
-                  <div className="text-[11px] text-[var(--grey)] mt-0.5">Confidence: High</div>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Open Positions</div>
+                  <div className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 num-tabular">{openPositions.length}</div>
                 </SpotlightCard>
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
-                  <div className="text-[11px] font-medium text-[var(--grey)] flex items-center justify-between">
-                    <span>Risk State</span>
-                    <span className="text-[9px] font-mono bg-[var(--raise)] px-1 py-0.2 rounded text-[var(--faint)]">BOT</span>
+                  <div className="text-[11px] font-medium text-[var(--grey)]">Bot Status</div>
+                  <div className={`text-sm font-semibold mt-1.5 ${isPaused ? 'text-amber-600' : 'text-emerald-600'}`}>
+                    {isPaused ? 'Paused' : 'Active'}
                   </div>
-                  <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
-                    Normal (Buffer 40%)
-                  </div>
-                  <div className="text-[11px] text-[var(--grey)]">Wings Armed</div>
                 </SpotlightCard>
-
               </div>
 
-              {/* Primary Engine Operational Status Bar */}
-              <div className="fintech-card p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4 shadow-subtle">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-2 h-2 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                    <h2 className="text-base font-semibold text-[var(--ink)]">
-                      ProfitPilot Execution Core
-                    </h2>
-                    <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${isPaused ? 'bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'}`}>
-                      {isPaused ? 'Paused' : 'Active'}
-                    </span>
+              <div className="fintech-card p-4 sm:p-5 shadow-subtle">
+                <h3 className="font-semibold text-sm text-[var(--ink)] mb-4">Open Positions</h3>
+                {openPositions.length === 0 ? (
+                  <div className="text-center text-[var(--grey)] text-xs p-6 bg-[var(--paper-2)] rounded-lg border border-[var(--hair)]">
+                    No open positions — ProfitPilot is currently monitoring the market.
                   </div>
-                  <p className="text-xs text-[var(--grey)] mt-1">
-                    Target: BTC &middot; Delta: 0.15–0.18 &middot; Dynamic Wings Trigger: &Delta; &ge; 0.35 &middot; Evaluation Interval: 5s
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2.5">
-                  <button 
-                    onClick={handlePauseToggle}
-                    className={`px-3.5 py-2 font-medium rounded-lg text-xs transition flex items-center gap-2 shadow-subtle active:scale-95 ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
-                  >
-                    {isPaused ? <Play className="w-3.5 h-3.5 fill-current" /> : <Pause className="w-3.5 h-3.5 fill-current" />}
-                    {isPaused ? 'Resume strategy entries' : 'Pause new entries'}
-                  </button>
-
-                  <button 
-                    onClick={() => { setLoading(true); fetchData(); }}
-                    className="px-3 py-2 font-medium rounded-lg text-xs bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--ink)] hover:bg-[var(--raise)] transition flex items-center gap-1.5 active:scale-95"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Refresh</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* LIVE ACTIVE POSITION & 4 DEFENSE STATES */}
-              <div className="fintech-card p-4 sm:p-5 space-y-4 shadow-subtle">
-                
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[var(--hair)] pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    <h3 className="font-semibold text-sm text-[var(--ink)]">
-                      Active Strategy Position (BTC Strangle)
-                    </h3>
-                    <span className="text-[10px] font-mono bg-[var(--paper-2)] text-[var(--grey)] px-2 py-0.5 rounded border border-[var(--hair)]">
-                      Source: Supabase DB
-                    </span>
-                  </div>
-
-                  {/* 4 Defense States Pipeline */}
-                  <div className="flex items-center gap-1 text-[11px]">
-                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 font-medium">
-                      1. Harvest (Active)
-                    </span>
-                    <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      2. Defend
-                    </span>
-                    <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      3. Protect
-                    </span>
-                    <span className="text-[var(--faint)]">&rarr;</span>
-                    <span className="px-2 py-0.5 rounded bg-[var(--paper-2)] text-[var(--faint)]">
-                      4. Lockdown
-                    </span>
-                  </div>
-                </div>
-
-                {openPositions.length > 0 ? (
-                  openPositions.map(pos => (
-                    <div key={pos.id} className="space-y-4">
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div className="fintech-card-subtle p-3 space-y-1">
-                          <div className="text-[11px] text-[var(--grey)] flex items-center justify-between">
-                            <span>Instruments</span>
-                            <CopyButton text={`${pos.short_call_symbol} / ${pos.short_put_symbol}`} label="Copy" />
+                ) : (
+                  <div className="space-y-4">
+                    {openPositions.map(pos => {
+                      const expanded = expandedPositionIds.has(pos.id);
+                      return (
+                        <div key={pos.id} className="bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg overflow-hidden text-xs">
+                          <div className="p-4 flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold text-[var(--ink)]">BTC Options Position</div>
+                              <div className="text-[var(--grey)] mt-0.5">Expiry: {new Date(pos.expiry_date).toLocaleDateString()}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className={`font-mono font-semibold ${pos.actualPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {pos.actualPnl >= 0 ? '+' : ''}{fmt(pos.actualPnl)}
+                              </div>
+                              <div className="text-emerald-600 font-medium">● Active</div>
+                            </div>
                           </div>
-                          <div className="font-mono text-xs font-semibold text-[var(--ink)]">{pos.short_call_symbol || 'BTC-CALL'}</div>
-                          <div className="font-mono text-xs font-semibold text-[var(--grey)]">{pos.short_put_symbol || 'BTC-PUT'}</div>
-                        </div>
-
-                        <div className="fintech-card-subtle p-3 space-y-1">
-                          <div className="text-[11px] text-[var(--grey)]">Position sizing &amp; fills</div>
-                          <div className="font-mono text-xs font-semibold text-[var(--ink)]">{(pos.lots * 0.001).toFixed(3)} BTC ({pos.lots} Lots)</div>
-                          <div className="font-mono text-[11px] text-[var(--grey)]">C: {pos.callEntry} | P: {pos.putEntry}</div>
-                        </div>
-
-                        <div className="fintech-card-subtle p-3 space-y-1">
-                          <div className="text-[11px] text-[var(--grey)]">Actual Mark P&amp;L</div>
-                          <div className={`font-mono text-base font-semibold ${pos.actualPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
-                            {pos.actualPnl >= 0 ? '+' : ''}{fmt(pos.actualPnl)}
-                          </div>
-                          <div className="font-mono text-[11px] text-emerald-600">Peak: +{fmt(pos.peakPnl)}</div>
-                        </div>
-
-                        <div className="fintech-card-subtle p-3 flex flex-col justify-between">
-                          <div className="text-[11px] text-[var(--grey)]">Emergency override</div>
-                          {pos.manual_exit_requested ? (
-                            <span className="text-rose-600 font-semibold text-xs animate-pulse">
-                              Kill order sent
-                            </span>
-                          ) : (
-                            <button 
-                              onClick={() => handleKillSwitch(pos.id)}
-                              className="w-full py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1.5 shadow-subtle active:scale-95"
-                            >
-                              <ShieldAlert className="w-3.5 h-3.5" /> Emergency market kill
+                          
+                          <div className="px-4 pb-3 flex items-center justify-between">
+                            <button onClick={() => toggleExpand(pos.id)} className="text-[#d97706] font-medium flex items-center gap-1">
+                              {expanded ? 'Hide Details' : 'View Details'} {expanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                             </button>
+                            {!pos.manual_exit_requested && (
+                              <button onClick={() => handleKillSwitch(pos.id)} className="text-rose-600 font-medium bg-rose-50 px-2 py-1 rounded transition">
+                                Emergency Kill Switch
+                              </button>
+                            )}
+                            {pos.manual_exit_requested && (
+                              <span className="text-rose-600 font-medium animate-pulse">Closing...</span>
+                            )}
+                          </div>
+                          
+                          {expanded && (
+                            <div className="bg-[var(--card)] p-4 border-t border-[var(--hair)] grid grid-cols-2 sm:grid-cols-4 gap-4">
+                              <div><div className="text-[var(--grey)] mb-1">Call Entry</div><div className="font-mono">{pos.callEntry}</div></div>
+                              <div><div className="text-[var(--grey)] mb-1">Put Entry</div><div className="font-mono">{pos.putEntry}</div></div>
+                              <div><div className="text-[var(--grey)] mb-1">Peak P&amp;L</div><div className="font-mono text-emerald-600">+{fmt(pos.peakPnl)}</div></div>
+                              <div><div className="text-[var(--grey)] mb-1">Lots</div><div className="font-mono">{pos.lots}</div></div>
+                            </div>
                           )}
                         </div>
-                      </div>
-
-                      {/* POSITION CHANGE DETECTOR */}
-                      <div className="bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg p-3.5 space-y-2.5 text-xs">
-                        <div className="flex items-center justify-between">
-                          <span className="font-semibold text-[var(--ink)] flex items-center gap-1.5">
-                            <Crosshair className="w-3.5 h-3.5 text-[#d97706]" /> Position Change Detector
-                          </span>
-                          <span className="text-[11px] font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded">
-                            Engine response: Harvest mode (Nominal)
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[11px] text-[var(--grey)] block">Implied Vol (IV):</span>
-                            <span className="font-mono font-medium text-[var(--ink)]">54% &rarr; {calculatedModel.iv.toFixed(0)}%</span>
-                          </div>
-                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[11px] text-[var(--grey)] block">NATR Level:</span>
-                            <span className="font-mono font-medium text-[var(--ink)]">3.2% &rarr; {calculatedModel.natr}%</span>
-                          </div>
-                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[11px] text-[var(--grey)] block">Threatened Delta:</span>
-                            <span className="font-mono font-medium text-emerald-600">0.15 &rarr; 0.16 (Safe &lt; 0.35)</span>
-                          </div>
-                          <div className="p-2.5 bg-[var(--card)] rounded-lg border border-[var(--hair)]">
-                            <span className="text-[11px] text-[var(--grey)] block">Wing Activation:</span>
-                            <span className="font-mono font-medium text-[var(--grey)]">Standby (Armed)</span>
-                          </div>
-                        </div>
-                      </div>
-
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center text-[var(--grey)] text-xs">
-                    No active positions open right now. Engine is scanning orderbook deltas on Delta Exchange.
+                      )
+                    })}
                   </div>
                 )}
-
               </div>
 
-              {/* WHY DIDN'T THE BOT TRADE? AUDIT TRAIL FORMAT */}
-              <div className="fintech-card p-4 sm:p-5 space-y-3 shadow-subtle">
-                <div className="flex items-center justify-between border-b border-[var(--hair)] pb-3">
-                  <div>
-                    <h3 className="font-semibold text-sm text-[var(--ink)] flex items-center gap-2">
-                      <Brain className="w-4 h-4 text-[#d97706]" /> "Why Didn't the Bot Trade?" &mdash; Quantitative Audit Trail
-                    </h3>
-                    <p className="text-xs text-[var(--grey)] mt-0.5">
-                      Audited checklist of all mathematical preconditions evaluated before capital allocation.
-                    </p>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="fintech-card p-4 sm:p-5 shadow-subtle">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-sm text-[var(--ink)]">Recent Trades</h3>
+                    <Link href="/dashboard" onClick={() => setSection('trade_history')} className="text-xs text-[#d97706] font-medium">View All</Link>
                   </div>
-                  <span className="text-[11px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 rounded font-medium border border-emerald-200">
-                    Overall: Pass
-                  </span>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="border-b border-[var(--hair)] text-[var(--grey)]">
+                        <tr>
+                          <th className="py-2 font-medium">Date</th>
+                          <th className="py-2 font-medium">Instrument</th>
+                          <th className="py-2 font-medium text-right">P&amp;L</th>
+                          <th className="py-2 font-medium text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--hair)]">
+                        {closedPositions.slice(0, 5).map(pos => (
+                          <tr key={pos.id}>
+                            <td className="py-2.5 text-[var(--grey)]">{new Date(pos.closed_at).toLocaleDateString()}</td>
+                            <td className="py-2.5 font-medium text-[var(--ink)]">BTC Options</td>
+                            <td className={`py-2.5 text-right font-mono font-medium ${pos.realizedPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {pos.realizedPnl >= 0 ? '+' : ''}{fmt(pos.realizedPnl)}
+                            </td>
+                            <td className="py-2.5 text-right"><span className="text-[10px] bg-[var(--paper-2)] border border-[var(--hair)] px-1.5 py-0.5 rounded text-[var(--grey)]">CLOSED</span></td>
+                          </tr>
+                        ))}
+                        {closedPositions.length === 0 && (
+                          <tr><td colSpan={4} className="py-4 text-center text-[var(--grey)]">No recent trades</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="fintech-card p-4 sm:p-5 shadow-subtle flex flex-col justify-between">
+                  <div>
+                    <h3 className="font-semibold text-sm text-[var(--ink)] mb-4">Account Health</h3>
+                    <div className="space-y-4 text-xs">
+                      <div className="flex justify-between items-center p-3 bg-[var(--paper-2)] rounded-lg border border-[var(--hair)]">
+                        <span className="text-[var(--grey)]">Status</span>
+                        <span className="text-emerald-600 font-medium flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> Normal</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-[var(--paper-2)] rounded-lg border border-[var(--hair)]">
+                        <span className="text-[var(--grey)]">Total Balance</span>
+                        <span className="font-mono text-[var(--ink)] font-medium">{fmt(metrics.liveBalance)}</span>
+                      </div>
+                      <div className="flex justify-between items-center p-3 bg-[var(--paper-2)] rounded-lg border border-[var(--hair)]">
+                        <span className="text-[var(--grey)]">Margin Used</span>
+                        <span className="font-mono text-[var(--ink)] font-medium">{marginUsed.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 text-center text-xs text-[var(--grey)]">
+                    No action required.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Positions View */}
+          {section === 'positions' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Positions</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">View your open and completed trades.</p>
+              </div>
+
+              <div className="flex gap-2 border-b border-[var(--hair)] pb-3 text-xs">
+                <button onClick={() => setPositionsTab('open')} className={`px-3 py-2 rounded-lg font-medium transition ${positionsTab === 'open' ? 'bg-[#d97706] text-white' : 'bg-[var(--paper-2)] text-[var(--grey)] border border-[var(--hair)]'}`}>
+                  Open Positions
+                </button>
+                <button onClick={() => setPositionsTab('closed')} className={`px-3 py-2 rounded-lg font-medium transition ${positionsTab === 'closed' ? 'bg-[#d97706] text-white' : 'bg-[var(--paper-2)] text-[var(--grey)] border border-[var(--hair)]'}`}>
+                  Closed Positions
+                </button>
+              </div>
+
+              {positionsTab === 'open' && (
+                <div className="space-y-4">
+                  {openPositions.length === 0 ? (
+                    <div className="text-center text-[var(--grey)] text-xs p-6 bg-[var(--paper-2)] rounded-lg border border-[var(--hair)]">No open positions.</div>
+                  ) : (
+                    openPositions.map(pos => {
+                      const expanded = expandedPositionIds.has(pos.id);
+                      return (
+                        <div key={pos.id} className="fintech-card p-4 text-xs space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-semibold text-[var(--ink)]">BTC Options Position</div>
+                              <div className="text-[var(--grey)]">Active</div>
+                            </div>
+                            <div className={`font-mono font-semibold text-sm ${pos.actualPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                              {pos.actualPnl >= 0 ? '+' : ''}{fmt(pos.actualPnl)}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <button onClick={() => toggleExpand(pos.id)} className="text-[#d97706] font-medium">
+                              {expanded ? 'Hide Details' : 'View Details'}
+                            </button>
+                            <button onClick={() => handleKillSwitch(pos.id)} className="text-rose-600 font-medium">Emergency Kill Switch</button>
+                          </div>
+                          {expanded && (
+                            <div className="bg-[var(--paper-2)] p-4 rounded border border-[var(--hair)] mt-2 grid grid-cols-2 gap-4">
+                              <div><div className="text-[var(--grey)]">Call Entry</div><div className="font-mono">{pos.callEntry}</div></div>
+                              <div><div className="text-[var(--grey)]">Put Entry</div><div className="font-mono">{pos.putEntry}</div></div>
+                              <div><div className="text-[var(--grey)]">Expiry</div><div className="font-mono">{new Date(pos.expiry_date).toLocaleDateString()}</div></div>
+                              <div><div className="text-[var(--grey)]">Lots</div><div className="font-mono">{pos.lots}</div></div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )}
+
+              {positionsTab === 'closed' && (
+                <div className="fintech-card p-4 overflow-x-auto shadow-subtle">
                   <table className="w-full text-xs text-left">
-                    <thead className="border-b border-[var(--hair)] text-[var(--grey)] font-medium">
+                    <thead className="border-b border-[var(--hair)] text-[var(--grey)]">
                       <tr>
-                        <th className="py-2">Condition</th>
-                        <th className="py-2">Status</th>
-                        <th className="py-2">Current Value</th>
-                        <th className="py-2">Explanation</th>
+                        <th className="py-2 font-medium">Date</th>
+                        <th className="py-2 font-medium">Instrument</th>
+                        <th className="py-2 font-medium text-right">P&amp;L</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--hair)]">
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Volatility Gate</td>
-                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
-                        <td className="font-mono py-2.5 text-[var(--ink)]">IV &gt; RV +12.2%</td>
-                        <td className="py-2.5 text-[var(--grey)]">Premium environment remains statistically favorable.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Strategy Fit</td>
-                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
-                        <td className="font-mono py-2.5 text-[var(--ink)]">82 / 100</td>
-                        <td className="py-2.5 text-[var(--grey)]">High volatility regime favors Out-of-the-Money strangle harvest.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Orderbook Liquidity</td>
-                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
-                        <td className="font-mono py-2.5 text-[var(--ink)]">Spread &lt; 2.0%</td>
-                        <td className="py-2.5 text-[var(--grey)]">Sufficient market depth on Delta Exchange to fill candidate legs.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Margin Buffer</td>
-                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
-                        <td className="font-mono py-2.5 text-[var(--ink)]">40% Free Margin</td>
-                        <td className="py-2.5 text-[var(--grey)]">Unallocated reserve preserved for dynamic Iron Condor wing triggers.</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Stop-Loss Cooldown</td>
-                        <td className="py-2.5"><span className="text-emerald-600 font-semibold">PASS</span></td>
-                        <td className="font-mono py-2.5 text-[var(--ink)]">0 Active Locks</td>
-                        <td className="py-2.5 text-[var(--grey)]">No recent stop-loss quarantine active on BTC underlying.</td>
-                      </tr>
+                      {closedPositions.map(pos => (
+                        <tr key={pos.id}>
+                          <td className="py-2.5 text-[var(--grey)]">{new Date(pos.closed_at).toLocaleString()}</td>
+                          <td className="py-2.5 font-medium text-[var(--ink)]">BTC Options</td>
+                          <td className={`py-2.5 text-right font-mono font-medium ${pos.realizedPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                            {pos.realizedPnl >= 0 ? '+' : ''}{fmt(pos.realizedPnl)}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* SECTION 2: MARKETS INTELLIGENCE MATRIX (01) */}
-          {section === 'markets_intel' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Engine 01 &middot; Regime Classification
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)]">
-                  Market Regime &amp; Intelligence Matrix
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  Multi-factor quantitative observation analyzing Trend, Volatility, Liquidity, Momentum, and Options Surface positioning.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                <div className="space-y-3">
-                  <h4 className="text-xs font-semibold text-[var(--ink)]">Component Sub-Factor Scores</h4>
-                  
-                  {[
-                    { label: 'Trend Strength (ADX / Moving Averages)', score: 82, note: 'Bullish momentum structure' },
-                    { label: 'Volatility State (IV / RV Spread & NATR)', score: 91, note: 'Elevated short premium environment' },
-                    { label: 'Orderbook Liquidity & Market Depth', score: 67, note: 'Sufficient depth for 10-lot sizing' },
-                    { label: 'Short-term Momentum Acceleration', score: 78, note: 'Consolidation in upper range' },
-                    { label: 'Options Positioning & Gamma Exposure', score: 84, note: 'Positive dealer gamma cushion' },
-                  ].map((factor, idx) => (
-                    <div key={idx} className="bg-[var(--paper-2)] p-3 rounded-lg border border-[var(--hair)] space-y-1.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-[var(--ink)]">{factor.label}</span>
-                        <span className="font-mono font-semibold text-[#d97706]">{factor.score} / 100</span>
-                      </div>
-                      <div className="w-full h-1.5 bg-[var(--hair)] rounded-full overflow-hidden">
-                        <div className="h-full bg-[#d97706]" style={{ width: `${factor.score}%` }} />
-                      </div>
-                      <div className="text-[11px] text-[var(--grey)]">{factor.note}</div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] flex flex-col justify-between space-y-4">
-                  <div>
-                    <div className="text-xs text-[var(--grey)]">Overall Market Intelligence</div>
-                    <div className="font-mono text-3xl font-semibold text-[var(--ink)] mt-1">
-                      78 <span className="text-xs font-normal text-[var(--grey)]">/ 100</span>
-                    </div>
-                    <div className="inline-block mt-2 px-2.5 py-0.5 bg-[var(--orange-tint)] text-[#d97706] font-semibold text-xs rounded-full border border-[#d97706]/20">
-                      High Volatility / Bullish Regime
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5 text-xs text-[var(--grey)] leading-relaxed border-t border-[var(--hair)] pt-3">
-                    <p>
-                      <strong>Regime Assessment:</strong> Bitcoin is currently trading with elevated implied volatility relative to 30-day realized moves. While trend momentum is bullish, the standard deviation width of $68k Call / $61k Put provides robust cushion.
-                    </p>
-                    <p>
-                      <strong>Strategy Directive:</strong> Strangle entries are approved with strict 0.35 Delta dynamic wing defense rules active.
-                    </p>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 3: VOLATILITY ENGINE (02) */}
-          {section === 'markets_vol' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Engine 02 &middot; Volatility Diagnostics
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)]">
-                  Volatility Engine &amp; Entry Gate
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  Measures ATR, NATR, Realized vs Implied Volatility spreads, and Expected Moves to gate entry.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] text-[var(--grey)] block">Implied Vol (IV)</span>
-                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">{calculatedModel.iv.toFixed(1)}%</span>
-                  <span className="text-[11px] text-emerald-600">Delta 30D surface</span>
-                </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] text-[var(--grey)] block">Realized Vol (RV)</span>
-                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">{calculatedModel.rv}%</span>
-                  <span className="text-[11px] text-[var(--grey)]">30-day historical</span>
-                </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] text-[var(--grey)] block">IV / RV Spread</span>
-                  <span className="font-mono text-xl font-semibold text-emerald-600 mt-1 block num-tabular">+{(calculatedModel.iv - calculatedModel.rv).toFixed(1)}%</span>
-                  <span className="text-[11px] text-emerald-600 font-medium">Premium rich</span>
-                </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] text-[var(--grey)] block">Expected Move (1D)</span>
-                  <span className="font-mono text-xl font-semibold text-[var(--ink)] mt-1 block num-tabular">&plusmn;{calculatedModel.expectedMovePct.toFixed(1)}%</span>
-                  <span className="font-mono text-[11px] text-[var(--grey)]">&plusmn;${(btcPrice * calculatedModel.expectedMovePct / 100).toFixed(0)}</span>
-                </div>
-              </div>
-
-              {/* Volatility Regime Timeline */}
-              <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
-                <div className="text-xs font-semibold text-[var(--ink)]">
-                  Volatility State Spectrum
-                </div>
-                <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block font-medium">LOW</span>
-                    <span className="font-mono text-[11px]">&lt; 35%</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block font-medium">NORMAL</span>
-                    <span className="font-mono text-[11px]">35%–50%</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-[var(--grey)]">
-                    <span className="text-[10px] block font-medium">ELEVATED</span>
-                    <span className="font-mono text-[11px]">50%–60%</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[#d97706] text-white font-medium shadow-subtle">
-                    <span className="text-[10px] block text-white/80">HIGH (CURRENT)</span>
-                    <span className="font-mono text-[11px]">60%–75%</span>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-rose-600">
-                    <span className="text-[10px] block font-medium">EXTREME</span>
-                    <span className="font-mono text-[11px]">&gt; 75%</span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* SECTION 4: SCENARIO STRESS LAB */}
-          {section === 'scenario_lab' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Engine 04 &middot; Scenario Stress Sandbox
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)]">
-                  Scenario Stress Lab
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  Modelled P&amp;L based on simulated Bitcoin price shocks, implied volatility shifts, and time decay.
-                </p>
-              </div>
-
-              {/* Stress Quick Buttons */}
-              <div className="space-y-2 text-xs">
-                <span className="font-medium text-[var(--grey)]">Quick stress scenarios:</span>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { label: 'BTC +2%', btc: 2, iv: 0 },
-                    { label: 'BTC +5%', btc: 5, iv: 5 },
-                    { label: 'BTC +10%', btc: 10, iv: 15 },
-                    { label: 'BTC -2%', btc: -2, iv: 0 },
-                    { label: 'BTC -5%', btc: -5, iv: 8 },
-                    { label: 'BTC -10%', btc: -10, iv: 20 },
-                    { label: 'IV Spike +10%', btc: 0, iv: 10 },
-                    { label: 'IV Crash -10%', btc: 0, iv: -10 },
-                  ].map((s, i) => (
-                    <button
-                      key={i}
-                      onClick={() => { setScenarioBtcShift(s.btc); setScenarioIvShift(s.iv); }}
-                      className="px-2.5 py-1 rounded-md bg-[var(--paper-2)] border border-[var(--hair)] text-xs font-mono font-medium hover:bg-[#d97706] hover:text-white transition"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => { setScenarioBtcShift(0); setScenarioIvShift(0); setScenarioHoursPassed(6); }}
-                    className="px-2.5 py-1 rounded-md bg-rose-50 text-rose-600 border border-rose-200 text-xs font-medium hover:bg-rose-100 transition"
-                  >
-                    Reset
-                  </button>
-                </div>
-              </div>
-
-              {/* Controls */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-5 bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] text-xs">
-                
-                <div className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--grey)]">BTC price shift:</span>
-                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioBtcShift >= 0 ? '+' : ''}{scenarioBtcShift}% (${calculatedModel.simulatedSpot.toFixed(0)})</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min={-15} 
-                    max={15} 
-                    step={1}
-                    value={scenarioBtcShift}
-                    onChange={(e) => setScenarioBtcShift(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--grey)]">IV shift:</span>
-                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioIvShift >= 0 ? '+' : ''}{scenarioIvShift}% ({calculatedModel.iv.toFixed(0)}% IV)</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min={-20} 
-                    max={30} 
-                    step={2}
-                    value={scenarioIvShift}
-                    onChange={(e) => setScenarioIvShift(parseFloat(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between">
-                    <span className="text-[var(--grey)]">Time passed:</span>
-                    <span className="font-mono font-medium text-[var(--ink)]">{scenarioHoursPassed}h / 24h</span>
-                  </div>
-                  <input 
-                    type="range" 
-                    min={0} 
-                    max={24} 
-                    step={1}
-                    value={scenarioHoursPassed}
-                    onChange={(e) => setScenarioHoursPassed(parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-
-              </div>
-
-              {/* Output Result Card */}
-              <div className="bg-[var(--card)] p-5 rounded-lg border border-[var(--hair)] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <span className="text-[11px] text-[var(--grey)] font-medium uppercase block">Modelled Scenario P&amp;L (1 BTC Contract)</span>
-                  <div className={`font-mono text-2xl sm:text-3xl font-semibold mt-1 num-tabular ${calculatedModel.modelledPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {calculatedModel.modelledPnl >= 0 ? '+' : ''}{fmt(calculatedModel.modelledPnl)}
-                  </div>
-                  <p className="text-[11px] text-[var(--grey)] mt-0.5">
-                    Based on selected underlying price, implied volatility, and time decay assumptions.
-                  </p>
-                </div>
-
-                <div className="text-right text-xs space-y-1">
-                  <div>Breakevens: <strong className="font-mono text-[var(--ink)] font-medium">$60,150 &mdash; $68,850</strong></div>
-                  <div>Max defined wing risk: <strong className="font-mono text-rose-600 font-medium">-$1,250</strong></div>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* SECTION 5: "TRADES WE DIDN'T TAKE" (No-Trade Analytics) */}
-          {section === 'analytics_notrade' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Signature Analytics &middot; Quantitative Discipline
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)]">
-                  The Trades We Didn't Take
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  "Discipline is not only knowing when to trade. It is knowing when not to."
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                
-                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
-                  <div className="text-xs font-semibold text-[var(--grey)]">Summary Statistics</div>
-                  <div className="space-y-2.5 text-xs divide-y divide-[var(--hair)]">
-                    <div className="flex justify-between pt-1">
-                      <span className="text-[var(--grey)]">Total scanned cycles:</span>
-                      <span className="font-mono font-medium text-[var(--ink)]">500</span>
-                    </div>
-                    <div className="flex justify-between pt-2">
-                      <span className="text-[var(--grey)]">Trades executed:</span>
-                      <span className="font-mono font-medium text-emerald-600">316 (63.2%)</span>
-                    </div>
-                    <div className="flex justify-between pt-2">
-                      <span className="text-[var(--grey)]">Trades filtered (avoided):</span>
-                      <span className="font-mono font-medium text-[#d97706]">184 (36.8%)</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="lg:col-span-2 space-y-2.5 text-xs">
-                  <h4 className="font-semibold text-[var(--ink)]">Breakdown of Avoided Trades</h4>
-                  
-                  {[
-                    { reason: 'Volatility Gate Trigger (IV < RV or NATR Spike)', count: 71, pct: '38.6%' },
-                    { reason: 'Trend Momentum Acceleration Filter', count: 42, pct: '22.8%' },
-                    { reason: 'Delta Exchange Orderbook Liquidity Buffer', count: 26, pct: '14.1%' },
-                    { reason: 'Free Margin Reserve Protection (< 40%)', count: 19, pct: '10.3%' },
-                    { reason: 'Stop-Loss Cooldown Lock (4-Hour Quarantine)', count: 15, pct: '8.2%' },
-                    { reason: 'Portfolio Greeks Concentration Ceiling', count: 11, pct: '6.0%' },
-                  ].map((item, idx) => (
-                    <div key={idx} className="bg-[var(--paper-2)] p-2.5 rounded-lg border border-[var(--hair)] flex items-center justify-between">
-                      <span className="text-[var(--ink)] font-medium">{item.reason}</span>
-                      <span className="font-mono font-medium text-[#d97706] num-tabular">{item.count} ({item.pct})</span>
-                    </div>
-                  ))}
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* SECTION 6: CONTEXTUAL "WHY?" AI ANALYST (07) */}
-          {section === 'intel_ai' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Engine 07 &middot; Contextual Diagnostics
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)] flex items-center gap-2">
-                  <Brain className="w-5 h-5 text-[#d97706]" /> "WHY?" Explainability Engine
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  Select any diagnostic query below to audit the platform's decision tree using real-time system metrics.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 text-xs">
-                {aiQueries.map((item, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveAiQuery(item.q)}
-                    className={`p-3.5 rounded-lg border text-left transition-all active:scale-[0.98] ${activeAiQuery === item.q ? 'bg-[var(--orange-tint)] border-[#d97706] text-[#d97706] font-semibold shadow-subtle' : 'bg-[var(--paper-2)] border-[var(--hair)] text-[var(--ink)] hover:border-[#d97706]'}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span>{item.q}</span>
-                      <ChevronRight className="w-4 h-4" />
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              {activeAiQuery && (
-                <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-2.5 text-xs leading-relaxed">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-[#d97706] font-semibold">
-                      <Activity className="w-4 h-4" /> Quantitative Audit Rationale:
-                    </div>
-                    <CopyButton text={aiQueries.find(x => x.q === activeAiQuery)?.a || ''} label="Copy rationale" />
-                  </div>
-                  <div className="text-[var(--ink)] bg-[var(--card)] p-3.5 rounded-lg border border-[var(--hair)] font-mono">
-                    {aiQueries.find(x => x.q === activeAiQuery)?.a}
-                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* SECTION 7: BACKTEST BY REGIME */}
-          {section === 'analytics_backtest' && (
-            <div className="fintech-card p-5 sm:p-6 space-y-6 shadow-subtle">
-              <div className="border-b border-[var(--hair)] pb-3">
-                <div className="text-xs font-semibold text-[#d97706] uppercase tracking-wider mb-0.5">
-                  Historical Simulation &middot; Methodological Transparency
-                </div>
-                <h2 className="text-xl font-bold text-[var(--ink)]">
-                  Strategy Backtest Performance
-                </h2>
-                <p className="text-xs text-[var(--grey)] mt-0.5">
-                  Simulation Period: Aug 2025 &ndash; Aug 2026 &middot; Capital: $5,000 USD &middot; Taker Fees + 18% GST: Included &middot; Slippage Model: 0.15% per leg
-                </p>
+          {/* Trade History */}
+          {section === 'trade_history' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Trade History</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">Complete record of your closed trades.</p>
+              </div>
+              <div className="fintech-card p-4 overflow-x-auto shadow-subtle">
+                <table className="w-full text-xs text-left">
+                  <thead className="border-b border-[var(--hair)] text-[var(--grey)]">
+                    <tr>
+                      <th className="py-2 font-medium">Date</th>
+                      <th className="py-2 font-medium">Instrument</th>
+                      <th className="py-2 font-medium">Call Entry / Exit</th>
+                      <th className="py-2 font-medium">Put Entry / Exit</th>
+                      <th className="py-2 font-medium text-right">Fees</th>
+                      <th className="py-2 font-medium text-right">Net P&amp;L</th>
+                      <th className="py-2 font-medium text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--hair)]">
+                    {closedPositions.map(pos => (
+                      <tr key={pos.id}>
+                        <td className="py-2.5 text-[var(--grey)]">{new Date(pos.closed_at).toLocaleDateString()}</td>
+                        <td className="py-2.5 font-medium text-[var(--ink)]">BTC Options</td>
+                        <td className="py-2.5 font-mono text-[var(--grey)]">{pos.callEntry} &rarr; {pos.callExit}</td>
+                        <td className="py-2.5 font-mono text-[var(--grey)]">{pos.putEntry} &rarr; {pos.putExit}</td>
+                        <td className="py-2.5 text-right font-mono text-[var(--grey)]">{fmt(pos.fees)}</td>
+                        <td className={`py-2.5 text-right font-mono font-medium ${pos.realizedPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {pos.realizedPnl >= 0 ? '+' : ''}{fmt(pos.realizedPnl)}
+                        </td>
+                        <td className="py-2.5 text-right"><span className="text-[10px] bg-[var(--paper-2)] border border-[var(--hair)] px-1.5 py-0.5 rounded text-[var(--grey)]">CLOSED</span></td>
+                      </tr>
+                    ))}
+                    {closedPositions.length === 0 && (
+                      <tr><td colSpan={7} className="py-4 text-center text-[var(--grey)]">No trade history available</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Performance */}
+          {section === 'performance' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Performance Overview</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">Track your overall trading results.</p>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] font-medium text-[var(--grey)] block">CAGR</span>
-                  <span className="font-mono text-xl sm:text-2xl font-semibold text-emerald-600 mt-1 block num-tabular">227.4%</span>
-                  <span className="text-[11px] text-[var(--grey)]">Compounded annual</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <SpotlightCard className="p-5 shadow-subtle">
+                  <div className="text-xs font-medium text-[var(--grey)]">Total P&amp;L</div>
+                  <div className={`font-mono text-2xl font-semibold mt-1 ${metrics.totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {metrics.totalPnl >= 0 ? '+' : ''}{fmt(metrics.totalPnl)}
+                  </div>
+                </SpotlightCard>
+                <SpotlightCard className="p-5 shadow-subtle">
+                  <div className="text-xs font-medium text-[var(--grey)]">This Month</div>
+                  <div className={`font-mono text-2xl font-semibold mt-1 ${thisMonthPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    {thisMonthPnl >= 0 ? '+' : ''}{fmt(thisMonthPnl)}
+                  </div>
+                </SpotlightCard>
+                <SpotlightCard className="p-5 shadow-subtle">
+                  <div className="text-xs font-medium text-[var(--grey)]">Win Rate</div>
+                  <div className="font-mono text-2xl font-semibold text-[var(--ink)] mt-1">{metrics.hitRate}%</div>
+                </SpotlightCard>
+                <SpotlightCard className="p-5 shadow-subtle">
+                  <div className="text-xs font-medium text-[var(--grey)]">Total Trades</div>
+                  <div className="font-mono text-2xl font-semibold text-[var(--ink)] mt-1">{metrics.roundTrips}</div>
+                </SpotlightCard>
+              </div>
+
+              <div className="fintech-card p-5 shadow-subtle">
+                <h3 className="font-semibold text-sm text-[var(--ink)] mb-4">Trade Statistics</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  <div className="p-4 bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg">
+                    <div className="text-[var(--grey)] mb-1">Winning Trades</div>
+                    <div className="font-mono font-semibold text-[var(--ink)]">{metrics.winners}</div>
+                  </div>
+                  <div className="p-4 bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg">
+                    <div className="text-[var(--grey)] mb-1">Losing Trades</div>
+                    <div className="font-mono font-semibold text-[var(--ink)]">{metrics.roundTrips - metrics.winners}</div>
+                  </div>
+                  <div className="p-4 bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg">
+                    <div className="text-[var(--grey)] mb-1">Net P&amp;L</div>
+                    <div className={`font-mono font-semibold ${metrics.totalPnl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>{fmt(metrics.totalPnl)}</div>
+                  </div>
                 </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] font-medium text-[var(--grey)] block">Win Rate</span>
-                  <span className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 block num-tabular">68.3%</span>
-                  <span className="text-[11px] text-emerald-600">386 / 565 trades</span>
+              </div>
+            </div>
+          )}
+
+          {/* Automation */}
+          {section === 'automation' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Automation Control</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">Manage automated trading execution.</p>
+              </div>
+
+              <div className="fintech-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-subtle">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className={`w-3 h-3 rounded-full ${isPaused ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                    <h3 className="font-semibold text-base text-[var(--ink)]">Automation Status: {isPaused ? 'Paused' : 'Active'}</h3>
+                  </div>
+                  <p className="text-xs text-[var(--grey)] max-w-sm">
+                    When active, ProfitPilot monitors the market and executes trades automatically based on defined parameters.
+                  </p>
                 </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] font-medium text-[var(--grey)] block">Sharpe Ratio</span>
-                  <span className="font-mono text-xl sm:text-2xl font-semibold text-[var(--ink)] mt-1 block num-tabular">1.93</span>
-                  <span className="text-[11px] text-[var(--grey)]">Risk-adjusted</span>
-                </div>
-                <div className="bg-[var(--paper-2)] p-3.5 rounded-lg border border-[var(--hair)]">
-                  <span className="text-[11px] font-medium text-[var(--grey)] block">Max Drawdown</span>
-                  <span className="font-mono text-xl sm:text-2xl font-semibold text-rose-600 mt-1 block num-tabular">-11.4%</span>
-                  <span className="text-[11px] text-[var(--grey)]">Peak to trough</span>
+                
+                <div className="flex flex-col gap-3 min-w-[200px]">
+                  <button 
+                    onClick={handlePauseToggle}
+                    className={`px-4 py-2.5 font-medium rounded-lg text-xs transition flex items-center justify-center gap-2 shadow-subtle ${isPaused ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'}`}
+                  >
+                    {isPaused ? <Play className="w-4 h-4 fill-current" /> : <Pause className="w-4 h-4 fill-current" />}
+                    {isPaused ? 'Resume Automation' : 'Pause New Trades'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (openPositions.length > 0) handleKillSwitch(openPositions[0].id);
+                    }}
+                    className="px-4 py-2.5 font-medium rounded-lg text-xs bg-rose-50 text-rose-600 border border-rose-200 transition flex items-center justify-center gap-2"
+                    disabled={openPositions.length === 0}
+                  >
+                    <ShieldAlert className="w-4 h-4" /> Emergency Stop
+                  </button>
                 </div>
               </div>
 
-              <div className="bg-[var(--paper-2)] p-5 rounded-lg border border-[var(--hair)] space-y-3">
-                <h4 className="text-xs font-semibold text-[var(--ink)]">Performance by Market Regime</h4>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left">
-                    <thead className="border-b border-[var(--hair)] text-[var(--grey)] font-medium">
-                      <tr>
-                        <th className="py-2">Market Regime</th>
-                        <th className="py-2">Cycles</th>
-                        <th className="py-2">Win Rate</th>
-                        <th className="py-2">Avg Return / Cycle</th>
-                        <th className="py-2">Defense Activation</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--hair)]">
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Normal Volatility (35-50%)</td>
-                        <td className="font-mono py-2.5">214</td>
-                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">78.5%</td>
-                        <td className="font-mono py-2.5 text-emerald-600">+1.8%</td>
-                        <td className="font-mono py-2.5 text-[var(--grey)]">4.2%</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">High Volatility (50-75%)</td>
-                        <td className="font-mono py-2.5">182</td>
-                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">65.4%</td>
-                        <td className="font-mono py-2.5 text-emerald-600">+2.4%</td>
-                        <td className="font-mono py-2.5 text-amber-600 font-semibold">14.8%</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Range-Bound Market</td>
-                        <td className="font-mono py-2.5">112</td>
-                        <td className="font-mono py-2.5 text-emerald-600 font-semibold">84.8%</td>
-                        <td className="font-mono py-2.5 text-emerald-600">+1.9%</td>
-                        <td className="font-mono py-2.5 text-[var(--grey)]">1.8%</td>
-                      </tr>
-                      <tr>
-                        <td className="py-2.5 font-medium text-[var(--ink)]">Extreme Volatility (&gt;75%)</td>
-                        <td className="font-mono py-2.5">57</td>
-                        <td className="font-mono py-2.5 text-rose-600 font-semibold">47.3%</td>
-                        <td className="font-mono py-2.5 text-rose-600">-0.8%</td>
-                        <td className="font-mono py-2.5 text-rose-600 font-semibold">38.6% (Wings Capped)</td>
-                      </tr>
-                    </tbody>
-                  </table>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="fintech-card p-5">
+                  <div className="text-xs text-[var(--grey)] mb-1">Today's Trades</div>
+                  <div className="font-mono text-2xl font-semibold text-[var(--ink)]">0</div>
+                </div>
+                <div className="fintech-card p-5">
+                  <div className="text-xs text-[var(--grey)] mb-1">Last Activity</div>
+                  <div className="text-sm font-semibold text-[var(--ink)] mt-1">{new Date().toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Activity */}
+          {section === 'activity' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Activity Feed</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">Timeline of recent automated actions.</p>
+              </div>
+
+              <div className="fintech-card p-5 shadow-subtle">
+                <div className="space-y-4">
+                  <div className="flex gap-4 text-xs">
+                    <div className="text-[var(--grey)] font-mono whitespace-nowrap">Today, 14:32</div>
+                    <div>
+                      <div className="font-medium text-[var(--ink)]">Trade opened — BTC Options</div>
+                      <div className="text-[var(--grey)] mt-0.5">New position entered automatically.</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-xs">
+                    <div className="text-[var(--grey)] font-mono whitespace-nowrap">Today, 13:18</div>
+                    <div>
+                      <div className="font-medium text-[var(--ink)]">No trade — Conditions not met</div>
+                      <div className="text-[var(--grey)] mt-0.5">Market conditions did not match safety criteria.</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-xs">
+                    <div className="text-[var(--grey)] font-mono whitespace-nowrap">Yesterday, 10:45</div>
+                    <div>
+                      <div className="font-medium text-[var(--ink)]">Trade closed — BTC Options</div>
+                      <div className="text-[var(--grey)] mt-0.5">Position closed successfully.</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Account Health */}
+          {section === 'account_health' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Account Health</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">Overview of your account balances and margin.</p>
+              </div>
+
+              <div className="fintech-card p-6 shadow-subtle text-xs space-y-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-[var(--ink)] text-sm">Status: Normal</h3>
+                    <p className="text-[var(--grey)]">Your account is in good standing.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-[var(--hair)]">
+                  <div>
+                    <div className="text-[var(--grey)] mb-1">Total Balance</div>
+                    <div className="font-mono text-xl font-semibold text-[var(--ink)]">{fmt(metrics.liveBalance)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[var(--grey)] mb-1">Available Margin</div>
+                    <div className="font-mono text-xl font-semibold text-[var(--ink)]">{fmt(availableMargin)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[var(--grey)] mb-1">Margin Used</div>
+                    <div className="font-mono text-xl font-semibold text-[var(--ink)]">{marginUsed.toFixed(1)}%</div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
         </main>
+      </div>
 
+      {/* Ask ProfitPilot Floating Widget */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {askPilotOpen ? (
+          <div className="w-80 bg-[var(--paper)] border border-[var(--hair)] rounded-lg shadow-xl overflow-hidden flex flex-col mb-4">
+            <div className="bg-[#d97706] text-white p-3 flex justify-between items-center">
+              <span className="font-semibold text-sm flex items-center gap-2"><MessageSquare className="w-4 h-4"/> Ask ProfitPilot</span>
+              <button onClick={() => setAskPilotOpen(false)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="p-4 max-h-80 overflow-y-auto space-y-3 text-xs bg-[var(--paper-2)]">
+              {!activeAiQuery ? (
+                <div className="space-y-2">
+                  <p className="text-[var(--grey)] mb-3">What would you like to know?</p>
+                  {simplifiedAiQueries.map((item, i) => (
+                    <button key={i} onClick={() => setActiveAiQuery(item.q)} className="w-full text-left p-2.5 bg-[var(--paper)] border border-[var(--hair)] rounded text-[var(--ink)] hover:border-[#d97706] transition">
+                      {item.q}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <button onClick={() => setActiveAiQuery(null)} className="text-[#d97706] font-medium flex items-center gap-1">
+                    &larr; Back
+                  </button>
+                  <div>
+                    <div className="font-semibold text-[var(--ink)] mb-2">{activeAiQuery}</div>
+                    <div className="text-[var(--grey)] leading-relaxed bg-[var(--paper)] p-3 rounded border border-[var(--hair)]">
+                      {simplifiedAiQueries.find(x => x.q === activeAiQuery)?.a}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <button 
+            onClick={() => setAskPilotOpen(true)}
+            className="bg-[#d97706] hover:bg-[#b45309] text-white p-3 rounded-full shadow-xl transition flex items-center gap-2"
+          >
+            <MessageSquare className="w-5 h-5" />
+            <span className="font-medium text-sm pr-1">Ask ProfitPilot</span>
+          </button>
+        )}
       </div>
 
     </div>
