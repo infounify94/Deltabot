@@ -23,11 +23,21 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
   const { data: profile } = await supabase.from('profiles').select('is_admin').eq('id', user.id).single();
   if (!profile?.is_admin) redirect('/dashboard');
 
-  const { data: invoice } = await supabase
-    .from('invoices')
-    .select('*, profiles(email, full_name)')
-    .eq('id', params.id)
-    .single();
+  // Bypass RLS using the admin RPCs we created
+  const { data: invoices } = await supabase.rpc('admin_get_all_invoices');
+  const invoiceData = (invoices || []).find((inv: any) => inv.id === params.id);
+  
+  if (!invoiceData) {
+    return <div className="p-10 font-sans">Invoice not found.</div>;
+  }
+
+  const { data: users } = await supabase.rpc('admin_get_all_users');
+  const userProfile = (users || []).find((u: any) => u.id === invoiceData.user_id);
+  
+  const invoice = {
+    ...invoiceData,
+    profiles: userProfile
+  };
 
   if (!invoice) {
     return <div className="p-10 font-sans">Invoice not found.</div>;
