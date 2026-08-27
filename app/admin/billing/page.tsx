@@ -16,11 +16,12 @@ export default function AdminBilling() {
 
   const fetchInvoices = async () => {
     setLoading(true);
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('invoices')
       .select('*, profiles(email, full_name)')
       .order('created_at', { ascending: false });
     
+    if (error) console.error("Fetch invoices error:", error);
     if (data) setInvoices(data);
     setLoading(false);
   };

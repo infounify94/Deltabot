@@ -82,10 +82,12 @@ export async function POST(req: Request) {
       }
 
       // Update unrecovered losses in profiles table
-      await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ unrecovered_losses: newUnrecoveredLosses })
         .eq('id', u.id);
+
+      if (updateError) throw updateError;
 
       // Always generate an invoice/statement record
       const dueDate = new Date();
@@ -93,7 +95,7 @@ export async function POST(req: Request) {
 
       const invoiceStatus = feeAmount > 0 ? 'Unpaid' : 'No Fee';
 
-      const { data: invoice } = await supabase
+      const { data: invoice, error: insertError } = await supabase
         .from('invoices')
         .insert({
           user_id: u.id,
@@ -107,12 +109,14 @@ export async function POST(req: Request) {
         .select()
         .single();
       
+      if (insertError) throw insertError;
+      
       invoiceCreated = true;
       results.push({ email: u.email, fee: feeAmount, status: invoiceStatus });
     }
 
     return NextResponse.json({ success: true, billingMonth, results });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error.message || JSON.stringify(error) }, { status: 500 });
   }
 }
