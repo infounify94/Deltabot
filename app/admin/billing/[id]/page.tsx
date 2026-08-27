@@ -145,6 +145,8 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
           <div className="pt-4 text-right">
             {invoice.status === 'Paid' ? (
               <span className="inline-block px-4 py-1.5 border-2 border-emerald-500 text-emerald-600 font-bold uppercase tracking-wider text-sm rounded transform -rotate-2">Paid in Full</span>
+            ) : invoice.status === 'No Fee' ? (
+              <span className="inline-block px-4 py-1.5 border-2 border-gray-400 text-gray-500 font-bold uppercase tracking-wider text-sm rounded transform -rotate-2">No Payment Required</span>
             ) : (
               <span className="inline-block px-4 py-1.5 border-2 border-red-500 text-red-600 font-bold uppercase tracking-wider text-sm rounded transform -rotate-2">Payment Required</span>
             )}

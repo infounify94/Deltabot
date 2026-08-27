@@ -87,32 +87,28 @@ export async function POST(req: Request) {
         .update({ unrecovered_losses: newUnrecoveredLosses })
         .eq('id', u.id);
 
-      // Generate invoice if fee > 0
-      if (feeAmount > 0) {
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 7); // Due in 7 days
+      // Always generate an invoice/statement record
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 7); // Due in 7 days
 
-        const { data: invoice } = await supabase
-          .from('invoices')
-          .insert({
-            user_id: u.id,
-            billing_month: billingMonth,
-            total_profit: thisMonthPnl,
-            previous_losses: previousLosses,
-            fee_amount: feeAmount,
-            status: 'Unpaid',
-            due_date: dueDate.toISOString(),
-          })
-          .select()
-          .single();
-        
-        invoiceCreated = true;
-        results.push({ email: u.email, fee: feeAmount, status: 'Invoiced' });
+      const invoiceStatus = feeAmount > 0 ? 'Unpaid' : 'No Fee';
 
-        // NOTE: In production, trigger an email via Resend/SendGrid here with Stripe Checkout link.
-      } else {
-        results.push({ email: u.email, fee: 0, status: 'No invoice (Loss/HWM)' });
-      }
+      const { data: invoice } = await supabase
+        .from('invoices')
+        .insert({
+          user_id: u.id,
+          billing_month: billingMonth,
+          total_profit: thisMonthPnl,
+          previous_losses: previousLosses,
+          fee_amount: feeAmount,
+          status: invoiceStatus,
+          due_date: dueDate.toISOString(),
+        })
+        .select()
+        .single();
+      
+      invoiceCreated = true;
+      results.push({ email: u.email, fee: feeAmount, status: invoiceStatus });
     }
 
     return NextResponse.json({ success: true, billingMonth, results });

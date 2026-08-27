@@ -36,8 +36,7 @@ export default function AdminBilling() {
       const data = await res.json();
       
       if (res.ok) {
-        const invoicedCount = data.results.filter((r: any) => r.status === 'Invoiced').length;
-        setMessage(`Success! Billing cycle for ${data.billingMonth} complete. ${invoicedCount} invoices were created.`);
+        setMessage(`Success! Billing cycle for ${data.billingMonth} complete. Monthly statements generated for all users.`);
         fetchInvoices();
       } else {
         setMessage(`Error: ${data.error}`);
@@ -102,13 +101,17 @@ export default function AdminBilling() {
                     <div className="text-xs text-[var(--grey)]">{inv.profiles?.email}</div>
                   </td>
                   <td className="px-5 py-4 font-medium">{inv.billing_month}</td>
-                  <td className="px-5 py-4 font-mono text-emerald-600 num-tabular">+{formatCurrency(inv.total_profit)}</td>
+                  <td className="px-5 py-4 font-mono text-emerald-600 num-tabular">{inv.total_profit >= 0 ? '+' : ''}{formatCurrency(inv.total_profit)}</td>
                   <td className="px-5 py-4 font-mono text-rose-600 num-tabular">-{formatCurrency(inv.previous_losses)}</td>
                   <td className="px-5 py-4 font-mono font-bold text-[#d97706] num-tabular">{formatCurrency(inv.fee_amount)}</td>
                   <td className="px-5 py-4">
                     {inv.status === 'Paid' ? (
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-medium border border-emerald-200">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Paid
+                      </span>
+                    ) : inv.status === 'No Fee' ? (
+                      <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-gray-100 text-gray-700 text-xs font-medium border border-gray-200">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> No Fee
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-50 text-rose-700 text-xs font-medium border border-rose-200">
