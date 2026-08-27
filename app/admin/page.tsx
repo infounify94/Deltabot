@@ -27,8 +27,8 @@ export default function AdminDashboard() {
     const { data: profiles } = await supabase.rpc('admin_get_all_users');
     if (profiles) {
       setUsers(profiles);
-      const activeUsers = profiles.filter(p => p.delta_api_key && p.delta_api_secret).length;
-      const aum = profiles.reduce((sum, p) => sum + Number(p.live_balance || 0), 0);
+      const activeUsers = profiles.filter((p: any) => p.delta_api_key && p.delta_api_secret).length;
+      const aum = profiles.reduce((sum: number, p: any) => sum + Number(p.live_balance || 0), 0);
       setStats(prev => ({ ...prev, activeUsers, aum }));
     }
 
