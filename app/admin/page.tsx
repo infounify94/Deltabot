@@ -24,7 +24,7 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     // 1. Fetch Users
-    const { data: profiles } = await supabase.from('profiles').select('*');
+    const { data: profiles } = await supabase.rpc('admin_get_all_users');
     if (profiles) {
       setUsers(profiles);
       const activeUsers = profiles.filter(p => p.delta_api_key && p.delta_api_secret).length;

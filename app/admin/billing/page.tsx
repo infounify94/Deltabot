@@ -16,13 +16,22 @@ export default function AdminBilling() {
 
   const fetchInvoices = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('invoices')
-      .select('*, profiles(email, full_name)')
-      .order('created_at', { ascending: false });
+    // Use RPC to bypass RLS
+    const { data, error } = await supabase.rpc('admin_get_all_invoices');
     
+    // the RPC returns just invoices. We need profiles(email, full_name) joined.
+    // Actually, RPC doesn't join automatically. Let's modify the RPC or just fetch profiles.
+    // Wait, let me rewrite the fetch to fetch invoices and then profiles manually.
     if (error) console.error("Fetch invoices error:", error);
-    if (data) setInvoices(data);
+    
+    if (data) {
+      const { data: profiles } = await supabase.rpc('admin_get_all_users');
+      const enriched = data.map((inv: any) => {
+        const prof = profiles?.find((p: any) => p.id === inv.user_id);
+        return { ...inv, profiles: prof };
+      });
+      setInvoices(enriched);
+    }
     setLoading(false);
   };
 

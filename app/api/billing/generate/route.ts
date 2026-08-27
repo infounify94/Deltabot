@@ -46,15 +46,15 @@ export async function POST(req: Request) {
   const { billingMonth, firstDayLastMonth, firstDayThisMonth } = getLastMonthInfo();
 
   try {
-    // 1. Fetch all users
-    const { data: users, error: usersErr } = await supabase.from('profiles').select('*');
+    // 1. Fetch all users using RPC to bypass RLS
+    const { data: users, error: usersErr } = await supabase.rpc('admin_get_all_users');
     if (usersErr) throw usersErr;
 
     const results = [];
 
     // 2. Loop through users to generate invoices
     for (const u of users) {
-      // Fetch closed positions for the previous month
+      // Fetch closed positions for the previous month (user's own positions, so RLS might allow, but let's be safe)
       const { data: positions } = await supabase
         .from('positions')
         .select('realized_pnl')
@@ -73,41 +73,34 @@ export async function POST(req: Request) {
       let invoiceCreated = false;
 
       if (netBillableProfit <= 0) {
-        // Did not clear HWM, all losses carry forward
         newUnrecoveredLosses = Math.abs(netBillableProfit);
       } else {
-        // Cleared HWM and made profit
         newUnrecoveredLosses = 0;
-        feeAmount = netBillableProfit * 0.30; // 30% performance fee
+        feeAmount = netBillableProfit * 0.30;
       }
 
-      // Update unrecovered losses in profiles table
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ unrecovered_losses: newUnrecoveredLosses })
-        .eq('id', u.id);
-
+      // Update unrecovered losses using RPC
+      const { error: updateError } = await supabase.rpc('admin_update_unrecovered_losses', {
+        p_user_id: u.id,
+        p_new_losses: newUnrecoveredLosses
+      });
       if (updateError) throw updateError;
 
-      // Always generate an invoice/statement record
+      // Generate invoice using RPC
       const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 7); // Due in 7 days
+      dueDate.setDate(dueDate.getDate() + 7);
 
       const invoiceStatus = feeAmount > 0 ? 'Unpaid' : 'No Fee';
 
-      const { data: invoice, error: insertError } = await supabase
-        .from('invoices')
-        .insert({
-          user_id: u.id,
-          billing_month: billingMonth,
-          total_profit: thisMonthPnl,
-          previous_losses: previousLosses,
-          fee_amount: feeAmount,
-          status: invoiceStatus,
-          due_date: dueDate.toISOString(),
-        })
-        .select()
-        .single();
+      const { error: insertError } = await supabase.rpc('admin_generate_invoice', {
+        p_user_id: u.id,
+        p_billing_month: billingMonth,
+        p_total_profit: thisMonthPnl,
+        p_previous_losses: previousLosses,
+        p_fee_amount: feeAmount,
+        p_status: invoiceStatus,
+        p_due_date: dueDate.toISOString()
+      });
       
       if (insertError) throw insertError;
       
