@@ -56,7 +56,7 @@ export default async function AdminLayout({
             <Link href="/admin" className="text-[var(--grey)] hover:text-[var(--ink)] transition-colors flex items-center gap-1.5">
               <Activity className="w-4 h-4" /> God View
             </Link>
-            <Link href="/admin/users" className="text-[var(--grey)] hover:text-[var(--ink)] transition-colors flex items-center gap-1.5">
+            <Link href="/admin" className="text-[var(--grey)] hover:text-[var(--ink)] transition-colors flex items-center gap-1.5">
               <Users className="w-4 h-4" /> Users
             </Link>
             <Link href="/admin/billing" className="text-[var(--grey)] hover:text-[var(--ink)] transition-colors flex items-center gap-1.5">
