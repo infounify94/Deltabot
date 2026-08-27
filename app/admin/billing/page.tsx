@@ -36,7 +36,8 @@ export default function AdminBilling() {
       const data = await res.json();
       
       if (res.ok) {
-        setMessage(`Success! Generated invoices for ${data.billingMonth}.`);
+        const invoicedCount = data.results.filter((r: any) => r.status === 'Invoiced').length;
+        setMessage(`Success! Billing cycle for ${data.billingMonth} complete. ${invoicedCount} invoices were created.`);
         fetchInvoices();
       } else {
         setMessage(`Error: ${data.error}`);
