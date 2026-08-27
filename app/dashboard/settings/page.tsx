@@ -95,14 +95,13 @@ export default function Settings() {
     
     const { error } = await supabase
       .from('profiles')
-      .upsert({
-        id: user.id,
-        email: user.email,
+      .update({
         delta_api_key: apiKey,
         delta_api_secret: apiSecret,
         connected_at: new Date().toISOString(),
         is_paused: false
-      });
+      })
+      .eq('id', user.id);
       
     if (!error) {
       setProfile({ ...profile, delta_api_key: apiKey, is_paused: false, connected_at: new Date().toISOString() });
