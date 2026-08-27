@@ -399,9 +399,22 @@ export default function Dashboard() {
             Sign Out
           </button>
         </div>
-      </header>
+        </header>
 
-      {/* Main Layout */}
+        {/* Crypto Price Ticker */}
+        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden flex items-center text-xs font-mono text-[var(--grey)] whitespace-nowrap">
+          <div className="animate-marquee inline-flex gap-8 px-4">
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> BTC ${btcPrice.toLocaleString()}</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ETH ${ethPrice.toLocaleString()}</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ProfitPilot Automation Active</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Market Volatility: Normal</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> BTC ${btcPrice.toLocaleString()}</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ETH ${ethPrice.toLocaleString()}</span>
+            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ProfitPilot Automation Active</span>
+          </div>
+        </div>
+
+        {/* Main Layout */}
       <div className="flex-1 flex overflow-hidden">
         
         {/* Sidebar */}
