@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* User Management Table */}
-        <div className="lg:col-span-2 fintech-card shadow-subtle overflow-hidden">
+        <div id="users" className="lg:col-span-2 fintech-card shadow-subtle overflow-hidden scroll-mt-24">
           <div className="px-5 py-4 border-b border-[var(--hair)]">
             <h2 className="font-semibold text-[var(--ink)]">User Management</h2>
           </div>
