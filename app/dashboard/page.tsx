@@ -36,7 +36,8 @@ type DashboardSection =
   | 'performance'
   | 'automation'
   | 'activity'
-  | 'account_health';
+  | 'account_health'
+  | 'billing';
 
 export default function Dashboard() {
   const [section, setSection] = useState<DashboardSection>('dashboard');
@@ -45,6 +46,7 @@ export default function Dashboard() {
   // Real DB Data (Supabase)
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, liveBalance: 0 });
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
@@ -137,6 +139,12 @@ export default function Dashboard() {
         .eq('status', 'system_pause')
         .eq('user_id', user.id);
       setIsPaused((pauseData || []).length > 0);
+
+      const { data: invs } = await supabase
+        .from('invoices')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setInvoices(invs || []);
 
       const { data: openData } = await supabase
         .from('positions')
@@ -399,14 +407,14 @@ export default function Dashboard() {
         </header>
 
         {/* Crypto Price Ticker */}
-        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden text-xs font-mono text-[var(--grey)] whitespace-nowrap">
+        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-2.5 overflow-hidden text-sm font-mono text-[var(--ink)] whitespace-nowrap">
           <div className="ticker-scroll">
             {[0, 1].map(i => (
-              <div key={i} className="flex gap-8 px-4 shrink-0">
-                <span className="flex items-center gap-1.5">🟠 BTC ${btcPrice.toLocaleString()}</span>
-                <span className="flex items-center gap-1.5">🔵 ETH ${ethPrice.toLocaleString()}</span>
-                <span className="flex items-center gap-1.5">🟢 ProfitPilot Active</span>
-                <span className="flex items-center gap-1.5">🟢 Market Volatility: Normal</span>
+              <div key={i} className="flex gap-12 px-6 shrink-0 font-medium">
+                <span className="flex items-center gap-2 num-tabular">🟠 BTC ${btcPrice.toFixed(2)}</span>
+                <span className="flex items-center gap-2 num-tabular">🔵 ETH ${ethPrice.toFixed(2)}</span>
+                <span className="flex items-center gap-2">🟢 ProfitPilot Active</span>
+                <span className="flex items-center gap-2">🟢 Market Volatility: Normal</span>
               </div>
             ))}
           </div>
@@ -483,6 +491,12 @@ export default function Dashboard() {
                 className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'account_health' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
               >
                 <ShieldCheck className="w-4 h-4" /> Account Health
+              </button>
+              <button
+                onClick={() => { setSection('billing'); setSidebarOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${section === 'billing' ? 'bg-[#d97706] text-white' : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'}`}
+              >
+                <Activity className="w-4 h-4" /> Billing
               </button>
             </div>
 
@@ -968,6 +982,62 @@ export default function Dashboard() {
                     <div className="font-mono text-xl font-semibold text-[var(--ink)]">{marginUsed.toFixed(1)}%</div>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Billing */}
+          {section === 'billing' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-xl font-bold text-[var(--ink)]">Billing & Invoices</h2>
+                <p className="text-xs text-[var(--grey)] mt-0.5">View and download your monthly performance fee invoices.</p>
+              </div>
+
+              <div className="fintech-card overflow-hidden shadow-subtle">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-[var(--paper-2)] text-[var(--grey)] text-xs uppercase border-b border-[var(--hair)]">
+                    <tr>
+                      <th className="px-5 py-3 font-medium">Month</th>
+                      <th className="px-5 py-3 font-medium">Fee Amount</th>
+                      <th className="px-5 py-3 font-medium">Status</th>
+                      <th className="px-5 py-3 font-medium">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--hair)]">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-[var(--paper-2)] transition-colors">
+                        <td className="px-5 py-4 font-medium text-[var(--ink)]">{inv.billing_month}</td>
+                        <td className="px-5 py-4 font-mono font-medium">{fmt(inv.fee_amount)}</td>
+                        <td className="px-5 py-4">
+                          {inv.status === 'Paid' ? (
+                            <span className="text-emerald-600 bg-emerald-50 px-2 py-1 rounded text-xs font-medium border border-emerald-200">Paid</span>
+                          ) : inv.status === 'No Fee' ? (
+                            <span className="text-[var(--grey)] bg-[var(--raise-2)] px-2 py-1 rounded text-xs font-medium border border-[var(--hair-2)]">No Fee</span>
+                          ) : (
+                            <span className="text-rose-600 bg-rose-50 px-2 py-1 rounded text-xs font-medium border border-rose-200">Unpaid</span>
+                          )}
+                        </td>
+                        <td className="px-5 py-4">
+                          <Link 
+                            href={`/dashboard/billing/${inv.id}`}
+                            target="_blank"
+                            className="text-indigo-600 hover:text-indigo-700 font-medium text-xs flex items-center gap-1"
+                          >
+                            View / Print
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                    {invoices.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="px-5 py-8 text-center text-[var(--grey)] text-sm">
+                          No invoices found yet.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}
