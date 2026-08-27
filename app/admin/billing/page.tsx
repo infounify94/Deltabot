@@ -91,6 +91,7 @@ export default function AdminBilling() {
                 <th className="px-5 py-3 font-medium">HWM Offset</th>
                 <th className="px-5 py-3 font-medium">Fee (30%)</th>
                 <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--hair)]">
@@ -115,11 +116,20 @@ export default function AdminBilling() {
                       </span>
                     )}
                   </td>
+                  <td className="px-5 py-4 text-right">
+                    <a 
+                      href={`/admin/billing/${inv.id}`} 
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-[var(--ink)] border border-[var(--hair)] hover:bg-[var(--paper-2)] transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" /> View / Print
+                    </a>
+                  </td>
                 </tr>
               ))}
               {invoices.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} className="px-5 py-8 text-center text-[var(--grey)] text-sm">
+                  <td colSpan={7} className="px-5 py-8 text-center text-[var(--grey)] text-sm">
                     No invoices generated yet.
                   </td>
                 </tr>
