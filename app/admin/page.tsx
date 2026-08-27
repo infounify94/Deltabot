@@ -154,7 +154,11 @@ export default function AdminDashboard() {
                       )}
                     </td>
                     <td className="px-5 py-4">
-                      {u.is_paused ? (
+                      {!u.delta_api_key ? (
+                        <span className="inline-flex items-center gap-1.5 text-amber-600 text-xs font-medium">
+                          <AlertCircle className="w-3.5 h-3.5" /> Not Connected
+                        </span>
+                      ) : u.is_paused ? (
                         <span className="inline-flex items-center gap-1.5 text-rose-600 text-xs font-medium">
                           <AlertCircle className="w-3.5 h-3.5" /> Paused
                         </span>
@@ -165,17 +169,27 @@ export default function AdminDashboard() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => handlePauseUser(u.id, u.is_paused)}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
-                          u.is_paused 
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
-                            : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
-                        }`}
-                      >
-                        {u.is_paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                        {u.is_paused ? 'Resume Trading' : 'Pause Trading'}
-                      </button>
+                      {!u.delta_api_key ? (
+                        <Link
+                          href={`/admin/users/${u.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5" />
+                          Setup API Keys
+                        </Link>
+                      ) : (
+                        <button
+                          onClick={() => handlePauseUser(u.id, u.is_paused)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                            u.is_paused 
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100' 
+                              : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                          }`}
+                        >
+                          {u.is_paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                          {u.is_paused ? 'Resume Trading' : 'Pause Trading'}
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

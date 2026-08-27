@@ -46,9 +46,23 @@ export async function POST(req: Request) {
   const { billingMonth, firstDayLastMonth, firstDayThisMonth } = getLastMonthInfo();
 
   try {
+    // Parse optional user_ids from request body
+    let selectedUserIds: string[] | null = null;
+    try {
+      const body = await req.json();
+      if (body.user_ids && Array.isArray(body.user_ids) && body.user_ids.length > 0) {
+        selectedUserIds = body.user_ids;
+      }
+    } catch { /* no body or invalid JSON, generate for all */ }
+
     // 1. Fetch all users using RPC to bypass RLS
-    const { data: users, error: usersErr } = await supabase.rpc('admin_get_all_users');
+    const { data: allUsers, error: usersErr } = await supabase.rpc('admin_get_all_users');
     if (usersErr) throw usersErr;
+
+    // Filter to selected users if specified
+    const users = selectedUserIds
+      ? allUsers.filter((u: any) => selectedUserIds!.includes(u.id))
+      : allUsers;
 
     const results = [];
 
@@ -99,7 +113,7 @@ export async function POST(req: Request) {
         p_previous_losses: previousLosses,
         p_fee_amount: feeAmount,
         p_status: invoiceStatus,
-        p_due_date: dueDate.toISOString()
+        p_due_date: dueDate.toISOString().split('T')[0]
       });
       
       if (insertError) throw insertError;

@@ -402,15 +402,16 @@ export default function Dashboard() {
         </header>
 
         {/* Crypto Price Ticker */}
-        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden flex items-center text-xs font-mono text-[var(--grey)] whitespace-nowrap">
-          <div className="animate-ticker inline-flex gap-8 px-4">
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> BTC ${btcPrice.toLocaleString()}</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ETH ${ethPrice.toLocaleString()}</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ProfitPilot Automation Active</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Market Volatility: Normal</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> BTC ${btcPrice.toLocaleString()}</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> ETH ${ethPrice.toLocaleString()}</span>
-            <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> ProfitPilot Automation Active</span>
+        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden text-xs font-mono text-[var(--grey)] whitespace-nowrap relative">
+          <div className="flex" style={{ width: 'max-content', animation: 'ticker 30s linear infinite' }}>
+            {[0, 1].map(i => (
+              <div key={i} className="flex gap-8 px-4">
+                <span className="flex items-center gap-1.5">🟠 BTC ${btcPrice.toLocaleString()}</span>
+                <span className="flex items-center gap-1.5">🔵 ETH ${ethPrice.toLocaleString()}</span>
+                <span className="flex items-center gap-1.5">🟢 ProfitPilot Automation Active</span>
+                <span className="flex items-center gap-1.5">🟢 Market Volatility: Normal</span>
+              </div>
+            ))}
           </div>
         </div>
 
