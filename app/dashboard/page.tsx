@@ -49,11 +49,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Real-time market WebSocket prices
-  const [btcPrice, setBtcPrice] = useState<number>(64250);
+  const [btcPrice, setBtcPrice] = useState<number>(92000);
   const [ethPrice, setEthPrice] = useState<number>(3480);
   const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
   const fxRate = 86.5;
@@ -156,9 +157,12 @@ export default function Dashboard() {
         : { data: [] };
 
       let liveBalance = 0;
-      const { data: profile } = await supabase.from('profiles').select('live_balance').eq('id', user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('live_balance, is_admin').eq('id', user.id).single();
       if (profile?.live_balance) {
         liveBalance = parseFloat(profile.live_balance);
+      }
+      if (profile?.is_admin) {
+        setIsAdmin(true);
       }
 
       const processedClosed = (closedData || []).map(pos => {
@@ -480,6 +484,11 @@ export default function Dashboard() {
               <Link href="/dashboard/help" className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)] transition-all">
                 <HelpCircle className="w-4 h-4" /> Help
               </Link>
+              {isAdmin && (
+                <Link href="/admin" className="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 transition-all mt-2 border border-emerald-100">
+                  <ShieldCheck className="w-4 h-4" /> Admin Panel
+                </Link>
+              )}
             </div>
           </div>
 
