@@ -126,3 +126,18 @@ body {
 input[type="range"] {
   accent-color: var(--orange);
 }
+
+/* Smooth scrolling ticker */
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-scroll {
+  display: flex;
+  width: max-content;
+  animation: tickerScroll 25s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+}

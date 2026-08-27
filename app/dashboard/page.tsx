@@ -361,9 +361,6 @@ export default function Dashboard() {
           <span className="font-medium text-[var(--ink)]">
             {isPaused ? 'Automation Paused' : 'Automation Active'}
           </span>
-          <span className="text-[var(--grey)] border-l border-[var(--hair)] pl-2">
-            BTC <strong className="font-mono text-[var(--ink)] num-tabular">${btcPrice.toFixed(0)}</strong>
-          </span>
         </div>
 
         <div className="flex items-center gap-2.5">
@@ -402,13 +399,13 @@ export default function Dashboard() {
         </header>
 
         {/* Crypto Price Ticker */}
-        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden text-xs font-mono text-[var(--grey)] whitespace-nowrap relative">
-          <div className="flex" style={{ width: 'max-content', animation: 'ticker 30s linear infinite' }}>
+        <div className="bg-[var(--paper)] border-b border-[var(--hair)] py-1.5 overflow-hidden text-xs font-mono text-[var(--grey)] whitespace-nowrap">
+          <div className="ticker-scroll">
             {[0, 1].map(i => (
-              <div key={i} className="flex gap-8 px-4">
+              <div key={i} className="flex gap-8 px-4 shrink-0">
                 <span className="flex items-center gap-1.5">🟠 BTC ${btcPrice.toLocaleString()}</span>
                 <span className="flex items-center gap-1.5">🔵 ETH ${ethPrice.toLocaleString()}</span>
-                <span className="flex items-center gap-1.5">🟢 ProfitPilot Automation Active</span>
+                <span className="flex items-center gap-1.5">🟢 ProfitPilot Active</span>
                 <span className="flex items-center gap-1.5">🟢 Market Volatility: Normal</span>
               </div>
             ))}
