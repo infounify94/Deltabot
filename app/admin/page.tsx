@@ -77,6 +77,16 @@ export default function AdminDashboard() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
   };
 
+  const connectedUsers = users.filter(u => u.delta_api_key);
+  const pausedUsers = connectedUsers.filter(u => u.is_paused);
+  
+  let systemStatus = 'Active';
+  if (connectedUsers.length > 0 && pausedUsers.length === connectedUsers.length) {
+    systemStatus = 'Globally Paused';
+  } else if (pausedUsers.length > 0) {
+    systemStatus = 'Partially Paused';
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -108,12 +118,16 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="fintech-card p-5 shadow-subtle space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-[var(--grey)]">Bot Health</span>
-            <Activity className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-medium text-[var(--grey)]">System Status</span>
+            <Activity className={`w-4 h-4 ${systemStatus === 'Globally Paused' ? 'text-rose-500' : systemStatus === 'Partially Paused' ? 'text-amber-500' : 'text-emerald-500'}`} />
           </div>
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-2xl font-bold font-mono">Online</span>
+            <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${
+              systemStatus === 'Globally Paused' ? 'bg-rose-500' :
+              systemStatus === 'Partially Paused' ? 'bg-amber-500' :
+              'bg-emerald-500'
+            }`} />
+            <span className="text-xl font-bold font-mono">{systemStatus}</span>
           </div>
         </div>
         
