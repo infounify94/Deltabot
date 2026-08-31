@@ -36,7 +36,10 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
 
   const handlePauseUser = async () => {
     if (!profile) return;
-    await supabase.from('profiles').update({ is_paused: !profile.is_paused }).eq('id', profile.id);
+    await supabase.rpc('admin_set_user_pause', { 
+      p_user_id: profile.id, 
+      p_is_paused: !profile.is_paused 
+    });
     fetchUserData();
   };
 
@@ -45,15 +48,11 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
     setSaving(true);
     setSaveMsg('');
     
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        delta_api_key: apiKey,
-        delta_api_secret: apiSecret,
-        connected_at: new Date().toISOString(),
-        is_paused: false
-      })
-      .eq('id', params.id);
+    const { error } = await supabase.rpc('admin_set_user_api_keys', {
+      p_user_id: params.id,
+      p_api_key: apiKey,
+      p_api_secret: apiSecret
+    });
     
     if (error) {
       setSaveMsg(`Error: ${error.message}`);

@@ -58,9 +58,19 @@ export default function AdminDashboard() {
     setLoading(false);
   };
 
+  const [isGlobalPausing, setIsGlobalPausing] = useState(false);
+
   const handlePauseUser = async (userId: string, currentStatus: boolean) => {
-    await supabase.from('profiles').update({ is_paused: !currentStatus }).eq('id', userId);
+    await supabase.rpc('admin_set_user_pause', { p_user_id: userId, p_is_paused: !currentStatus });
     fetchData(); // Refresh list
+  };
+
+  const handleGlobalPause = async (pauseStatus: boolean) => {
+    if (!confirm(`Are you sure you want to ${pauseStatus ? 'PAUSE' : 'RESUME'} all trading platform-wide?`)) return;
+    setIsGlobalPausing(true);
+    await supabase.rpc('admin_set_global_pause', { p_is_paused: pauseStatus });
+    await fetchData();
+    setIsGlobalPausing(false);
   };
 
   const formatCurrency = (val: number) => {
@@ -69,9 +79,29 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--ink)]">God View</h1>
-        <p className="text-sm text-[var(--grey)]">Platform-wide statistics and user management.</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--ink)]">God View</h1>
+          <p className="text-sm text-[var(--grey)]">Platform-wide statistics and user management.</p>
+        </div>
+        
+        {/* GLOBAL KILL SWITCH */}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => handleGlobalPause(true)}
+            disabled={isGlobalPausing}
+            className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <AlertCircle className="w-4 h-4" /> Pause All Trading
+          </button>
+          <button
+            onClick={() => handleGlobalPause(false)}
+            disabled={isGlobalPausing}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
+          >
+            <Play className="w-4 h-4" /> Resume All Trading
+          </button>
+        </div>
       </div>
 
       {/* Top Summary Cards */}
