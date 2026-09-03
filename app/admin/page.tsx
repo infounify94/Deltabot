@@ -41,6 +41,9 @@ export default function AdminDashboard() {
     if (tradeEvents) setEvents(tradeEvents);
 
     // 3. Fetch Global Stats
+    const { data: pauseCheck } = await supabase.from('positions').select('id').eq('status', 'system_pause').limit(1);
+    setIsGloballyPaused((pauseCheck || []).length > 0);
+
     const { count: tradesCount } = await supabase
       .from('trade_events')
       .select('*', { count: 'exact', head: true });
@@ -59,6 +62,7 @@ export default function AdminDashboard() {
   };
 
   const [isGlobalPausing, setIsGlobalPausing] = useState(false);
+  const [isGloballyPaused, setIsGloballyPaused] = useState(false);
 
   const handlePauseUser = async (userId: string, currentStatus: boolean) => {
     await supabase.rpc('admin_set_user_pause', { p_user_id: userId, p_is_paused: !currentStatus });
@@ -81,7 +85,7 @@ export default function AdminDashboard() {
   const pausedUsers = connectedUsers.filter(u => u.is_paused);
   
   let systemStatus = 'Active';
-  if (connectedUsers.length > 0 && pausedUsers.length === connectedUsers.length) {
+  if (isGloballyPaused) {
     systemStatus = 'Globally Paused';
   } else if (pausedUsers.length > 0) {
     systemStatus = 'Partially Paused';

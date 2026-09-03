@@ -47,7 +47,7 @@ export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, liveBalance: 0 });
+  const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, todayPnl: 0, liveBalance: 0 });
   const [loading, setLoading] = useState(true);
   const [isPaused, setIsPaused] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
@@ -133,12 +133,12 @@ export default function Dashboard() {
       setUserEmail(user.email || '');
       setUserId(user.id);
 
-      const { data: pauseData } = await supabase
-        .from('positions')
-        .select('id')
-        .eq('status', 'system_pause')
-        .eq('user_id', user.id);
-      setIsPaused((pauseData || []).length > 0);
+      const { data: profilePause } = await supabase
+        .from('profiles')
+        .select('is_paused')
+        .eq('id', user.id)
+        .single();
+      setIsPaused(profilePause?.is_paused || false);
 
       const { data: invs } = await supabase
         .from('invoices')
@@ -245,8 +245,13 @@ export default function Dashboard() {
       const winners = processedClosed.filter(p => p.realizedPnl > 0).length;
       const hitRate = roundTrips > 0 ? Math.round((winners / roundTrips) * 100) : 0;
       const totalPnl = processedClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
+
+      const todayMidnight = new Date();
+      todayMidnight.setHours(0, 0, 0, 0);
+      const todayClosed = processedClosed.filter(p => p.closed_at && new Date(p.closed_at) >= todayMidnight);
+      const todayPnl = todayClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
       
-      setMetrics({ roundTrips, winners, hitRate, totalPnl, liveBalance });
+      setMetrics({ roundTrips, winners, hitRate, totalPnl, todayPnl, liveBalance });
     } catch (err) {
       console.error("Dashboard fetch error", err);
     } finally {
@@ -264,22 +269,9 @@ export default function Dashboard() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    if (isPaused) {
-      await supabase.from('positions').delete().eq('status', 'system_pause').eq('user_id', user.id);
-    } else {
-      await supabase.from('positions').insert([{ 
-        user_id: user.id,
-        status: 'system_pause', 
-        underlying: 'SYSTEM', 
-        expiry_date: '2099-01-01', 
-        short_call_symbol: 'SYSTEM', 
-        short_call_strike: 0, 
-        short_put_symbol: 'SYSTEM', 
-        short_put_strike: 0, 
-        credit_received: 0, 
-        lots: 0
-      }]);
-    }
+    const nextPause = !isPaused;
+    setIsPaused(nextPause);
+    await supabase.from('profiles').update({ is_paused: nextPause }).eq('id', user.id);
     fetchData();
   };
 
@@ -298,8 +290,16 @@ export default function Dashboard() {
     return openPositions.reduce((acc, pos) => acc + (pos.actualPnl || 0), 0);
   }, [openPositions]);
 
-  const availableMargin = metrics.liveBalance * 0.4; // rough calc for simplified display
-  const marginUsed = metrics.liveBalance > 0 ? ((metrics.liveBalance - availableMargin) / metrics.liveBalance) * 100 : 0;
+  // Dynamically calculate from open positions (or balance if none)
+  const totalPositionMargin = useMemo(() => {
+    return openPositions.reduce((acc, pos) => {
+      // Conservative estimate per lot: ~2.0 USD margin for 1 lot BTC/ETH on micro capital
+      return acc + (pos.lots || 1) * 2.0;
+    }, 0);
+  }, [openPositions]);
+
+  const availableMargin = Math.max(0, metrics.liveBalance - totalPositionMargin);
+  const marginUsed = metrics.liveBalance > 0 ? (totalPositionMargin / metrics.liveBalance) * 100 : 0;
   
   const thisMonthPnl = useMemo(() => {
     const now = new Date();
@@ -307,15 +307,6 @@ export default function Dashboard() {
       .filter(p => new Date(p.closed_at).getMonth() === now.getMonth() && new Date(p.closed_at).getFullYear() === now.getFullYear())
       .reduce((sum, p) => sum + p.realizedPnl, 0);
   }, [closedPositions]);
-
-  // Keep it internally for when we need to show minimal simplified info
-  const calculatedModel = useMemo(() => {
-    return {
-      iv: 58.4,
-      rv: 46.2,
-      natr: 3.82,
-    };
-  }, []);
 
   const simplifiedAiQueries = [
     {
@@ -539,8 +530,8 @@ export default function Dashboard() {
 
                 <SpotlightCard className="p-4 space-y-1 shadow-subtle">
                   <div className="text-[11px] font-medium text-[var(--grey)]">Today's P&amp;L</div>
-                  <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${metrics.totalPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
-                    {metrics.totalPnl >= 0 ? '+' : ''}{fmt(metrics.totalPnl)}
+                  <div className={`font-mono text-xl sm:text-2xl font-semibold mt-1 num-tabular ${metrics.todayPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600'}`}>
+                    {metrics.todayPnl >= 0 ? '+' : ''}{fmt(metrics.todayPnl)}
                   </div>
                 </SpotlightCard>
 
