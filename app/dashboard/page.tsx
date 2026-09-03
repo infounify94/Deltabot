@@ -255,7 +255,7 @@ export default function Dashboard() {
         .select('*')
         .eq('user_id', user.id)
         .eq('status', 'closed')
-        .order('closed_at', { ascending: false });
+        .order('opened_at', { ascending: false });
 
       const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
       const { data: eventsData } = posIds.length > 0 
@@ -534,8 +534,8 @@ export default function Dashboard() {
       <div className="flex-1 flex max-w-7xl w-full mx-auto">
         
         {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:sticky lg:top-[98px] lg:h-[calc(100vh-98px)] flex flex-col justify-between shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="p-4 space-y-6 overflow-y-auto text-xs">
+        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:sticky lg:top-[98px] lg:h-auto lg:self-start flex flex-col justify-between shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="p-4 space-y-6 text-xs">
             
             {/* NAVIGATION */}
             <div>
@@ -620,7 +620,7 @@ export default function Dashboard() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 pb-36 space-y-6">
           
           {/* SECTION: DASHBOARD OVERVIEW */}
           {section === 'dashboard' && (

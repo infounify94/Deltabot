@@ -224,88 +224,50 @@ export default function Home() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
               
-              {/* Left Column (7 cols on desktop for rich dense content) */}
+              {/* Left Column (6 cols on desktop for balanced, relaxed reading) */}
               <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
                 
                 {/* Live Alpha Tag */}
                 <div className="flex justify-center lg:justify-start">
-                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#d97706] uppercase tracking-wider bg-[#d97706]/10 px-3.5 py-1.5 rounded-full border border-[#d97706]/20 shadow-2xs">
+                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#d97706] uppercase tracking-wider bg-amber-500/10 dark:bg-amber-500/15 px-3.5 py-1.5 rounded-full border border-amber-500/20">
                     <span className="w-2 h-2 rounded-full bg-[#d97706] animate-pulse" />
-                    Autonomous Crypto Options Engine
+                    Automated Options Trading Engine
                   </span>
                 </div>
 
-                {/* Powerful Headline */}
-                <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[var(--ink)] leading-[1.12]">
-                  Systematic Yield.{' '}
-                  <span className="bg-gradient-to-r from-[#d97706] via-amber-500 to-[#f59e0b] bg-clip-text text-transparent">
-                    Zero Custody.
-                  </span>
+                {/* Calm, Elegant Headline */}
+                <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-bold tracking-tight text-slate-900 dark:text-white leading-[1.2]">
+                  Automated Crypto Options Strategy.{' '}
+                  <span className="text-[#d97706]">Non-Custodial &amp; Systematic.</span>
                 </h1>
 
-                {/* Subheadline */}
-                <p className="max-w-xl text-base sm:text-lg text-[var(--grey)] leading-relaxed mx-auto lg:mx-0">
-                  ProfitPilot automates systematic delta-neutral strangles on Delta Exchange. Engineered with real-time macroeconomic blackout shields, ATR volatility sensors, and trailing profit ratchets.
+                {/* Relaxed, Readable Subheadline */}
+                <p className="max-w-xl text-base text-slate-600 dark:text-slate-300 leading-relaxed mx-auto lg:mx-0">
+                  ProfitPilot automatically executes and monitors delta-neutral strangles on Delta Exchange. Built with autonomous macroeconomic blackout shields, ATR volatility sensors, and trailing profit ratchets.
                 </p>
 
                 {/* Primary CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center gap-3.5 justify-center lg:justify-start pt-1">
                   <Link 
                     href="/login"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#d97706] hover:bg-[#b45309] px-7 py-3.5 text-sm font-semibold text-white shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#d97706] hover:bg-[#b45309] px-7 py-3 text-sm font-semibold text-white shadow-sm transition-all active:scale-[0.98]"
                   >
                     Start 30-Day Free Trial
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <a 
                     href="#macro-shield"
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--hair)] bg-[var(--card)] hover:bg-[var(--raise)] px-7 py-3.5 text-sm font-medium text-[var(--ink)] transition-colors"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 hover:bg-slate-50 dark:hover:bg-white/10 px-7 py-3 text-sm font-medium text-slate-700 dark:text-slate-200 transition-colors"
                   >
                     View Risk Architecture
                   </a>
                 </div>
 
-                {/* DENSE 4-PILLAR TRUST GRID (Eliminates empty white space!) */}
-                <div className="grid grid-cols-2 gap-3 pt-4 text-left">
-                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span>Non-Custodial API</span>
-                    </div>
-                    <p className="text-[11px] text-[var(--grey)] leading-normal">
-                      Funds remain 100% in your Delta wallet. Zero withdrawal access.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
-                      <Radio className="w-4 h-4 text-[#d97706]" />
-                      <span>Macro Event Shield</span>
-                    </div>
-                    <p className="text-[11px] text-[var(--grey)] leading-normal">
-                      Automatic blackout pauses before Fed, CPI &amp; NFP volatility.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
-                      <TrendingUp className="w-4 h-4 text-emerald-600" />
-                      <span>30% Trailing Ratchet</span>
-                    </div>
-                    <p className="text-[11px] text-[var(--grey)] leading-normal">
-                      Locks in banked profit on the way up to prevent reversals.
-                    </p>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
-                      <Zap className="w-4 h-4 text-blue-600" />
-                      <span>Rollback Protection</span>
-                    </div>
-                    <p className="text-[11px] text-[var(--grey)] leading-normal">
-                      Auto-cancels if bid shifts. Never stranded with naked risk.
-                    </p>
-                  </div>
+                {/* Clean, Reassuring Trust Row (Zero Clutter) */}
+                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-y-2 gap-x-6 text-xs text-slate-600 dark:text-slate-400 pt-2">
+                  <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> Non-Custodial (Your Wallet)</span>
+                  <span className="flex items-center gap-1.5"><Radio className="w-4 h-4 text-[#d97706]" /> Pre-Emptive Macro Blackout</span>
+                  <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 30% Trailing Profit Ratchet</span>
                 </div>
 
               </div>
