@@ -503,39 +503,39 @@ export default function Dashboard() {
       </header>
 
       {/* Crypto & Bot Intelligence Ticker */}
-      <div className="bg-[var(--paper-2)] border-b border-[var(--hair)] py-2 px-4 overflow-hidden text-xs font-mono text-[var(--ink)] whitespace-nowrap">
-        <div className="flex items-center justify-between max-w-7xl mx-auto gap-4">
-          <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+      <div className="bg-[var(--paper-2)] border-b border-[var(--hair)] py-2.5 px-4 sm:px-8 text-xs font-mono text-[var(--ink)]">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap">
             <span className="flex items-center gap-1.5 font-medium shrink-0">
-              <span className="text-amber-500">BTC</span> ${btcPrice.toLocaleString()}
+              <span className="text-amber-500 font-bold">BTC</span> ${btcPrice.toLocaleString()}
             </span>
             <span className="flex items-center gap-1.5 font-medium shrink-0">
-              <span className="text-blue-500">ETH</span> ${ethPrice.toLocaleString()}
+              <span className="text-blue-500 font-bold">ETH</span> ${ethPrice.toLocaleString()}
             </span>
             {macroInfo?.is_blocked ? (
-              <span className="flex items-center gap-1.5 text-amber-600 font-semibold shrink-0">
+              <span className="flex items-center gap-2 text-amber-600 font-semibold shrink-0">
                 <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping" />
                 Macro Shield Active: {macroInfo.active_event?.title}
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 text-emerald-600 font-medium shrink-0">
+              <span className="flex items-center gap-2 text-emerald-600 font-medium shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
                 All Safety Gates Clear
               </span>
             )}
           </div>
-          <span className="hidden lg:inline text-[11px] text-[var(--grey)]">
+          <span className="text-[11px] text-[var(--grey)] hidden md:block shrink-0">
             Delta Exchange Options Execution
           </span>
         </div>
       </div>
 
       {/* Main Layout */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex max-w-7xl w-full mx-auto">
         
         {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto flex flex-col justify-between ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-          <div className="p-4 space-y-6 overflow-y-auto max-h-[calc(100vh-80px)] text-xs">
+        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-[var(--paper-2)] border-r border-[var(--hair)] transform transition-transform duration-200 lg:translate-x-0 lg:sticky lg:top-[98px] lg:h-[calc(100vh-98px)] flex flex-col justify-between shrink-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="p-4 space-y-6 overflow-y-auto text-xs">
             
             {/* NAVIGATION */}
             <div>
@@ -620,7 +620,7 @@ export default function Dashboard() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 space-y-6">
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 space-y-6">
           
           {/* SECTION: DASHBOARD OVERVIEW */}
           {section === 'dashboard' && (

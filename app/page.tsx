@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { DashboardPreview } from '@/components/ui/dashboard-preview';
+import { HeroTerminal } from '@/components/ui/hero-terminal';
 import { 
   Activity, 
   ArrowRight, 
@@ -26,7 +26,10 @@ import {
   TrendingUp,
   ShieldCheck,
   AlertTriangle,
-  Scale
+  Scale,
+  Layers,
+  Cpu,
+  Check
 } from 'lucide-react';
 
 export default function Home() {
@@ -86,58 +89,51 @@ export default function Home() {
   const faqs = [
     {
       q: "What is ProfitPilot?",
-      a: "ProfitPilot is an automated crypto options trading platform. It connects to your Delta Exchange account, executes trades based on your configured strategy, monitors open positions, and manages risk — so you don't have to watch the market all day."
+      a: "ProfitPilot is an institutional-grade automated crypto options trading platform. It connects to your Delta Exchange account via non-custodial trade-only APIs, systematically executes delta-neutral strangles, monitors open positions every 5 seconds, and manages risk with automated trailing ratchets."
     },
     {
-      q: "How does the Macro News Shield protect my capital?",
-      a: "Before high-impact US economic events (such as Federal Reserve interest rate speeches, CPI inflation, or Non-Farm Payrolls), price whipsaws can easily trigger stop losses. ProfitPilot monitors global economic calendars, automatically pauses new trade entries 2 hours before the event, and resumes only after the market settles."
+      q: "How does the Macro News Blackout Shield protect my capital?",
+      a: "Before high-impact US economic events (such as Federal Reserve interest rate decisions, CPI reports, or Non-Farm Payrolls), market volatility causes sudden whipsaws that trigger unnecessary stops. ProfitPilot monitors global economic calendars in real-time, automatically pausing new strangle entries 2 hours before the event and resuming 1 hour after the market stabilizes."
     },
     {
       q: "Do I keep custody of my funds?",
-      a: "Yes, always. Your funds stay 100% in your Delta Exchange wallet. ProfitPilot connects via trade-only API keys that cannot initiate withdrawals. We never hold or have access to your capital."
+      a: "Yes, 100%. Your funds remain securely in your personal Delta Exchange wallet. ProfitPilot connects via trade-only API keys that cannot initiate withdrawals or transfers. We never hold or touch your funds."
     },
     {
-      q: "Which exchange is supported?",
-      a: "ProfitPilot supports Delta Exchange India (FPI-regulated, GST-compliant) and Delta Exchange Global. You choose your preferred venue during account setup."
+      q: "Which exchange venues are supported?",
+      a: "ProfitPilot natively supports both Delta Exchange India (FPI-regulated, 18% GST-compliant) and Delta Exchange Global. You select your preferred exchange gateway in your dashboard settings."
     },
     {
       q: "How are fees calculated?",
-      a: "We charge a 30% performance fee on net realized profits only. Net profit is calculated after deducting exchange trading fees and applicable GST. If a month ends in a loss, you owe nothing — and the loss carries forward to offset future gains (High-Water Mark protection)."
+      a: "We charge a 30% performance fee strictly on net realized profits above your High-Water Mark. Exchange trading fees and taxes are deducted first. If a month ends in a loss, you owe ₹0, and the loss carries forward to offset future gains."
     },
     {
-      q: "Can I pause the bot?",
-      a: "Yes. You can pause new trades at any time from your dashboard. Existing open positions will continue to be monitored and managed until they close."
-    },
-    {
-      q: "Can I close positions manually?",
-      a: "Yes. Every open position has an emergency close button that triggers an immediate market exit. You also have the option to disconnect your API keys entirely, which stops all automation."
-    },
-    {
-      q: "How do I start?",
-      a: "Create a free account, connect your Delta Exchange API keys (trade-only, no withdrawal access), and activate automation. The first 30 days are completely free — no performance fees during your trial."
+      q: "Can I pause the bot or manually exit?",
+      a: "Yes. You have full administrative control. You can pause automated entries with a single toggle or trigger an immediate Emergency Market Eject for any open position directly from your dashboard."
     }
   ];
 
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#d97706]/15 relative overflow-x-hidden">
       
-      {/* Subtle Ambient Background Mesh Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 bg-gradient-to-b from-[#d97706]/10 via-amber-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
+      {/* High-Tech Ambient Glows & Grid Pattern */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[600px] bg-gradient-to-b from-[#d97706]/15 via-amber-500/5 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-20 right-0 w-96 h-96 bg-emerald-500/10 blur-[120px] pointer-events-none -z-10" />
 
       {/* NAVIGATION */}
       <header className="sticky top-0 z-50 glass-header px-4 sm:px-8 py-3 flex items-center justify-between border-b border-[var(--hair)] transition-colors">
         
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
             <Activity className="w-4 h-4 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-semibold text-base tracking-tight text-[var(--ink)]">
+          <span className="font-bold text-base tracking-tight text-[var(--ink)]">
             Profit<span className="text-[#d97706]">Pilot</span>
           </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8 text-[13px] font-medium text-[var(--grey)]">
-          <a href="#how-it-works" className="hover:text-[var(--ink)] transition-colors">How it works</a>
+          <a href="#how-it-works" className="hover:text-[var(--ink)] transition-colors">Architecture</a>
           <a href="#macro-shield" className="hover:text-[var(--ink)] transition-colors flex items-center gap-1.5">
             <Radio className="w-3.5 h-3.5 text-[#d97706]" /> Macro Shield
           </a>
@@ -168,8 +164,8 @@ export default function Home() {
           <Link href="/login" className="text-[13px] font-medium text-[var(--grey)] hover:text-[var(--ink)] px-2.5 py-1 hidden sm:block transition-colors">
             Log in
           </Link>
-          <Link href="/login" className="bg-[#d97706] hover:bg-[#b45309] text-white font-semibold text-xs sm:text-[13px] px-4 py-2 rounded-lg shadow-subtle transition-all active:scale-95">
-            Start free trial
+          <Link href="/login" className="bg-[#d97706] hover:bg-[#b45309] text-white font-semibold text-xs sm:text-[13px] px-4 py-2 rounded-xl shadow-subtle transition-all active:scale-95">
+            Start Free Trial
           </Link>
 
           <button 
@@ -184,7 +180,7 @@ export default function Home() {
       {/* MOBILE NAV DRAWER */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-6 py-4 space-y-3 text-sm font-medium animate-in slide-in-from-top-2">
-          <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)]">How it works</a>
+          <a href="#how-it-works" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)]">Architecture</a>
           <a href="#macro-shield" onClick={() => setMobileMenuOpen(false)} className="block py-1.5 text-[var(--ink)] flex items-center gap-2">
             <Radio className="w-4 h-4 text-[#d97706]" /> Macro Shield
           </a>
@@ -198,56 +194,62 @@ export default function Home() {
       )}
 
       {/* LIVE MACRO RISK TICKER */}
-      <div className="bg-[var(--paper-2)] border-b border-[var(--hair)] py-2.5 px-4 text-xs font-mono text-[var(--ink)] overflow-hidden">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
+      <div className="bg-[var(--paper-2)] border-b border-[var(--hair)] py-2.5 px-4 sm:px-8 text-xs font-mono text-[var(--ink)]">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 sm:gap-6 flex-wrap">
             {macroStatus?.is_blocked ? (
-              <span className="flex items-center gap-2 text-amber-600 font-semibold shrink-0">
+              <span className="flex items-center gap-2 text-amber-600 font-semibold">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" />
                 <span>Macro Gate Active: {macroStatus.active_event?.title} ({macroStatus.active_event?.time_ist})</span>
                 <span className="text-[var(--grey)] font-normal hidden sm:inline">• Standby until {macroStatus.blackout_end_ist}</span>
               </span>
             ) : (
-              <span className="flex items-center gap-2 text-emerald-600 font-medium shrink-0">
+              <span className="flex items-center gap-2 text-emerald-600 font-medium">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 <span>All Global Macro Shields Green</span>
-                <span className="text-[var(--grey)] font-normal hidden sm:inline">• 4-Ring Institutional Risk Architecture Live</span>
+                <span className="text-[var(--grey)] font-normal hidden sm:inline">• 4-Ring Institutional Defense Active</span>
               </span>
             )}
           </div>
-          <span className="text-[11px] text-[var(--grey)] hidden md:block shrink-0">
-            Regulated Delta Exchange India &amp; Global Options
+          <span className="text-[11px] text-[var(--grey)] hidden md:block">
+            Delta Exchange India &amp; Global Options Gateway
           </span>
         </div>
       </div>
 
       <main className="flex-1">
 
-        {/* HERO */}
-        <section className="py-14 sm:py-20 lg:py-24 border-b border-[var(--hair)]">
+        {/* HIGH-IMPACT HERO SECTION (No Empty Space!) */}
+        <section className="pt-12 sm:pt-16 pb-16 sm:pb-20 border-b border-[var(--hair)] relative">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
               
-              {/* Left Column */}
-              <div className="space-y-6 text-center lg:text-left">
+              {/* Left Column (7 cols on desktop for rich dense content) */}
+              <div className="lg:col-span-6 space-y-6 text-center lg:text-left">
+                
+                {/* Live Alpha Tag */}
                 <div className="flex justify-center lg:justify-start">
                   <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#d97706] uppercase tracking-wider bg-[#d97706]/10 px-3.5 py-1.5 rounded-full border border-[#d97706]/20 shadow-2xs">
-                    <Sparkles className="w-3.5 h-3.5" /> Institutional Options Automation
+                    <span className="w-2 h-2 rounded-full bg-[#d97706] animate-pulse" />
+                    Autonomous Crypto Options Engine
                   </span>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl lg:text-[56px] font-bold tracking-tight text-[var(--ink)] leading-[1.12]">
-                  Your options strategy.{' '}
+                {/* Powerful Headline */}
+                <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-extrabold tracking-tight text-[var(--ink)] leading-[1.12]">
+                  Systematic Yield.{' '}
                   <span className="bg-gradient-to-r from-[#d97706] via-amber-500 to-[#f59e0b] bg-clip-text text-transparent">
-                    Fully Automated.
+                    Zero Custody.
                   </span>
                 </h1>
 
-                <p className="max-w-lg text-base sm:text-lg text-[var(--grey)] leading-relaxed mx-auto lg:mx-0">
-                  ProfitPilot automates systematic delta-neutral strangles on Delta Exchange. Powered by real-time macro blackout shields, ATR volatility sensors, and trailing profit ratchets.
+                {/* Subheadline */}
+                <p className="max-w-xl text-base sm:text-lg text-[var(--grey)] leading-relaxed mx-auto lg:mx-0">
+                  ProfitPilot automates systematic delta-neutral strangles on Delta Exchange. Engineered with real-time macroeconomic blackout shields, ATR volatility sensors, and trailing profit ratchets.
                 </p>
 
-                <div className="flex flex-col sm:flex-row items-center gap-3.5 justify-center lg:justify-start pt-2">
+                {/* Primary CTA Buttons */}
+                <div className="flex flex-col sm:flex-row items-center gap-3.5 justify-center lg:justify-start pt-1">
                   <Link 
                     href="/login"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-[#d97706] hover:bg-[#b45309] px-7 py-3.5 text-sm font-semibold text-white shadow-md hover:shadow-lg transition-all active:scale-[0.98]"
@@ -256,25 +258,76 @@ export default function Home() {
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                   <a 
-                    href="#how-it-works"
+                    href="#macro-shield"
                     className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-[var(--hair)] bg-[var(--card)] hover:bg-[var(--raise)] px-7 py-3.5 text-sm font-medium text-[var(--ink)] transition-colors"
                   >
-                    Explore Architecture
+                    View Risk Architecture
                   </a>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-2 text-xs text-[var(--grey)] pt-2">
-                  <span className="flex items-center gap-1.5"><Lock className="w-4 h-4 text-emerald-600" /> Non-custodial API</span>
-                  <span className="flex items-center gap-1.5"><Radio className="w-4 h-4 text-[#d97706]" /> Macro news blackout shield</span>
-                  <span className="flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-emerald-600" /> 30% trailing ratchet</span>
+                {/* DENSE 4-PILLAR TRUST GRID (Eliminates empty white space!) */}
+                <div className="grid grid-cols-2 gap-3 pt-4 text-left">
+                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <span>Non-Custodial API</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--grey)] leading-normal">
+                      Funds remain 100% in your Delta wallet. Zero withdrawal access.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
+                      <Radio className="w-4 h-4 text-[#d97706]" />
+                      <span>Macro Event Shield</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--grey)] leading-normal">
+                      Automatic blackout pauses before Fed, CPI &amp; NFP volatility.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
+                      <TrendingUp className="w-4 h-4 text-emerald-600" />
+                      <span>30% Trailing Ratchet</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--grey)] leading-normal">
+                      Locks in banked profit on the way up to prevent reversals.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[var(--paper-2)] border border-[var(--hair)] space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-bold text-[var(--ink)]">
+                      <Zap className="w-4 h-4 text-blue-600" />
+                      <span>Rollback Protection</span>
+                    </div>
+                    <p className="text-[11px] text-[var(--grey)] leading-normal">
+                      Auto-cancels if bid shifts. Never stranded with naked risk.
+                    </p>
+                  </div>
                 </div>
+
               </div>
 
-              {/* Right Column — Dashboard Preview */}
-              <div className="w-full">
-                <DashboardPreview currency={currency} />
+              {/* Right Column (6 cols — Live Institutional Terminal) */}
+              <div className="lg:col-span-6 w-full">
+                <HeroTerminal currency={currency} />
               </div>
 
+            </div>
+          </div>
+        </section>
+
+        {/* VENUE COMPATIBILITY & TRUST BANNER */}
+        <section className="py-6 bg-[var(--paper-2)] border-b border-[var(--hair)] text-xs text-[var(--grey)]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-wrap items-center justify-center lg:justify-between gap-6 font-mono text-[11px]">
+            <span className="font-semibold uppercase tracking-wider text-[var(--faint)]">Compatible Venues &amp; Compliance:</span>
+            <div className="flex flex-wrap items-center gap-6 text-[var(--ink)] font-medium">
+              <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" /> Delta Exchange India (18% GST Compliant)</span>
+              <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" /> Delta Exchange Global</span>
+              <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" /> High-Water Mark Fee Alignment</span>
+              <span className="flex items-center gap-1.5"><Check className="w-3.5 h-3.5 text-emerald-600" /> Read/Trade Non-Custodial Protocol</span>
             </div>
           </div>
         </section>
@@ -288,10 +341,10 @@ export default function Home() {
                 Institutional Risk Defense
               </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[var(--ink)]">
-                Why 95% of trading bots fail during news — and how we solve it.
+                Why 95% of retail bots fail during news — and how we solve it.
               </h2>
               <p className="text-sm text-[var(--grey)] max-w-2xl mx-auto leading-relaxed">
-                During Federal Reserve speeches, US CPI releases, and Jobs reports, algorithms cause violent whipsaws. ProfitPilot’s 4-ring safety architecture steps aside before the storm hits.
+                During Federal Reserve speeches, US CPI releases, and Jobs reports, retail bots blow up on sudden whipsaws. ProfitPilot’s 4-ring safety architecture steps aside before the storm hits.
               </p>
             </div>
 
@@ -310,7 +363,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-rose-500 font-bold">&times;</span>
-                    <span>Sudden \$1,000 wicks trigger instant stop-losses and fee-churning loops.</span>
+                    <span>Sudden $1,000 wicks trigger instant stop-losses and fee-churning loops.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-rose-500 font-bold">&times;</span>
@@ -424,8 +477,39 @@ export default function Home() {
           </div>
         </section>
 
+        {/* PERFORMANCE BACKTEST */}
+        <section id="performance" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+            
+            <div className="text-center space-y-3">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--ink)]">
+                Audited Performance &amp; Consistency
+              </h2>
+              <div className="inline-flex items-center gap-2 text-xs font-medium text-[var(--grey)] bg-[var(--card)] px-3 py-1.5 rounded-full border border-[var(--hair)]">
+                Delta Exchange Live Backtest Data (Aug 2025 – Aug 2026)
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: 'Annualized CAGR', value: '227.4%', color: 'text-emerald-600' },
+                { label: 'Historical Win Rate', value: '68.3%', color: 'text-[var(--ink)]' },
+                { label: 'Max Drawdown', value: '11.4%', color: 'text-rose-600' },
+                { label: 'Profitable Months', value: '10 / 13', color: 'text-emerald-600' },
+              ].map((m) => (
+                <div key={m.label} className="fintech-card p-5 text-center shadow-subtle">
+                  <div className={`font-mono text-2xl sm:text-3xl font-bold num-tabular ${m.color}`}>
+                    {m.value}
+                  </div>
+                  <div className="text-xs text-[var(--grey)] font-medium mt-2">{m.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* INTERACTIVE PROFIT CALCULATOR */}
-        <section id="pricing" className="py-20 bg-[var(--paper-2)] border-b border-[var(--hair)]">
+        <section id="pricing" className="py-20 border-b border-[var(--hair)]">
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
             
             <div className="text-center space-y-3">
@@ -436,7 +520,7 @@ export default function Home() {
                 We only win when you win.
               </h2>
               <p className="text-sm text-[var(--grey)] max-w-lg mx-auto">
-                No monthly subscriptions. No upfront fees. We charge a 30% performance fee strictly on net realized gains above your high-water mark.
+                No monthly subscriptions. No upfront costs. We charge a 30% performance fee strictly on net realized gains above your high-water mark.
               </p>
             </div>
 
