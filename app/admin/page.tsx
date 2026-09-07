@@ -158,7 +158,7 @@ export default function AdminDashboard() {
               </div>
               <div className="text-sm text-[var(--grey)] flex items-center gap-2 mt-0.5">
                 <span className="font-semibold text-[var(--ink)]">{stats.totalUsers}</span> Users &middot;
-                <span className="font-semibold text-[var(--ink)]">{stats.activeUsers}</span> Active Bots &middot;
+                <span className="font-semibold text-[var(--ink)]">{stats.activeUsers}</span> Active Connections &middot;
                 <span className="font-semibold text-[var(--ink)]">{stats.openPositionsCount}</span> Open Positions
               </div>
             </div>
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
             </GlassCard>
             <GlassCard className="p-4">
               <div className="text-xs font-medium text-[var(--grey)] mb-1">Failed Orders</div>
-              <div className="text-xl font-bold text-rose-500 num-tabular">0</div>
+              <div className="text-xl font-bold text-[var(--grey)]">N/A</div>
             </GlassCard>
           </div>
         </section>
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
                       <div className="w-5 h-5 rounded bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">D</div>
                       Delta Exchange
                     </td>
-                    <td className="px-4 py-3 text-[var(--grey)] num-tabular">12ms</td>
+                    <td className="px-4 py-3 text-[var(--grey)] text-xs">Not available</td>
                     <td className="px-4 py-3">
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">
                         <CheckCircle2 className="w-3 h-3" /> CONNECTED
