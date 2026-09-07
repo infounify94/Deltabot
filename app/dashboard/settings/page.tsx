@@ -38,7 +38,6 @@ export default function Settings() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Risk parameters state
-  const [maxLots, setMaxLots] = useState(1);
   const [cashReservePct, setCashReservePct] = useState(40);
 
   // Password update state
@@ -78,7 +77,6 @@ export default function Settings() {
         
       if (profileData) {
         setProfile(profileData);
-        setMaxLots(profileData.max_lots);
         setCashReservePct(Number(profileData.cash_reserve_pct) * 100);
       }
       if (error) alert('Could not load account settings. Please retry.');
@@ -428,23 +426,16 @@ export default function Settings() {
             <div className="space-y-4">
               <div className="bg-[var(--paper-2)] p-4 rounded-lg border border-[var(--hair)] space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-[var(--grey)]">Max lot sizing cap:</span>
-                  <span className="font-mono text-[#d97706] font-semibold">{maxLots} Lots ({(maxLots * 0.001).toFixed(3)} BTC)</span>
+                  <span className="text-[var(--grey)]">Position sizing:</span>
+                  <span className="font-mono text-[#d97706] font-semibold">Automatic</span>
                 </div>
-                <input 
-                  type="range" 
-                  min={1} 
-                  max={10} 
-                  value={maxLots}
-                  onChange={(e) => setMaxLots(parseInt(e.target.value))}
-                  className="w-full"
-                />
+                <p className="text-[11px] text-[var(--grey)]">One strangle at a time. Lots grow with available capital, after the reserve, estimated margin and fees. No fixed account lot cap; exchange limits and liquidity checks apply.</p>
               </div>
 
               <div className="bg-[var(--paper-2)] p-4 rounded-lg border border-[var(--hair)] space-y-2">
                 <div className="flex justify-between">
                   <span className="text-[var(--grey)]">Cash reserve buffer:</span>
-                  <span className="font-mono text-emerald-600 font-semibold">{cashReservePct}% Free Margin</span>
+                  <span className="font-mono text-emerald-600 font-semibold">{cashReservePct}% of equity</span>
                 </div>
                 <input 
                   type="range" 
@@ -455,7 +446,7 @@ export default function Settings() {
                   onChange={(e) => setCashReservePct(parseInt(e.target.value))}
                   className="w-full"
                 />
-                <p className="text-[11px] text-[var(--grey)]">Reserve margin to help manage risk during volatile market conditions.</p>
+                <p className="text-[11px] text-[var(--grey)]">Up to {100 - cashReservePct}% for new-entry margin and estimated fees. The reserve provides headroom for wings, hedging and margin changes; market losses can reduce it.</p>
               </div>
 
               <button 
@@ -464,10 +455,11 @@ export default function Settings() {
                 onClick={async () => {
                   setSaving(true);
                   const { error } = await supabase.rpc('save_risk_settings', {
-                    p_max_lots: maxLots, p_cash_reserve_pct: cashReservePct / 100
+                    // Compatibility argument for the existing RPC; live sizing ignores this legacy field.
+                    p_max_lots: 1, p_cash_reserve_pct: cashReservePct / 100
                   });
                   setSaving(false);
-                  alert(error ? `Risk settings were not saved: ${error.message}` : 'Risk settings saved. Platform limits still apply.');
+                  alert(error ? `Risk settings were not saved: ${error.message}` : 'Reserve saved. Entry sizing follows available capital and exchange limits.');
                 }}
                 className="px-5 py-2.5 rounded-lg bg-[#d97706] text-white font-medium text-xs shadow-subtle hover:brightness-105 transition"
               >
