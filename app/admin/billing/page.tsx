@@ -19,7 +19,7 @@ export default function AdminBilling() {
   }, []);
 
   const fetchUsers = async () => {
-    const { data } = await supabase.rpc('admin_get_all_users');
+    const { data } = await supabase.rpc('admin_get_all_users_safe');
     if (data) setAllUsers(data);
   };
 
@@ -30,7 +30,7 @@ export default function AdminBilling() {
     if (error) console.error("Fetch invoices error:", error);
     
     if (data) {
-      const { data: profiles } = await supabase.rpc('admin_get_all_users');
+      const { data: profiles } = await supabase.rpc('admin_get_all_users_safe');
       const enriched = data.map((inv: any) => {
         const prof = profiles?.find((p: any) => p.id === inv.user_id);
         return { ...inv, profiles: prof };

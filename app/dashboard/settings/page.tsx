@@ -70,15 +70,18 @@ export default function Settings() {
       // Explicitly select only the fields the UI needs.
       // delta_api_secret is intentionally excluded — it is write-only from the
       // browser's perspective and must never be returned to the frontend.
-      const { data: profileData } = await supabase
+      const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses')
+        .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses, max_lots, cash_reserve_pct')
         .eq('id', user.id)
         .single();
         
       if (profileData) {
         setProfile(profileData);
+        setMaxLots(profileData.max_lots);
+        setCashReservePct(Number(profileData.cash_reserve_pct) * 100);
       }
+      if (error) alert('Could not load account settings. Please retry.');
       setLoading(false);
     };
     fetchUser();
@@ -102,21 +105,22 @@ export default function Settings() {
         delta_api_key: apiKey,
         delta_api_secret: apiSecret,
         connected_at: new Date().toISOString(),
-        is_paused: false
+        is_paused: true
       })
       .eq('id', user.id);
       
     if (!error) {
-      setProfile({ ...profile, delta_api_key: apiKey, is_paused: false, connected_at: new Date().toISOString() });
+      setProfile({ ...profile, delta_api_key: apiKey, is_paused: true, connected_at: new Date().toISOString() });
       setApiKey('');
       setApiSecret('');
     }
+    if (error) alert(error.message);
     setSaving(false);
   };
 
   const handleDisconnect = async () => {
     if (!user || !profile) return;
-    if (!confirm("Are you sure you want to disconnect your Delta API keys? Live execution will halt immediately.")) return;
+    if (!confirm("Disconnect exchange credentials? Positions and pending executions must be closed and reconciled first.")) return;
     
     const { error } = await supabase
       .from('profiles')
@@ -124,13 +128,14 @@ export default function Settings() {
         delta_api_key: null,
         delta_api_secret: null,
         connected_at: null,
-        is_paused: false
+        is_paused: true
       })
       .eq('id', user.id);
       
     if (!error) {
       setProfile({ ...profile, delta_api_key: null });
     }
+    if (error) alert(error.message);
   };
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
@@ -443,7 +448,7 @@ export default function Settings() {
                 </div>
                 <input 
                   type="range" 
-                  min={20} 
+                  min={40}
                   max={60} 
                   step={5}
                   value={cashReservePct}
@@ -455,7 +460,15 @@ export default function Settings() {
 
               <button 
                 type="button" 
-                onClick={() => alert("Risk parameters saved successfully!")}
+                disabled={saving || !profile}
+                onClick={async () => {
+                  setSaving(true);
+                  const { error } = await supabase.rpc('save_risk_settings', {
+                    p_max_lots: maxLots, p_cash_reserve_pct: cashReservePct / 100
+                  });
+                  setSaving(false);
+                  alert(error ? `Risk settings were not saved: ${error.message}` : 'Risk settings saved. Platform limits still apply.');
+                }}
                 className="px-5 py-2.5 rounded-lg bg-[#d97706] text-white font-medium text-xs shadow-subtle hover:brightness-105 transition"
               >
                 Save Risk Configuration
@@ -471,17 +484,17 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-base font-semibold text-[var(--ink)]">Plan &amp; High-Water Mark</h3>
-                  <span className="text-xs text-[var(--grey)]">30-Day Rolling Performance Fee Model</span>
+                  <span className="text-xs text-[var(--grey)]">Calendar-Month Performance Fee Model</span>
                 </div>
                 <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-xs font-medium rounded-full border border-emerald-200">
-                  Free Trial Active
+                  Performance-Based Billing
                 </span>
               </div>
 
               <div className="space-y-3 divide-y divide-[var(--hair)]">
                 <div className="flex justify-between pt-2">
-                  <span className="text-[var(--grey)]">Trial period:</span>
-                  <span className="text-[var(--ink)] font-semibold">30 Days (100% Free)</span>
+                  <span className="text-[var(--grey)]">Billing period:</span>
+                  <span className="text-[var(--ink)] font-semibold">Previous calendar month</span>
                 </div>
                 <div className="flex justify-between pt-2">
                   <span className="text-[var(--grey)]">Performance fee:</span>
@@ -494,15 +507,15 @@ export default function Settings() {
               </div>
 
               <div className="p-3.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[11px] text-[var(--grey)] leading-relaxed">
-                If a 30-day period ends in net negative P&amp;L, you are invoiced $0/₹0, and the loss carries forward to offset future gains before performance fees apply.
+                Net losses carry forward to offset future gains before performance fees apply. Unreconciled results must be resolved before billing.
               </div>
             </div>
 
             <div className="lg:col-span-5 fintech-card p-6 flex flex-col items-center justify-center text-center space-y-2.5">
               <CreditCard className="w-8 h-8 text-[var(--faint)]" />
-              <h4 className="font-semibold text-[var(--ink)] text-sm">No Invoices Pending</h4>
+              <h4 className="font-semibold text-[var(--ink)] text-sm">Invoice Records</h4>
               <p className="text-xs text-[var(--grey)] max-w-xs leading-relaxed">
-                Invoices generate only at the conclusion of a profitable 30-day cycle.
+                Review your actual invoices in the Command Center billing section. This settings page does not report your payment or trial status.
               </p>
             </div>
           </div>

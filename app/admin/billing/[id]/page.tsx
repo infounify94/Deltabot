@@ -21,7 +21,7 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
   if (!user) redirect('/login');
 
   // Use RPC to check admin (bypasses RLS)
-  const { data: allUsers } = await supabase.rpc('admin_get_all_users');
+  const { data: allUsers } = await supabase.rpc('admin_get_all_users_safe');
   const adminProfile = (allUsers || []).find((u: any) => u.id === user.id);
   if (!adminProfile?.is_admin) redirect('/dashboard');
 

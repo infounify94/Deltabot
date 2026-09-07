@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function POST(req: Request) {
-  // NOTE: In production, this should be protected by a secure Cron secret,
-  // e.g., checking if req.headers.get('Authorization') === `Bearer ${process.env.CRON_SECRET}`
+  const secret = process.env.CRON_SECRET;
+  if (!secret || req.headers.get('Authorization') !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: 'Billing service unavailable' }, { status: 503 });
+  }
   
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY
   );
 
   try {

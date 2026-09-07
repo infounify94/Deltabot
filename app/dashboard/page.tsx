@@ -20,8 +20,11 @@ export default function Dashboard() {
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
   const [invoices, setInvoices] = useState<any[]>([]);
+  const [accountMargin, setAccountMargin] = useState({ available: NaN, utilization: NaN });
   const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, todayPnl: 0, liveBalance: 0 });
   const [loading, setLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
@@ -41,9 +44,9 @@ export default function Dashboard() {
   } | null>(null);
 
   // Real-time market WebSocket prices
-  const [btcPrice, setBtcPrice] = useState<number>(78500);
-  const [ethPrice, setEthPrice] = useState<number>(2450);
-  const [currency, setCurrency] = useState<'INR' | 'USD'>('INR');
+  const [btcPrice, setBtcPrice] = useState<number>(NaN);
+  const [ethPrice, setEthPrice] = useState<number>(NaN);
+  const [currency, setCurrency] = useState<'INR' | 'USD'>('USD');
   const fxRate = 86.5;
 
   const [expandedPositionIds, setExpandedPositionIds] = useState<Set<number | string>>(new Set());
@@ -67,9 +70,10 @@ export default function Dashboard() {
 
   // Currency Formatter
   const fmt = (usdAmount: number, forceDecimals = true) => {
+    if (!Number.isFinite(usdAmount)) return 'Unavailable';
     if (currency === 'INR') {
       const inr = usdAmount * fxRate;
-      return `₹${inr.toLocaleString('en-IN', { minimumFractionDigits: forceDecimals ? 2 : 0, maximumFractionDigits: forceDecimals ? 2 : 0 })}`;
+      return `≈₹${inr.toLocaleString('en-IN', { minimumFractionDigits: forceDecimals ? 2 : 0, maximumFractionDigits: forceDecimals ? 2 : 0 })}`;
     }
     return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: forceDecimals ? 2 : 0, maximumFractionDigits: forceDecimals ? 2 : 0 })}`;
   };
@@ -143,17 +147,20 @@ export default function Dashboard() {
       setUserEmail(user.email || '');
       setUserId(user.id);
 
-      const { data: profile } = await supabase.from('profiles').select('is_paused, live_balance, is_admin').eq('id', user.id).single();
-      setIsPaused(profile?.is_paused || false);
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('is_paused, live_balance, is_admin, available_balance, margin_utilization, balance_observed_at').eq('id', user.id).single();
+      if (profileError || !profile) throw new Error("Account data unavailable");
+      setIsPaused(profile.is_paused);
       setIsAdmin(profile?.is_admin || false);
-      let liveBalance = profile?.live_balance ? parseFloat(profile.live_balance) : 0;
+      const balanceFresh = profile.balance_observed_at && Date.now() - Date.parse(profile.balance_observed_at) < 60000;
+      let liveBalance = balanceFresh && profile.live_balance != null ? Number(profile.live_balance) : NaN;
 
       const { data: invs } = await supabase.from('invoices').select('*').order('created_at', { ascending: false });
       setInvoices(invs || []);
 
-      const { data: openData } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['open', 'adjusted']);
-      const { data: closedData } = await supabase.from('positions').select('*').eq('user_id', user.id).eq('status', 'closed').order('opened_at', { ascending: false });
+      const { data: openData, error: openError } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['open', 'adjusted', 'closing', 'close_failed', 'execution_anomaly', 'reconciliation_required']);
+      const { data: closedData, error: closedError } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['closed', 'closed_unreconciled']).order('opened_at', { ascending: false });
 
+      if (openError || closedError) throw new Error("Position data unavailable");
       const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
       const { data: eventsData } = posIds.length > 0 
         ? await supabase.from('trade_events').select('*').in('position_id', posIds) 
@@ -163,22 +170,24 @@ export default function Dashboard() {
         let fees = 0;
         const posEvents = (eventsData || []).filter(e => e.position_id === pos.id);
         posEvents.forEach(e => {
-          if (e.event_type === 'entry') fees += parseFloat(e.detail?.fill?.fees_paid || 0);
+          if (e.event_type === 'entry') fees += parseFloat(e.detail?.fees_paid ?? e.detail?.fill?.fees_paid ?? 0);
           if (['time_exit', 'profit_take', 'stop_loss', 'manual_kill_switch', 'exit'].includes(e.event_type)) {
+            const reports = e.detail?.execution?.legs;
+            if (reports) { fees += Object.values(reports).reduce((sum: number, r: any) => sum + Number(r.fees || 0), 0); return; }
             const fills = e.detail?.fills || {};
             const cf = fills[pos.short_call_symbol] || {};
             const pf = fills[pos.short_put_symbol] || {};
-            const extractFee = (f: any) => parseFloat(f.paid_commission || f.result?.paid_commission || 0) * 1.18;
+            const extractFee = (f: any) => parseFloat(f.paid_commission || f.result?.paid_commission || 0);
             fees += extractFee(cf) + extractFee(pf);
           }
         });
-        const realizedPnl = parseFloat(pos.realized_pnl || 0);
+        const realizedPnl = pos.realized_pnl == null ? NaN : Number(pos.realized_pnl);
         return { ...pos, fees, grossPnl: realizedPnl + fees, realizedPnl };
       });
 
       const processedOpen = (openData || []).map((pos: any) => ({
         ...pos,
-        actualPnl: parseFloat(pos.actual_pnl || 0),
+        actualPnl: pos.pnl_observed_at && Date.now() - Date.parse(pos.pnl_observed_at) < 60000 && pos.actual_pnl != null ? Number(pos.actual_pnl) : NaN,
         peakPnl: parseFloat(pos.peak_unrealized_pnl || 0),
       }));
 
@@ -199,7 +208,10 @@ export default function Dashboard() {
       const todayPnl = todayClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
       
       setMetrics({ roundTrips, winners, hitRate, totalPnl, todayPnl, liveBalance });
+      setAccountMargin({ available: !balanceFresh || profile.available_balance == null ? NaN : Number(profile.available_balance), utilization: !balanceFresh || profile.margin_utilization == null ? NaN : Number(profile.margin_utilization) });
+      setDataError(balanceFresh ? null : 'Worker telemetry is stale; trading status is unconfirmed.'); setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
+      setDataError("Data refresh failed. Displayed values may be stale.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -217,23 +229,25 @@ export default function Dashboard() {
     if (!userId) return;
     if (!confirm(isPaused ? "Are you sure you want to resume new trades?" : "Are you sure you want to pause new trades? (Existing positions will remain open)")) return;
     const nextPause = !isPaused;
+    const { error } = await supabase.from('profiles').update({ is_paused: nextPause }).eq('id', userId);
+    if (error) { alert(`Trading state was not changed: ${error.message}`); return; }
     setIsPaused(nextPause);
-    await supabase.from('profiles').update({ is_paused: nextPause }).eq('id', userId);
     fetchData();
   };
 
   const handleKillSwitch = async (id: string | number) => {
     if (!userId) return;
     if (confirm("EMERGENCY KILL SWITCH: Are you sure you want to market close this position immediately?")) {
-      await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id).eq('user_id', userId);
+      const { error } = await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id).eq('user_id', userId);
+      if (error) { alert(`Exit request failed: ${error.message}`); return; }
       fetchData();
     }
   };
 
-  const openPnl = useMemo(() => openPositions.reduce((acc, pos) => acc + (pos.actualPnl || 0), 0), [openPositions]);
-  const totalPositionMargin = useMemo(() => openPositions.reduce((acc, pos) => acc + (pos.lots || 1) * 2.0, 0), [openPositions]);
-  const availableMargin = Math.max(0, metrics.liveBalance - totalPositionMargin);
-  const marginUsed = metrics.liveBalance > 0 ? (totalPositionMargin / metrics.liveBalance) * 100 : 0;
+  const openPnl = useMemo(() => openPositions.reduce((acc, pos) => acc + pos.actualPnl, 0), [openPositions]);
+  const availableMargin = accountMargin.available;
+  const marginUsed = accountMargin.utilization * 100;
+  const totalPositionMargin = Number.isFinite(availableMargin) ? Math.max(0, metrics.liveBalance - availableMargin) : NaN;
 
   if (loading) {
     return (
@@ -252,7 +266,9 @@ export default function Dashboard() {
   let statusText = 'Trading Active';
   let statusDesc = 'All strategies are running and monitoring for new entries.';
   
-  if (macroInfo?.is_blocked) {
+  if (dataError || !macroInfo || macroInfo.status === 'UNKNOWN') {
+    statusState = 'paused'; statusText = 'Status Unavailable'; statusDesc = dataError || 'Macro safety has not been confirmed.';
+  } else if (macroInfo?.is_blocked) {
     statusState = 'halted';
     statusText = 'Emergency Halted';
     statusDesc = macroInfo.blackout_reason || 'System paused due to extreme market volatility.';
@@ -281,6 +297,10 @@ export default function Dashboard() {
     <div className="aurora-wrapper text-[var(--ink)] flex flex-col min-h-screen">
       <div className="aurora-bg" />
       
+      <div role="status" className="px-4 py-2 text-xs text-amber-600">
+        {dataError || `Last data refresh: ${lastUpdated || 'unavailable'}. P&L is an estimate until execution settles.`}
+        {currency === 'INR' && ' INR display uses an indicative fixed rate of ₹86.50/USD.'}
+      </div>
       {/* Header */}
       <header className="sticky top-0 z-50 glass-header px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -302,12 +322,12 @@ export default function Dashboard() {
           <div className="hidden sm:flex items-center gap-4 px-4 py-1.5 rounded-lg border border-[var(--hair)] bg-[var(--card)] shadow-sm text-sm font-medium">
             <div className="flex items-center gap-1.5">
               <span className="text-[var(--grey)]">BTC</span>
-              <span className="text-emerald-500 num-tabular">${btcPrice.toLocaleString()}</span>
+              <span className="text-emerald-500 num-tabular">{Number.isFinite(btcPrice) ? `$${btcPrice.toLocaleString()}` : "Unavailable"}</span>
             </div>
             <div className="w-px h-4 bg-[var(--hair)]" />
             <div className="flex items-center gap-1.5">
               <span className="text-[var(--grey)]">ETH</span>
-              <span className="text-emerald-500 num-tabular">${ethPrice.toLocaleString()}</span>
+              <span className="text-emerald-500 num-tabular">{Number.isFinite(ethPrice) ? `$${ethPrice.toLocaleString()}` : "Unavailable"}</span>
             </div>
           </div>
           
@@ -450,7 +470,7 @@ export default function Dashboard() {
                           <div className="text-right">
                             <div className="text-sm text-[var(--grey)] font-medium mb-1">Unrealized P&L</div>
                             <div className={`text-xl font-bold num-tabular ${pos.actualPnl > 0 ? 'text-emerald-500' : pos.actualPnl < 0 ? 'text-rose-500' : ''}`}>
-                              {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl || 0)}
+                              {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
                             </div>
                           </div>
                         </div>
@@ -545,7 +565,7 @@ export default function Dashboard() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <GlassCard className="p-5 border-l-4 border-l-indigo-500">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Margin Utilization</div>
-                    <div className="text-2xl font-bold num-tabular mb-3">{marginUsed.toFixed(1)}%</div>
+                    <div className="text-2xl font-bold num-tabular mb-3">{Number.isFinite(marginUsed) ? `${marginUsed.toFixed(1)}%` : 'Unavailable'}</div>
                     <div className="w-full bg-[var(--raise)] rounded-full h-2">
                       <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${Math.min(100, marginUsed)}%` }}></div>
                     </div>

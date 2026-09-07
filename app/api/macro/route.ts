@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 
 export const revalidate = 60; // Cache for 60 seconds
 
@@ -134,6 +135,7 @@ function parseXmlEvents(xmlText: string): MacroEvent[] {
 export async function GET() {
   try {
     let events: MacroEvent[] = [];
+    let feedValid = false;
     try {
       const resp = await fetch(FEED_URL, {
         headers: {
@@ -144,11 +146,14 @@ export async function GET() {
       });
       if (resp.ok) {
         const xml = await resp.text();
+        if (!xml.includes('<weeklyevents') || !xml.includes('</weeklyevents>')) throw new Error('Invalid calendar feed');
         events = parseXmlEvents(xml);
+        feedValid = true;
       }
     } catch (err) {
       console.warn("Could not fetch remote XML feed:", err);
     }
+    if (!feedValid) throw new Error('Macro calendar unavailable');
 
     const nowTs = Math.floor(Date.now() / 1000);
     const blackoutBeforeSec = 120 * 60; // 2 hours before
@@ -196,9 +201,9 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       error: error.message,
-      is_blocked: false,
-      status: "SCANNING",
-      blackout_reason: "Market clear. Monitoring conditions.",
+      is_blocked: true,
+      status: "UNKNOWN",
+      blackout_reason: "Macro calendar unavailable. Entry safety cannot be confirmed.",
       upcoming_events: [],
     });
   }

@@ -20,7 +20,7 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
 
   const fetchUserData = async () => {
     // Use RPC to bypass RLS
-    const { data: allUsers } = await supabase.rpc('admin_get_all_users');
+    const { data: allUsers } = await supabase.rpc('admin_get_all_users_safe');
     const p = (allUsers || []).find((u: any) => u.id === params.id);
     if (p) setProfile(p);
 
