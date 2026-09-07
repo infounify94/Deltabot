@@ -67,9 +67,12 @@ export default function Settings() {
       }
       setUser(user);
       
+      // Explicitly select only the fields the UI needs.
+      // delta_api_secret is intentionally excluded — it is write-only from the
+      // browser's perspective and must never be returned to the frontend.
       const { data: profileData } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses')
         .eq('id', user.id)
         .single();
         
