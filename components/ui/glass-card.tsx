@@ -14,17 +14,16 @@ export function GlassCard({
   ...props 
 }: GlassCardProps) {
   
-  const baseClasses = variant === 'default' 
-    ? 'bg-[rgba(20,23,32,0.4)] border-[rgba(255,255,255,0.05)] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] rounded-2xl backdrop-blur-xl'
-    : 'bg-[rgba(255,255,255,0.02)] border-[rgba(255,255,255,0.03)] rounded-xl backdrop-blur-md';
-
+  // By using the CSS classes defined in globals.css, we automatically get light/dark theme support
+  const baseClasses = variant === 'default' ? 'fintech-card' : 'fintech-card-subtle';
+  
   const hoverClasses = hoverEffect 
-    ? 'transition-all duration-300 hover:bg-[rgba(23,27,38,0.6)] hover:border-[rgba(255,255,255,0.08)] hover:-translate-y-0.5' 
+    ? 'transition-all duration-300 hover:-translate-y-0.5 hover:border-[var(--hair-2)] hover:bg-[var(--card-hover)]' 
     : '';
 
   return (
     <div 
-      className={`border ${baseClasses} ${hoverClasses} ${className}`}
+      className={`${baseClasses} ${hoverClasses} ${className}`}
       {...props}
     >
       {children}
