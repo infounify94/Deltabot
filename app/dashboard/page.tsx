@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { formatAccountCurrency } from '@/lib/currency';
+import { formatAccountCurrency, INR_RATE_LABEL } from '@/lib/currency';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { LogoutButton } from '@/components/ui/logout-button';
@@ -384,7 +384,7 @@ export default function Dashboard() {
             </div>}
             {section !== 'billing' && <p role="status" className={`text-xs leading-relaxed ${dataError ? 'text-[var(--clay)]' : 'text-[var(--grey)]'}`}>
               {dataError || `Updated ${lastUpdated || '—'} · P&L is estimated until execution settles.`}
-              {currency === 'INR' && ' INR uses an indicative ₹86.50/USD rate.'}
+              {currency === 'INR' && ` ${INR_RATE_LABEL}.`}
             </p>}
 
 

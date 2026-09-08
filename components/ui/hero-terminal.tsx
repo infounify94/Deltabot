@@ -1,5 +1,6 @@
 'use client';
 
+import { formatAccountCurrency } from '@/lib/currency';
 import React, { useState, useEffect } from 'react';
 import { 
   Activity, 
@@ -20,15 +21,7 @@ interface HeroTerminalProps {
 export function HeroTerminal({ currency = 'INR' }: HeroTerminalProps) {
   const [activeTab, setActiveTab] = useState<'strategy' | 'safety' | 'live'>('strategy');
   const [tickerPrice, setTickerPrice] = useState(78984);
-  const fxRate = 86.5;
-
-  const fmt = (usd: number) => {
-    if (currency === 'INR') {
-      const inr = usd * fxRate;
-      return `₹${Math.round(inr).toLocaleString('en-IN')}`;
-    }
-    return `$${usd.toFixed(2)}`;
-  };
+  const fmt = (usd: number) => formatAccountCurrency(usd, currency);
 
   useEffect(() => {
     const interval = setInterval(() => {

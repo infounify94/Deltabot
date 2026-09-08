@@ -1,4 +1,6 @@
-export const DISPLAY_USD_INR_RATE = 86.5;
+export const DISPLAY_USD_INR_RATE = 85;
+
+export const INR_RATE_LABEL = `Delta Exchange India fixed rate: ₹${DISPLAY_USD_INR_RATE} per USD`;
 
 /** Display conversion only. Billing and the trading engine continue using USD. */
 export function formatAccountCurrency(value: number, currency: 'USD' | 'INR', decimals = true) {
