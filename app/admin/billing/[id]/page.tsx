@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { InvoiceActions } from '@/components/ui/invoice-actions';
 import { Activity } from 'lucide-react';
 
 export default async function InvoicePrintView({ params }: { params: { id: string } }) {
@@ -26,11 +28,15 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
   if (!adminProfile?.is_admin) redirect('/dashboard');
 
   // Fetch invoice using RPC
-  const { data: invoices } = await supabase.rpc('admin_get_all_invoices');
+  const { data: invoices, error: invoiceError } = await supabase.rpc('admin_get_all_invoices');
   const invoice = (invoices || []).find((inv: any) => inv.id === params.id);
-  
-  if (!invoice) {
-    return <div className="p-10 font-sans text-gray-500">Invoice not found.</div>;
+
+  if (invoiceError || !invoice) {
+    return <div className="max-w-xl mx-auto p-6 sm:p-10 space-y-4">
+      <h1 className="text-xl font-semibold">{invoiceError ? 'Unable to load invoice' : 'Invoice unavailable'}</h1>
+      <p role="alert" className="text-[var(--grey)]">{invoiceError ? 'Please try opening this invoice again. If the issue persists, contact support.' : 'This invoice does not exist or you do not have permission to view it.'}</p>
+      <Link href="/admin/billing" className="inline-flex min-h-11 items-center underline">Back to billing</Link>
+    </div>;
   }
 
   // Find the user profile for this invoice
@@ -40,28 +46,20 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(val) || 0);
   };
 
-  const invoiceDate = invoice.created_at 
-    ? new Date(invoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) 
+  const invoiceDate = invoice.created_at
+    ? new Date(invoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'N/A';
-  
-  const dueDate = invoice.due_date 
-    ? new Date(invoice.due_date + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) 
+
+  const dueDate = invoice.due_date
+    ? new Date(String(invoice.due_date).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : 'N/A';
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900 p-8 sm:p-16 max-w-4xl mx-auto">
-      {/* Print Button (Hidden when printing) */}
-      <div className="mb-8 print:hidden flex justify-end">
-        <button 
-          onClick={() => window.print()}
-          className="px-4 py-2 bg-blue-600 text-white rounded font-medium text-sm shadow hover:bg-blue-700 transition"
-        >
-          Print / Save as PDF
-        </button>
-      </div>
+    <div className="min-h-screen bg-white font-sans text-gray-900 p-4 sm:p-12 print:p-0 max-w-4xl mx-auto">
+      <InvoiceActions backHref="/admin/billing" invoiceId={invoice.id} />
 
       {/* Invoice Header */}
-      <div className="flex justify-between items-start border-b border-gray-200 pb-8 mb-8">
+      <div className="flex flex-col sm:flex-row gap-6 justify-between items-start border-b border-gray-200 pb-8 mb-8">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center">
@@ -70,18 +68,16 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
             <span className="font-bold text-xl tracking-tight">ProfitPilot</span>
           </div>
           <div className="text-sm text-gray-500 space-y-1">
-            <p>123 Quant Street</p>
-            <p>New York, NY 10001</p>
-            <p>billing@profitpilot.com</p>
+            <p>Performance fee statement</p>
           </div>
         </div>
-        
-        <div className="text-right">
+
+        <div className="sm:text-right">
           <h1 className="text-4xl font-light text-gray-400 uppercase tracking-widest mb-4">Invoice</h1>
           <div className="text-sm space-y-1">
             <p><span className="text-gray-500 inline-block w-24">Invoice #</span> <span className="font-mono">{String(invoice.id).split('-')[0].toUpperCase()}</span></p>
             <p><span className="text-gray-500 inline-block w-24">Date</span> {invoiceDate}</p>
-            <p><span className="text-gray-500 inline-block w-24">Due Date</span> <span className="font-medium text-red-600">{dueDate}</span></p>
+            <p><span className="text-gray-500 inline-block w-24">Due Date</span> <span className="font-medium text-gray-700">{dueDate}</span></p>
           </div>
         </div>
       </div>
@@ -105,10 +101,10 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
           <tr className="border-b border-gray-200">
             <td className="py-4">
               <p className="font-medium">Performance Fee - {invoice.billing_month}</p>
-              <p className="text-gray-500 text-xs mt-1">Gross Trading Profit for the period</p>
+              <p className="text-gray-500 text-xs mt-1">Realized trading profit for the period</p>
             </td>
             <td className="py-4 text-right font-mono text-emerald-600">
-              +{formatCurrency(invoice.total_profit)}
+              {formatCurrency(invoice.total_profit)}
             </td>
           </tr>
           {Number(invoice.previous_losses) > 0 && (
@@ -127,7 +123,7 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
               <p className="font-medium">Net Billable Profit</p>
             </td>
             <td className="py-4 text-right font-mono">
-              {formatCurrency(Number(invoice.total_profit) - Number(invoice.previous_losses))}
+              {formatCurrency(Math.max(0, Number(invoice.total_profit) - Number(invoice.previous_losses)))}
             </td>
           </tr>
         </tbody>
@@ -141,10 +137,10 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
             <span>30%</span>
           </div>
           <div className="flex justify-between font-bold text-xl border-t-2 border-black pt-3">
-            <span>Total Due</span>
+            <span>Invoice Total</span>
             <span className="font-mono">{formatCurrency(invoice.fee_amount)}</span>
           </div>
-          
+
           <div className="pt-4 text-right">
             {invoice.status === 'Paid' ? (
               <span className="inline-block px-4 py-1.5 border-2 border-emerald-500 text-emerald-600 font-bold uppercase tracking-wider text-sm rounded transform -rotate-2">Paid in Full</span>
@@ -159,7 +155,7 @@ export default async function InvoicePrintView({ params }: { params: { id: strin
 
       {/* Footer */}
       <div className="border-t border-gray-200 pt-8 text-center text-xs text-gray-500">
-        <p>Please remit payment by {dueDate} to avoid automated account suspension.</p>
+        {invoice.status !== 'Paid' && invoice.status !== 'No Fee' && <p>Please remit payment by {dueDate}.</p>}
         <p className="mt-1">Thank you for trading with ProfitPilot.</p>
       </div>
 

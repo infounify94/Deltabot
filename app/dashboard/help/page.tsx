@@ -1,15 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { 
-  Activity, 
-  MessageCircle, 
-  Mail, 
-  Globe, 
-  ShieldAlert, 
-  HelpCircle, 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LogoutButton } from '@/components/ui/logout-button';
+import {
+  Activity,
+  MessageCircle,
+  Mail,
+  Globe,
+  ShieldAlert,
+  HelpCircle,
   ExternalLink,
   ChevronRight,
   Shield,
@@ -24,25 +25,15 @@ import {
 
 export default function Help() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    if (next === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#d97706]/15">
-      
+
       {/* Shared Dashboard Navbar */}
-      <nav className="w-full glass-header px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-50">
-        
+      <nav className="w-full glass-header px-4 sm:px-8 py-3 flex flex-wrap gap-3 items-center justify-between sticky top-0 z-50">
+
         {/* Brand Logo */}
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-sm">
@@ -69,26 +60,11 @@ export default function Help() {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2.5">
-          <button 
-            onClick={toggleTheme}
-            className="w-7 h-7 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </button>
+          <ThemeToggle /><LogoutButton />
 
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut();
-              window.location.href = '/';
-            }}
-            className="hidden sm:block text-xs font-medium text-rose-600 hover:text-rose-700 transition bg-rose-50 dark:bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-500/20"
-          >
-            Sign Out
-          </button>
 
           {/* Mobile Menu Hamburger Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
             aria-label="Toggle Navigation"
@@ -101,22 +77,22 @@ export default function Help() {
       {/* Mobile Drawer Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-2 text-xs font-medium">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[var(--grey)] hover:text-[var(--ink)] border-b border-[var(--hair)]"
           >
             Command Center
           </Link>
-          <Link 
-            href="/dashboard/settings" 
+          <Link
+            href="/dashboard/settings"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[var(--grey)] hover:text-[var(--ink)] border-b border-[var(--hair)]"
           >
             Settings &amp; API Keys
           </Link>
-          <Link 
-            href="/dashboard/help" 
+          <Link
+            href="/dashboard/help"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[#d97706] font-semibold border-b border-[var(--hair)]"
           >
@@ -127,7 +103,7 @@ export default function Help() {
 
       {/* Main Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 w-full flex-1 space-y-6">
-        
+
         {/* Header */}
         <div>
           <div className="text-xs font-semibold uppercase text-[#d97706] tracking-wider mb-0.5">
@@ -143,7 +119,7 @@ export default function Help() {
 
         {/* Channels Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          
+
           {/* WhatsApp Support */}
           <div className="fintech-card p-5 space-y-3.5 flex flex-col justify-between">
             <div className="space-y-2">
@@ -155,9 +131,9 @@ export default function Help() {
                 Connect directly with the strategy engineering team for immediate assistance.
               </p>
             </div>
-            <a 
+            <a
               href="https://wa.me/918328217848?text=Hello%20ProfitPilot%20Team%2C%20I%20need%20assistance%20with%20my%20options%20account"
-              target="_blank" 
+              target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs flex items-center justify-center gap-2 transition shadow-subtle"
             >
@@ -176,7 +152,7 @@ export default function Help() {
                 For detailed API audit inquiries, billing reconciliation, or institutional accounts.
               </p>
             </div>
-            <a 
+            <a
               href="mailto:support@profitpilot.in"
               className="w-full py-2.5 rounded-lg bg-[var(--paper-2)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-medium text-xs flex items-center justify-center gap-2 transition"
             >
@@ -195,9 +171,9 @@ export default function Help() {
                 Check manual margin balances, API key logs, and direct order books on the exchange.
               </p>
             </div>
-            <a 
-              href="https://www.delta.exchange/" 
-              target="_blank" 
+            <a
+              href="https://www.delta.exchange/"
+              target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2.5 rounded-lg bg-[var(--paper-2)] hover:bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)] font-medium text-xs flex items-center justify-center gap-2 transition"
             >

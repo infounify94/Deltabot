@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { ProtectedSession } from '@/components/ui/protected-session';
+import { LogoutButton } from '@/components/ui/logout-button';
 import { ShieldCheck, Activity, Users, DollarSign, LogOut } from 'lucide-react';
 
 export default async function AdminLayout({
@@ -40,9 +42,10 @@ export default async function AdminLayout({
   }
 
   return (
+    <ProtectedSession>
     <div className="min-h-screen bg-[var(--paper)] flex flex-col font-sans text-[var(--ink)]">
-      <header className="glass-header px-6 py-3 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-4">
+      <header className="print:hidden glass-header px-4 sm:px-6 py-3 flex flex-wrap gap-3 items-center justify-between sticky top-0 z-50">
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/admin" className="flex items-center gap-2 group">
             <div className="w-7 h-7 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm">
               <ShieldCheck className="w-4 h-4 text-white" strokeWidth={2.5} />
@@ -64,17 +67,19 @@ export default async function AdminLayout({
             </Link>
           </nav>
         </div>
-        
-        <div className="flex items-center gap-4">
+
+        <div className="flex flex-wrap items-center gap-3">
           <Link href="/dashboard" className="text-sm font-medium text-[var(--grey)] hover:text-[var(--ink)] transition-colors">
             Exit Admin
           </Link>
+          <LogoutButton />
         </div>
       </header>
-      
-      <main className="flex-1 p-6 max-w-7xl mx-auto w-full">
+
+      <main className="flex-1 p-4 sm:p-6 print:p-0 max-w-7xl mx-auto w-full">
         {children}
       </main>
     </div>
+    </ProtectedSession>
   );
 }

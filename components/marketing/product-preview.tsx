@@ -1,0 +1,25 @@
+'use client';
+
+import { useState } from 'react';
+import { Activity, ArrowDownRight, ArrowUpRight, CreditCard, LayoutDashboard, Lock, ShieldCheck } from 'lucide-react';
+import { Brand } from '@/components/brand';
+import { formatAccountCurrency } from '@/lib/currency';
+
+export function ProductPreview({ expanded = false }: { expanded?: boolean }) {
+  const [view, setView] = useState<'overview' | 'activity' | 'billing'>('overview');
+  const [currency, setCurrency] = useState<'USD' | 'INR'>('USD');
+  const fmt = (value: number) => formatAccountCurrency(value, currency);
+  return <div className={`product-preview ${expanded ? 'expanded-preview' : ''}`}>
+    <div className="preview-top"><Brand small /><span className="preview-demo">DEMO WORKSPACE</span><Lock size={12} /></div>
+    <div className="preview-body"><div className="preview-sidebar" aria-hidden="true"><LayoutDashboard /><Activity /><ShieldCheck /><CreditCard /></div><div className="preview-main">
+      <div className="preview-heading"><div><span className="micro-label">YOUR WORKSPACE</span><h3>Account overview</h3></div><button aria-label={`Demo currency: ${currency}. Switch currency`} onClick={() => setCurrency(currency === 'USD' ? 'INR' : 'USD')} className="preview-currency">{currency}</button></div>
+      <div role="tablist" aria-label="Product preview" className="preview-tabs">{(['overview', 'activity', 'billing'] as const).map(tab => <button key={tab} role="tab" id={`preview-tab-${tab}`} aria-controls={`preview-panel-${tab}`} aria-selected={view === tab} onClick={() => setView(tab)}>{tab === 'overview' ? 'Overview' : tab === 'activity' ? 'Trade activity' : 'Invoices'}</button>)}</div>
+      <div role="tabpanel" id={`preview-panel-${view}`} aria-labelledby={`preview-tab-${view}`} className="preview-panel">
+        {view === 'overview' ? <><div className="preview-stats"><div><span>Account balance</span><strong>{fmt(12480)}</strong><small>Example account</small></div><div><span>Realized P&L</span><strong className="positive">+{fmt(480)}</strong><small>Illustrative period</small></div><div><span>Open positions</span><strong>02</strong><small>In this example</small></div></div>
+          <div className="preview-chart"><div className="chart-caption"><span>Realized P&L</span><span className="micro-label">ILLUSTRATIVE</span></div><svg viewBox="0 0 600 185" role="img" aria-label="Illustrative P&L chart with both gains and losses, not actual performance"><defs><linearGradient id="preview-area" x1="0" y1="0" x2="0" y2="1"><stop stopColor="currentColor" stopOpacity=".2"/><stop offset="1" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>{[30,75,120,165].map(y=><line key={y} x1="0" y1={y} x2="600" y2={y} stroke="var(--hair)" />)}{[60,180,300,420,540].map(x=><line key={x} x1={x} y1="15" x2={x} y2="170" stroke="var(--hair)" />)}<path d="M0 145 25 140 50 150 75 119 100 126 125 115 150 132 175 93 200 97 225 89 250 115 275 100 300 110 325 75 350 88 375 58 400 62 425 77 450 45 475 51 500 29 525 48 550 36 575 44 600 18 V180 H0Z" fill="url(#preview-area)"/><path d="M0 145 25 140 50 150 75 119 100 126 125 115 150 132 175 93 200 97 225 89 250 115 275 100 300 110 325 75 350 88 375 58 400 62 425 77 450 45 475 51 500 29 525 48 550 36 575 44 600 18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinejoin="round" /></svg><div className="chart-axis"><span>01 AUG</span><span>08 AUG</span><span>15 AUG</span><span>22 AUG</span><span>30 AUG</span></div></div>
+          <div className="preview-position"><span><span className="asset-coin">₿</span>BTC options</span><span>Open position</span><strong className="positive">+{fmt(24.8)}</strong></div><div className="preview-position"><span><span className="asset-coin eth">Ξ</span>ETH options</span><span>Open position</span><strong className="negative">{fmt(-8.4)}</strong></div></> : view === 'activity' ? <div className="preview-activity"><h4>A record behind every result.</h4><p>Review closed trades and their recorded outcomes.</p>{[{asset:'BTC',pnl:42,time:'14:20'}, {asset:'ETH',pnl:-18,time:'12:05'}, {asset:'BTC',pnl:31,time:'09:40'}].map((item,i)=><div className="activity-demo-row" key={i}>{item.pnl > 0 ? <ArrowUpRight className="positive" size={18}/> : <ArrowDownRight className="negative" size={18}/>}<div><strong>{item.asset} options</strong><small>Example closed trade · {item.time}</small></div><strong className={item.pnl>0?'positive':'negative'}>{item.pnl>0?'+':''}{fmt(item.pnl)}</strong></div>)}</div> : <div className="preview-invoice"><CreditCard size={24}/><span className="micro-label">EXAMPLE STATEMENT</span><h4>August 2026</h4><div><span>Billable profit</span><strong>{fmt(480)}</strong></div><div><span>Performance fee · 30%</span><strong>{fmt(144)}</strong></div><p>Preview or download your statement from your account. Actual invoices are issued in USD.</p></div>}
+      </div>
+      <div className="preview-note"><span className="status-dot" />Interactive product preview · sample data{currency === 'INR' && ' · ₹86.50/USD display rate'}</div>
+    </div></div>
+  </div>;
+}

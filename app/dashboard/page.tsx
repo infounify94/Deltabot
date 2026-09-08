@@ -1,12 +1,16 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { formatAccountCurrency } from '@/lib/currency';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
+import { LogoutButton } from '@/components/ui/logout-button';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { BillingList } from '@/components/ui/billing-list';
 import { GlassCard } from '@/components/ui/glass-card';
-import { 
-  Activity, Play, Pause, ShieldAlert, Menu, X, Settings, Sun, Moon, 
-  Home, Layers, History, TrendingUp, Radio, ShieldCheck, Clock, Calendar, 
+import {
+  Activity, Play, Pause, ShieldAlert, Menu, X, Settings, Sun, Moon,
+  Home, Layers, History, TrendingUp, Radio, ShieldCheck, Clock, Calendar,
   Sparkles, Zap, CheckCircle2, AlertCircle, CreditCard, PieChart, Shield
 } from 'lucide-react';
 
@@ -15,7 +19,8 @@ type DashboardSection = 'dashboard' | 'trading' | 'history' | 'analytics' | 'ris
 export default function Dashboard() {
   const [section, setSection] = useState<DashboardSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+  const drawerRef = useRef<HTMLElement>(null);
+
   // Real DB Data (Supabase)
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
@@ -29,9 +34,6 @@ export default function Dashboard() {
   const [userEmail, setUserEmail] = useState<string>('');
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  
-  // Start with empty theme, let useEffect handle it to avoid hydration mismatch
-  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Macro Information
   const [macroInfo, setMacroInfo] = useState<{
@@ -47,36 +49,39 @@ export default function Dashboard() {
   const [btcPrice, setBtcPrice] = useState<number>(NaN);
   const [ethPrice, setEthPrice] = useState<number>(NaN);
   const [currency, setCurrency] = useState<'INR' | 'USD'>('USD');
-  const fxRate = 86.5;
 
   const [expandedPositionIds, setExpandedPositionIds] = useState<Set<number | string>>(new Set());
 
-  // Set theme on mount based on HTML attribute
   useEffect(() => {
-    const currentTheme = document.documentElement.getAttribute('data-theme') as 'light' | 'dark';
-    if (currentTheme) setTheme(currentTheme);
-  }, []);
+    if (!sidebarOpen) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const drawer = drawerRef.current;
+    const focusable = () => Array.from(drawer?.querySelectorAll<HTMLElement>('button, a[href]') || []).filter(el => el.getClientRects().length > 0);
+    focusable()[0]?.focus();
+    const close = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+      if (event.key === 'Tab') {
+        const items = focusable();
+        const first = items[0], last = items[items.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    const wide = window.matchMedia('(min-width: 1024px)');
+    const resize = () => { if (wide.matches) setSidebarOpen(false); };
+    wide.addEventListener('change', resize);
+    document.addEventListener('keydown', close);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', close);
+      wide.removeEventListener('change', resize);
+      document.body.style.overflow = previous;
+      previousFocus?.focus();
+    };
+  }, [sidebarOpen]);
 
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    if (next === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
-  };
-
-  // Currency Formatter
-  const fmt = (usdAmount: number, forceDecimals = true) => {
-    if (!Number.isFinite(usdAmount)) return 'Unavailable';
-    if (currency === 'INR') {
-      const inr = usdAmount * fxRate;
-      return `≈₹${inr.toLocaleString('en-IN', { minimumFractionDigits: forceDecimals ? 2 : 0, maximumFractionDigits: forceDecimals ? 2 : 0 })}`;
-    }
-    return `$${usdAmount.toLocaleString('en-US', { minimumFractionDigits: forceDecimals ? 2 : 0, maximumFractionDigits: forceDecimals ? 2 : 0 })}`;
-  };
+  const fmt = (amount: number, decimals = true) => formatAccountCurrency(amount, currency, decimals);
 
   const formatTradeDate = (rawDate?: string | null) => {
     if (!rawDate) return 'Recent';
@@ -162,8 +167,8 @@ export default function Dashboard() {
 
       if (openError || closedError) throw new Error("Position data unavailable");
       const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
-      const { data: eventsData } = posIds.length > 0 
-        ? await supabase.from('trade_events').select('*').in('position_id', posIds) 
+      const { data: eventsData } = posIds.length > 0
+        ? await supabase.from('trade_events').select('*').in('position_id', posIds)
         : { data: [] };
 
       const processedClosed = (closedData || []).map(pos => {
@@ -206,7 +211,7 @@ export default function Dashboard() {
         return d && d >= todayMidnight;
       });
       const todayPnl = todayClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
-      
+
       setMetrics({ roundTrips, winners, hitRate, totalPnl, todayPnl, liveBalance });
       setAccountMargin({ available: !balanceFresh || profile.available_balance == null ? NaN : Number(profile.available_balance), utilization: !balanceFresh || profile.margin_utilization == null ? NaN : Number(profile.margin_utilization) });
       setDataError(balanceFresh ? null : 'Worker telemetry is stale; trading status is unconfirmed.'); setLastUpdated(new Date().toLocaleTimeString());
@@ -254,7 +259,7 @@ export default function Dashboard() {
       <div className="aurora-wrapper flex items-center justify-center min-h-screen text-[var(--ink)]">
         <div className="aurora-bg" />
         <div className="aurora-content flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
           <p className="text-sm font-medium animate-pulse">Initializing Terminal...</p>
         </div>
       </div>
@@ -265,7 +270,7 @@ export default function Dashboard() {
   let statusState: 'active' | 'paused' | 'halted' = 'active';
   let statusText = 'Trading Active';
   let statusDesc = 'All strategies are running and monitoring for new entries.';
-  
+
   if (dataError || !macroInfo || macroInfo.status === 'UNKNOWN') {
     statusState = 'paused'; statusText = 'Status Unavailable'; statusDesc = dataError || 'Macro safety has not been confirmed.';
   } else if (macroInfo?.is_blocked) {
@@ -280,11 +285,12 @@ export default function Dashboard() {
 
   // Sidebar Component
   const NavItem = ({ id, icon: Icon, label }: { id: DashboardSection, icon: any, label: string }) => (
-    <button 
+    <button
+      aria-current={section === id ? 'page' : undefined}
       onClick={() => { setSection(id); setSidebarOpen(false); }}
       className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
-        section === id 
-          ? 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400' 
+        section === id
+          ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
           : 'text-[var(--grey)] hover:text-[var(--ink)] hover:bg-[var(--raise)]'
       }`}
     >
@@ -296,85 +302,91 @@ export default function Dashboard() {
   return (
     <div className="aurora-wrapper text-[var(--ink)] flex flex-col min-h-screen">
       <div className="aurora-bg" />
-      
-      <div role="status" className="px-4 py-2 text-xs text-amber-600">
-        {dataError || `Last data refresh: ${lastUpdated || 'unavailable'}. P&L is an estimate until execution settles.`}
-        {currency === 'INR' && ' INR display uses an indicative fixed rate of ₹86.50/USD.'}
-      </div>
+
       {/* Header */}
-      <header className="sticky top-0 z-50 glass-header px-4 sm:px-6 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-50 glass-header px-4 sm:px-6 py-3 flex flex-wrap gap-3 items-center justify-between">
         <div className="flex items-center gap-3">
-          <button 
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="lg:hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
+          <button
+            aria-label="Toggle dashboard navigation" aria-expanded={sidebarOpen} aria-controls="dashboard-navigation" onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="hidden p-2 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
           >
             {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
-              <Activity className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
+              <Activity className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
             </div>
-            <span className="font-bold text-lg hidden sm:block">Profit<span className="text-indigo-500 dark:text-indigo-400">Pilot</span></span>
+            <span className="font-bold text-base sm:text-lg">Profit<span className="text-emerald-500 dark:text-emerald-400">Pilot</span></span>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="hidden sm:flex items-center gap-4 px-4 py-1.5 rounded-lg border border-[var(--hair)] bg-[var(--card)] shadow-sm text-sm font-medium">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="hidden xl:flex items-center gap-4 px-4 py-1.5 rounded-lg border border-[var(--hair)] bg-[var(--card)] shadow-sm text-sm font-medium">
             <div className="flex items-center gap-1.5">
               <span className="text-[var(--grey)]">BTC</span>
-              <span className="text-emerald-500 num-tabular">{Number.isFinite(btcPrice) ? `$${btcPrice.toLocaleString()}` : "Unavailable"}</span>
+              <span className="text-[var(--pine)] num-tabular">{Number.isFinite(btcPrice) ? `$${btcPrice.toLocaleString()}` : "Unavailable"}</span>
             </div>
             <div className="w-px h-4 bg-[var(--hair)]" />
             <div className="flex items-center gap-1.5">
               <span className="text-[var(--grey)]">ETH</span>
-              <span className="text-emerald-500 num-tabular">{Number.isFinite(ethPrice) ? `$${ethPrice.toLocaleString()}` : "Unavailable"}</span>
+              <span className="text-[var(--pine)] num-tabular">{Number.isFinite(ethPrice) ? `$${ethPrice.toLocaleString()}` : "Unavailable"}</span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => setCurrency(c => c === 'INR' ? 'USD' : 'INR')}
-            className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] hover:bg-[var(--raise)] transition-colors"
+            className="hidden sm:block min-h-11 text-xs font-medium px-3 py-1.5 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] hover:bg-[var(--raise)] transition-colors"
           >
             {currency}
           </button>
-          
-          <button 
-            onClick={toggleTheme}
-            className="w-8 h-8 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
-          >
-            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-          </button>
+
+          <ThemeToggle />
+          <LogoutButton />
 
           {isAdmin && (
-            <Link href="/admin" className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium shadow-sm transition-colors">
-              God View
+            <Link href="/admin" className="hidden sm:inline-flex px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium shadow-sm transition-colors">
+              Admin
             </Link>
           )}
         </div>
       </header>
 
-      <div className="flex flex-1 relative z-10">
+      <div className="flex flex-1 relative">
+        {sidebarOpen && <button aria-label="Close dashboard navigation" onClick={() => setSidebarOpen(false)} className="fixed inset-0 z-[55] bg-slate-950/60 backdrop-blur-sm lg:hidden" />}
         {/* Sidebar */}
-        <aside className={`fixed lg:static inset-y-0 left-0 w-64 bg-[var(--paper)]/95 backdrop-blur-xl border-r border-[var(--hair)] transform ${sidebarOpen ? 'translate-x-0 pt-16 lg:pt-0' : '-translate-x-full'} lg:translate-x-0 transition-transform duration-300 z-40`}>
+        <aside ref={drawerRef} id="dashboard-navigation" role={sidebarOpen ? "dialog" : undefined} aria-modal={sidebarOpen ? true : undefined} aria-label="Dashboard navigation" className={`fixed lg:sticky lg:top-20 lg:h-[calc(100dvh-5rem)] shrink-0 inset-y-0 left-0 w-72 max-w-[calc(100vw-2rem)] bg-[var(--paper)] backdrop-blur-xl border-r border-[var(--hair)] transform ${sidebarOpen ? 'translate-x-0 visible' : '-translate-x-full invisible lg:visible'} lg:translate-x-0 transition-transform duration-300 z-[60] lg:z-20`}>
           <div className="p-4 space-y-1 h-full overflow-y-auto">
+            <div className="lg:hidden flex items-center justify-between border-b border-[var(--hair)] pb-3 mb-3"><span className="font-semibold">Your workspace</span><button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-[var(--raise)]"><X className="h-5 w-5" /></button></div>
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-4">Overview</div>
             <NavItem id="dashboard" icon={Home} label="Dashboard" />
             <NavItem id="trading" icon={Activity} label="Live Trading" />
-            
+
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-8">Performance</div>
             <NavItem id="analytics" icon={PieChart} label="Analytics" />
             <NavItem id="risk" icon={ShieldAlert} label="Risk Center" />
             <NavItem id="history" icon={History} label="Trade History" />
-            
+
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-8">Account</div>
             <NavItem id="billing" icon={CreditCard} label="Billing & Invoices" />
-            <NavItem id="settings" icon={Settings} label="Settings" />
+            <Link href="/dashboard/settings" className="flex min-h-11 items-center gap-3 px-4 py-3 text-sm text-[var(--grey)] hover:bg-[var(--raise)] rounded-lg"><Settings className="w-5 h-5" />Settings</Link>
+            {isAdmin && <Link href="/admin" className="block px-4 py-3 text-sm text-[var(--indigo)]">Admin console</Link>}
+            <Link href="/dashboard/help" className="block px-4 py-3 text-sm text-[var(--grey)]">Help & support</Link>
+            <div className="border-t border-[var(--hair)] mt-5 pt-4 px-4"><p className="break-all text-xs text-[var(--grey)] mb-3">{userEmail}</p><LogoutButton /></div>
           </div>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 sm:p-8 overflow-x-hidden">
-          <div className="max-w-6xl mx-auto space-y-6">
+        <main className="relative z-10 min-w-0 flex-1 p-4 sm:p-6 xl:p-8 pb-28 lg:pb-8">
+          <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6">
+            {section !== 'billing' && <div className="flex items-start justify-between gap-3">
+              <div><p className="text-xs font-semibold tracking-widest uppercase text-[var(--indigo)]">Your workspace</p><h1 className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight">{{ dashboard: 'Account overview', trading: 'Live trading', history: 'Trade history', analytics: 'Performance', risk: 'Risk center', settings: 'Account settings' }[section]}</h1></div>
+              <button onClick={() => setCurrency(c => c === 'INR' ? 'USD' : 'INR')} aria-label={`Display currency: ${currency}. Switch currency`} className="sm:hidden min-h-11 rounded-lg border border-[var(--hair-2)] px-3 text-xs font-semibold">{currency}</button>
+            </div>}
+            {section !== 'billing' && <p role="status" className={`text-xs leading-relaxed ${dataError ? 'text-[var(--clay)]' : 'text-[var(--grey)]'}`}>
+              {dataError || `Updated ${lastUpdated || '—'} · P&L is estimated until execution settles.`}
+              {currency === 'INR' && ' INR uses an indicative ₹86.50/USD rate.'}
+            </p>}
+
 
             {/* LIVE TRADING STATUS BANNER (Visible on relevant sections) */}
             {(section === 'dashboard' || section === 'trading') && (
@@ -382,10 +394,10 @@ export default function Dashboard() {
                 borderLeftColor: statusState === 'active' ? 'var(--pine)' : statusState === 'paused' ? 'var(--orange)' : 'var(--clay)'
               }}>
                 <div className="flex items-center gap-4">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center bg-opacity-10 ${
-                    statusState === 'active' ? 'bg-emerald-500 text-emerald-500' :
-                    statusState === 'paused' ? 'bg-amber-500 text-amber-500' :
-                    'bg-rose-500 text-rose-500'
+                  <div className={`w-10 h-10 shrink-0 rounded-xl flex items-center justify-center ${
+                    statusState === 'active' ? 'bg-emerald-500/10 text-[var(--pine)]' :
+                    statusState === 'paused' ? 'bg-amber-500/10 text-[var(--orange)]' :
+                    'bg-rose-500/10 text-[var(--clay)]'
                   }`}>
                     {statusState === 'active' ? <Activity className="w-6 h-6" /> :
                      statusState === 'paused' ? <Pause className="w-6 h-6" /> : <ShieldAlert className="w-6 h-6" />}
@@ -402,12 +414,12 @@ export default function Dashboard() {
                     <p className="text-sm text-[var(--grey)]">{statusDesc}</p>
                   </div>
                 </div>
-                
-                <button 
+
+                <button
                   onClick={handlePauseToggle}
-                  className={`px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
-                    isPaused 
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20' 
+                  className={`w-full sm:w-auto min-h-11 justify-center shrink-0 px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 ${
+                    isPaused
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20'
                       : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 border border-amber-500/20'
                   }`}
                 >
@@ -418,37 +430,37 @@ export default function Dashboard() {
             )}
 
             {/* DASHBOARD SECTION */}
-            {section === 'dashboard' && (
+            {(section === 'dashboard' || section === 'trading') && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <GlassCard hoverEffect className="p-5">
+                {section === 'dashboard' && <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+                  <GlassCard hoverEffect className="p-4 sm:p-5 min-w-0">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Total Capital</div>
-                    <div className="text-2xl font-bold num-tabular">{fmt(metrics.liveBalance)}</div>
+                    <div className="text-lg sm:text-2xl font-semibold tracking-tight break-words num-tabular">{fmt(metrics.liveBalance)}</div>
                   </GlassCard>
-                  <GlassCard hoverEffect className="p-5">
+                  <GlassCard hoverEffect className="p-4 sm:p-5 min-w-0">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Available Margin</div>
-                    <div className="text-2xl font-bold num-tabular">{fmt(availableMargin)}</div>
+                    <div className="text-lg sm:text-2xl font-semibold tracking-tight break-words num-tabular">{fmt(availableMargin)}</div>
                   </GlassCard>
-                  <GlassCard hoverEffect className="p-5">
+                  <GlassCard hoverEffect className="p-4 sm:p-5 min-w-0">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Today's P&L</div>
-                    <div className={`text-2xl font-bold num-tabular ${metrics.todayPnl > 0 ? 'text-emerald-500' : metrics.todayPnl < 0 ? 'text-rose-500' : ''}`}>
+                    <div className={`text-lg sm:text-2xl font-semibold tracking-tight break-words num-tabular ${metrics.todayPnl > 0 ? 'text-[var(--pine)]' : metrics.todayPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
                       {metrics.todayPnl > 0 ? '+' : ''}{fmt(metrics.todayPnl)}
                     </div>
                   </GlassCard>
-                  <GlassCard hoverEffect className="p-5">
+                  <GlassCard hoverEffect className="p-4 sm:p-5 min-w-0">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Open P&L</div>
-                    <div className={`text-2xl font-bold num-tabular ${openPnl > 0 ? 'text-emerald-500' : openPnl < 0 ? 'text-rose-500' : ''}`}>
+                    <div className={`text-lg sm:text-2xl font-semibold tracking-tight break-words num-tabular ${openPnl > 0 ? 'text-[var(--pine)]' : openPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
                       {openPnl > 0 ? '+' : ''}{fmt(openPnl)}
                     </div>
                   </GlassCard>
-                </div>
+                </div>}
 
                 <h2 className="text-xl font-bold mt-8 mb-4">Active Positions</h2>
                 {openPositions.length === 0 ? (
                   <GlassCard variant="subtle" className="p-8 text-center flex flex-col items-center">
                     <ShieldCheck className="w-12 h-12 text-[var(--grey)] opacity-50 mb-3" />
                     <h3 className="font-semibold text-lg mb-1">No Open Positions</h3>
-                    <p className="text-sm text-[var(--grey)]">ProfitPilot is actively monitoring the market for the next entry signal.</p>
+                    <p className="text-sm text-[var(--grey)]">Positions will appear here when a trade opens. Check the trading status above for entry availability.</p>
                   </GlassCard>
                 ) : (
                   <div className="space-y-4">
@@ -457,8 +469,8 @@ export default function Dashboard() {
                         <div className="flex flex-wrap items-center justify-between gap-4">
                           <div>
                             <div className="flex items-center gap-2 mb-1">
-                              <span className="font-bold text-lg">BTC Short Strangle</span>
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-500/10 text-indigo-500 dark:text-indigo-400 border border-indigo-500/20">
+                              <span className="font-bold text-lg">{pos.short_call_symbol?.split('-')[1] || 'Options'} Short Strangle</span>
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
                                 {pos.lots || 1} LOT
                               </span>
                             </div>
@@ -466,46 +478,46 @@ export default function Dashboard() {
                               Opened {formatTradeDate(pos.opened_at)}
                             </div>
                           </div>
-                          
+
                           <div className="text-right">
                             <div className="text-sm text-[var(--grey)] font-medium mb-1">Unrealized P&L</div>
-                            <div className={`text-xl font-bold num-tabular ${pos.actualPnl > 0 ? 'text-emerald-500' : pos.actualPnl < 0 ? 'text-rose-500' : ''}`}>
+                            <div className={`text-xl font-bold num-tabular ${pos.actualPnl > 0 ? 'text-[var(--pine)]' : pos.actualPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
                               {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
                             </div>
                           </div>
                         </div>
 
-                        <div className="mt-5 pt-5 border-t border-[var(--hair)] flex justify-between items-center">
-                          <button onClick={() => toggleExpand(pos.id)} className="text-sm text-indigo-500 dark:text-indigo-400 font-medium hover:underline">
+                        <div className="mt-5 pt-5 border-t border-[var(--hair)] flex flex-wrap gap-3 justify-between items-center">
+                          <button onClick={() => toggleExpand(pos.id)} className="text-sm text-emerald-500 dark:text-emerald-400 font-medium hover:underline">
                             {expandedPositionIds.has(pos.id) ? 'Hide Analytics' : 'View Analytics'}
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleKillSwitch(pos.id)}
                             className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-semibold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1"
                           >
                             <ShieldAlert className="w-3.5 h-3.5" /> Emergency Close
                           </button>
                         </div>
-                        
+
                         {expandedPositionIds.has(pos.id) && (
                           <div className="mt-4 pt-4 border-t border-[var(--hair)] grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <div className="text-[var(--grey)] mb-1">Short Call</div>
-                              <div className="font-medium">{pos.short_call_symbol}</div>
+                              <div className="font-medium break-all">{pos.short_call_symbol}</div>
                               <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.callEntry}</div>
                             </div>
                             <div>
                               <div className="text-[var(--grey)] mb-1">Short Put</div>
-                              <div className="font-medium">{pos.short_put_symbol}</div>
+                              <div className="font-medium break-all">{pos.short_put_symbol}</div>
                               <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.putEntry}</div>
                             </div>
                             <div>
                               <div className="text-[var(--grey)] mb-1">Peak Profit</div>
-                              <div className="font-medium text-emerald-500">{fmt(pos.peakPnl)}</div>
+                              <div className="font-medium text-[var(--pine)]">{fmt(pos.peakPnl)}</div>
                             </div>
                             <div>
-                              <div className="text-[var(--grey)] mb-1">Margin Used</div>
-                              <div className="font-medium">{fmt((pos.lots || 1) * 2)}</div>
+                              <div className="text-[var(--grey)] mb-1">Position size</div>
+                              <div className="font-medium">{pos.lots ?? 'Unavailable'} lots</div>
                             </div>
                           </div>
                         )}
@@ -516,26 +528,13 @@ export default function Dashboard() {
               </>
             )}
 
-            {/* TRADING SECTION */}
-            {section === 'trading' && (
-              <div className="space-y-6">
-                <GlassCard className="p-8 text-center flex flex-col items-center justify-center min-h-[300px]">
-                   <Activity className="w-12 h-12 text-[var(--grey)] opacity-50 mb-3" />
-                   <h3 className="font-semibold text-lg mb-1">Advanced Trading View</h3>
-                   <p className="text-sm text-[var(--grey)] max-w-md mx-auto">
-                     A fully featured order book, deep analytics, and real-time greeks view is coming in a future update.
-                   </p>
-                </GlassCard>
-              </div>
-            )}
-
             {/* ANALYTICS SECTION */}
             {section === 'analytics' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <GlassCard className="p-5">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Total Net P&L</div>
-                    <div className={`text-3xl font-bold num-tabular ${metrics.totalPnl > 0 ? 'text-emerald-500' : metrics.totalPnl < 0 ? 'text-rose-500' : ''}`}>
+                    <div className={`text-3xl font-bold num-tabular ${metrics.totalPnl > 0 ? 'text-[var(--pine)]' : metrics.totalPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
                       {metrics.totalPnl > 0 ? '+' : ''}{fmt(metrics.totalPnl)}
                     </div>
                   </GlassCard>
@@ -563,20 +562,20 @@ export default function Dashboard() {
             {section === 'risk' && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <GlassCard className="p-5 border-l-4 border-l-indigo-500">
+                  <GlassCard className="p-5 border-l-4 border-l-emerald-500">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Margin Utilization</div>
-                    <div className="text-2xl font-bold num-tabular mb-3">{Number.isFinite(marginUsed) ? `${marginUsed.toFixed(1)}%` : 'Unavailable'}</div>
+                    <div className="text-lg sm:text-2xl font-semibold tracking-tight break-words num-tabular mb-3">{Number.isFinite(marginUsed) ? `${marginUsed.toFixed(1)}%` : 'Unavailable'}</div>
                     <div className="w-full bg-[var(--raise)] rounded-full h-2">
-                      <div className="bg-indigo-500 h-2 rounded-full" style={{ width: `${Math.min(100, marginUsed)}%` }}></div>
+                      <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Number.isFinite(marginUsed) ? Math.max(0, Math.min(100, marginUsed)) : 0}%` }}></div>
                     </div>
                   </GlassCard>
                   <GlassCard className="p-5 border-l-4 border-l-emerald-500">
                     <div className="text-sm text-[var(--grey)] font-medium mb-2">Account Health</div>
-                    <div className="text-2xl font-bold text-emerald-500">Healthy</div>
-                    <p className="text-xs text-[var(--grey)] mt-1">Available margin safely exceeds current open exposure.</p>
+                    <div className="text-xl font-semibold">{Number.isFinite(marginUsed) ? 'Telemetry available' : 'Unavailable'}</div>
+                    <p className="text-xs text-[var(--grey)] mt-1">Account health requires current margin and position data. The figures shown here do not guarantee trading safety.</p>
                   </GlassCard>
                 </div>
-                
+
                 <GlassCard variant="subtle" className="p-8 text-center flex flex-col items-center">
                    <Shield className="w-12 h-12 text-[var(--grey)] opacity-50 mb-3" />
                    <h3 className="font-semibold text-lg mb-1">Global Risk Controls</h3>
@@ -615,7 +614,7 @@ export default function Dashboard() {
                               {pos.close_reason ? pos.close_reason.replace(/_/g, ' ') : 'Closed'}
                             </span>
                           </td>
-                          <td className={`px-5 py-4 text-right font-bold num-tabular ${pos.realizedPnl > 0 ? 'text-emerald-500' : pos.realizedPnl < 0 ? 'text-rose-500' : ''}`}>
+                          <td className={`px-5 py-4 text-right font-bold num-tabular ${pos.realizedPnl > 0 ? 'text-[var(--pine)]' : pos.realizedPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
                             {pos.realizedPnl > 0 ? '+' : ''}{fmt(pos.realizedPnl)}
                           </td>
                         </tr>
@@ -634,7 +633,8 @@ export default function Dashboard() {
             )}
 
             {/* SETTINGS / BILLING (Placeholders from original sections) */}
-            {(section === 'settings' || section === 'billing') && (
+            {section === 'billing' && <BillingList />}
+            {section === 'settings' && (
               <GlassCard className="p-8 text-center flex flex-col items-center">
                  <Settings className="w-12 h-12 text-[var(--grey)] opacity-50 mb-3" />
                  <h3 className="font-semibold text-lg mb-1">Account & Billing Settings</h3>
@@ -642,7 +642,7 @@ export default function Dashboard() {
                    Please use the Settings page to manage your API keys, and the Billing page to view invoices.
                  </p>
                  <div className="mt-6 flex gap-4">
-                   <Link href="/dashboard/settings" className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium">Go to Settings</Link>
+                   <Link href="/dashboard/settings" className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium">Go to Settings</Link>
                    <Link href="/dashboard/billing" className="px-4 py-2 bg-[var(--raise)] hover:bg-[var(--raise-2)] border border-[var(--hair)] rounded-lg text-sm font-medium">Go to Billing</Link>
                  </div>
               </GlassCard>
@@ -651,6 +651,10 @@ export default function Dashboard() {
           </div>
         </main>
       </div>
+      <nav aria-label="Mobile dashboard" className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--hair-2)] bg-[var(--paper)] px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-4 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
+        {([{ id: 'dashboard', label: 'Overview', icon: Home }, { id: 'trading', label: 'Trading', icon: Activity }, { id: 'billing', label: 'Invoices', icon: CreditCard }] as const).map(item => <button key={item.id} onClick={() => { setSection(item.id); setSidebarOpen(false); window.scrollTo({ top: 0 }); }} aria-current={section === item.id ? 'page' : undefined} className={`min-h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-semibold ${section === item.id ? 'bg-[var(--emerald-tint)] text-[var(--indigo)]' : 'text-[var(--grey)]'}`}><item.icon className="h-5 w-5" />{item.label}</button>)}
+        <button onClick={() => setSidebarOpen(true)} aria-expanded={sidebarOpen} aria-controls="dashboard-navigation" className="min-h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-semibold text-[var(--grey)]"><Menu className="h-5 w-5" />More</button>
+      </nav>
     </div>
   );
 }

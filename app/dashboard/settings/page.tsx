@@ -3,17 +3,19 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
-import { 
-  Activity, 
-  Key, 
-  ShieldCheck, 
-  CreditCard, 
-  User, 
-  Copy, 
-  Check, 
-  AlertTriangle, 
-  Sliders, 
-  Lock, 
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { LogoutButton } from '@/components/ui/logout-button';
+import {
+  Activity,
+  Key,
+  ShieldCheck,
+  CreditCard,
+  User,
+  Copy,
+  Check,
+  AlertTriangle,
+  Sliders,
+  Lock,
   RefreshCw,
   ExternalLink,
   Shield,
@@ -35,7 +37,6 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [exchange, setExchange] = useState('Delta Exchange India');
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   // Risk parameters state
   const [cashReservePct, setCashReservePct] = useState(40);
@@ -46,16 +47,7 @@ export default function Settings() {
 
   const oracleIp = '144.24.131.121';
 
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    document.documentElement.setAttribute('data-theme', next);
-    if (next === 'light') {
-      document.documentElement.classList.remove('dark');
-    } else {
-      document.documentElement.classList.add('dark');
-    }
-  };
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,7 +57,7 @@ export default function Settings() {
         return;
       }
       setUser(user);
-      
+
       // Explicitly select only the fields the UI needs.
       // delta_api_secret is intentionally excluded — it is write-only from the
       // browser's perspective and must never be returned to the frontend.
@@ -74,7 +66,7 @@ export default function Settings() {
         .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses, max_lots, cash_reserve_pct')
         .eq('id', user.id)
         .single();
-        
+
       if (profileData) {
         setProfile(profileData);
         setCashReservePct(Number(profileData.cash_reserve_pct) * 100);
@@ -94,9 +86,9 @@ export default function Settings() {
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    
+
     if (!user) return;
-    
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -106,7 +98,7 @@ export default function Settings() {
         is_paused: true
       })
       .eq('id', user.id);
-      
+
     if (!error) {
       setProfile({ ...profile, delta_api_key: apiKey, is_paused: true, connected_at: new Date().toISOString() });
       setApiKey('');
@@ -119,7 +111,7 @@ export default function Settings() {
   const handleDisconnect = async () => {
     if (!user || !profile) return;
     if (!confirm("Disconnect exchange credentials? Positions and pending executions must be closed and reconciled first.")) return;
-    
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -129,7 +121,7 @@ export default function Settings() {
         is_paused: true
       })
       .eq('id', user.id);
-      
+
     if (!error) {
       setProfile({ ...profile, delta_api_key: null });
     }
@@ -151,10 +143,10 @@ export default function Settings() {
 
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans flex flex-col selection:bg-[#d97706]/15">
-      
+
       {/* Shared Dashboard Navbar */}
-      <nav className="w-full glass-header px-4 sm:px-8 py-3 flex items-center justify-between sticky top-0 z-50">
-        
+      <nav className="w-full glass-header px-4 sm:px-8 py-3 flex flex-wrap gap-3 items-center justify-between sticky top-0 z-50">
+
         {/* Brand Logo */}
         <Link href="/dashboard" className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-[#f59e0b] to-[#d97706] flex items-center justify-center shadow-sm">
@@ -181,26 +173,11 @@ export default function Settings() {
 
         {/* Right Controls */}
         <div className="flex items-center gap-2.5">
-          <button 
-            onClick={toggleTheme}
-            className="w-7 h-7 rounded-lg border border-[var(--hair)] bg-[var(--paper-2)] flex items-center justify-center text-[var(--grey)] hover:text-[var(--ink)] transition-colors"
-            title="Toggle Light/Dark Theme"
-          >
-            {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
-          </button>
+          <ThemeToggle /><LogoutButton />
 
-          <button 
-            onClick={async () => {
-              await supabase.auth.signOut();
-              window.location.href = '/';
-            }}
-            className="hidden sm:block text-xs font-medium text-rose-600 hover:text-rose-700 transition bg-rose-50 dark:bg-rose-500/10 px-3 py-1.5 rounded-lg border border-rose-200 dark:border-rose-500/20"
-          >
-            Sign Out
-          </button>
 
           {/* Mobile Menu Hamburger Button */}
-          <button 
+          <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="md:hidden p-1.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-[var(--grey)] hover:text-[var(--ink)]"
             aria-label="Toggle Navigation"
@@ -213,22 +190,22 @@ export default function Settings() {
       {/* Mobile Drawer Dropdown */}
       {mobileMenuOpen && (
         <div className="md:hidden bg-[var(--paper-2)] border-b border-[var(--hair)] px-4 py-4 space-y-2 text-xs font-medium">
-          <Link 
-            href="/dashboard" 
+          <Link
+            href="/dashboard"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[var(--grey)] hover:text-[var(--ink)] border-b border-[var(--hair)]"
           >
             Command Center
           </Link>
-          <Link 
-            href="/dashboard/settings" 
+          <Link
+            href="/dashboard/settings"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[#d97706] font-semibold border-b border-[var(--hair)]"
           >
             Settings &amp; API Keys
           </Link>
-          <Link 
-            href="/dashboard/help" 
+          <Link
+            href="/dashboard/help"
             onClick={() => setMobileMenuOpen(false)}
             className="block py-1.5 text-[var(--grey)] hover:text-[var(--ink)] border-b border-[var(--hair)]"
           >
@@ -239,7 +216,7 @@ export default function Settings() {
 
       {/* Main Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-8 py-8 w-full flex-1 space-y-6">
-        
+
         {/* Header */}
         <div>
           <div className="text-xs font-semibold uppercase text-[#d97706] tracking-wider mb-0.5">
@@ -280,12 +257,12 @@ export default function Settings() {
         {/* TAB 1: TRADING ACCOUNT */}
         {activeTab === 'trading' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
+
             {/* Left: Connected Accounts Status */}
             <div className="lg:col-span-6 space-y-5">
-              
+
               <div className="fintech-card p-5 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-3 items-center justify-between">
                   <h3 className="font-semibold text-[var(--ink)] text-sm">Connected Delta Account</h3>
                   {profile?.delta_api_key && (
                     <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200">
@@ -306,8 +283,8 @@ export default function Settings() {
                       </div>
                     </div>
 
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleDisconnect}
                       className="w-full py-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs font-medium transition"
                     >
@@ -332,9 +309,9 @@ export default function Settings() {
                 <p className="text-xs text-[var(--grey)] leading-relaxed">
                   When creating your API key inside Delta Exchange, restrict execution to our dedicated execution IP:
                 </p>
-                <div className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)]">
+                <div className="flex flex-wrap gap-3 items-center justify-between p-2.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)]">
                   <code className="text-xs font-mono font-semibold text-[var(--ink)]">{oracleIp}</code>
-                  <button 
+                  <button
                     onClick={handleCopyIp}
                     className="p-1.5 rounded-md bg-[var(--card)] hover:bg-[var(--raise)] text-[var(--grey)] border border-[var(--hair)] transition flex items-center gap-1 text-xs font-medium"
                   >
@@ -361,8 +338,8 @@ export default function Settings() {
                     <label className="block font-medium text-[var(--grey)] mb-1">
                       Target Exchange
                     </label>
-                    <select 
-                      value={exchange} 
+                    <select
+                      value={exchange}
                       onChange={(e) => setExchange(e.target.value)}
                       className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg px-3 py-2 text-[var(--ink)] text-xs focus:outline-none focus:border-[#d97706]"
                     >
@@ -375,8 +352,8 @@ export default function Settings() {
                     <label className="block font-medium text-[var(--grey)] mb-1">
                       API Key
                     </label>
-                    <input 
-                      type="text" 
+                    <input
+                      type="text"
                       required
                       value={apiKey}
                       onChange={(e) => setApiKey(e.target.value)}
@@ -389,8 +366,8 @@ export default function Settings() {
                     <label className="block font-medium text-[var(--grey)] mb-1">
                       API Secret
                     </label>
-                    <input 
-                      type="password" 
+                    <input
+                      type="password"
                       required
                       value={apiSecret}
                       onChange={(e) => setApiSecret(e.target.value)}
@@ -399,8 +376,8 @@ export default function Settings() {
                     />
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={saving}
                     className="w-full py-2.5 rounded-lg bg-[#d97706] hover:bg-[#b45309] text-white font-medium shadow-subtle transition disabled:opacity-50 text-xs"
                   >
@@ -437,10 +414,10 @@ export default function Settings() {
                   <span className="text-[var(--grey)]">Cash reserve buffer:</span>
                   <span className="font-mono text-emerald-600 font-semibold">{cashReservePct}% of equity</span>
                 </div>
-                <input 
-                  type="range" 
+                <input
+                  type="range"
                   min={40}
-                  max={60} 
+                  max={60}
                   step={5}
                   value={cashReservePct}
                   onChange={(e) => setCashReservePct(parseInt(e.target.value))}
@@ -449,8 +426,8 @@ export default function Settings() {
                 <p className="text-[11px] text-[var(--grey)]">Up to {100 - cashReservePct}% for new-entry margin and estimated fees. The reserve provides headroom for wings, hedging and margin changes; market losses can reduce it.</p>
               </div>
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 disabled={saving || !profile}
                 onClick={async () => {
                   setSaving(true);
@@ -473,7 +450,7 @@ export default function Settings() {
         {activeTab === 'billing' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
             <div className="lg:col-span-7 fintech-card p-6 space-y-5">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap gap-3 items-center justify-between">
                 <div>
                   <h3 className="text-base font-semibold text-[var(--ink)]">Plan &amp; High-Water Mark</h3>
                   <span className="text-xs text-[var(--grey)]">Calendar-Month Performance Fee Model</span>
@@ -505,12 +482,24 @@ export default function Settings() {
 
             <div className="lg:col-span-5 fintech-card p-6 flex flex-col items-center justify-center text-center space-y-2.5">
               <CreditCard className="w-8 h-8 text-[var(--faint)]" />
-              <h4 className="font-semibold text-[var(--ink)] text-sm">Invoice Records</h4>
+              <h4 className="font-semibold text-[var(--ink)] text-sm">Invoice Records</h4><Link href="/dashboard/billing" className="inline-flex min-h-11 items-center underline">View invoices →</Link>
               <p className="text-xs text-[var(--grey)] max-w-xs leading-relaxed">
-                Review your actual invoices in the Command Center billing section. This settings page does not report your payment or trial status.
+                Review monthly statements and download your invoices.
               </p>
             </div>
           </div>
+        )}
+
+        {activeTab === 'security' && (
+          <section className="fintech-card p-5 sm:p-6 max-w-3xl space-y-4">
+            <h2 className="text-lg font-semibold">Security & IP whitelisting</h2>
+            <p className="text-sm text-[var(--grey)]">Use a trade-only Delta Exchange API key with withdrawals disabled. Restrict the key to the execution IP below in your exchange account.</p>
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] p-4">
+              <code className="break-all">{oracleIp}</code>
+              <button onClick={handleCopyIp} className="min-h-11 rounded-lg border border-[var(--hair-2)] px-4 text-sm">{copied ? 'Copied' : 'Copy IP'}</button>
+            </div>
+            <Link href="/dashboard/help" className="inline-flex min-h-11 items-center text-sm underline">Read the connection guide →</Link>
+          </section>
         )}
 
         {/* TAB 4: PROFILE & PASSWORD */}
@@ -525,11 +514,11 @@ export default function Settings() {
                 </div>
                 <div className="pt-2 flex justify-between">
                   <span className="text-[var(--grey)]">Mobile Number:</span>
-                  <span className="font-mono text-[var(--ink)] font-medium">{profile?.phone || user?.user_metadata?.phone || 'Not Provided'}</span>
+                  <span className="font-mono text-[var(--ink)] font-medium break-all">{profile?.phone || user?.user_metadata?.phone || 'Not Provided'}</span>
                 </div>
                 <div className="pt-2 flex justify-between">
                   <span className="text-[var(--grey)]">Email ID:</span>
-                  <span className="font-mono text-[var(--ink)] font-medium">{user?.email || 'N/A'}</span>
+                  <span className="font-mono text-[var(--ink)] font-medium break-all">{user?.email || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -546,8 +535,8 @@ export default function Settings() {
                   <label className="block font-medium text-[var(--grey)] mb-1">
                     New Password
                   </label>
-                  <input 
-                    type="password" 
+                  <input
+                    type="password"
                     required
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -555,8 +544,8 @@ export default function Settings() {
                     className="w-full bg-[var(--paper-2)] border border-[var(--hair)] rounded-lg px-3 py-2 text-[var(--ink)] text-xs focus:outline-none focus:border-[#d97706]"
                   />
                 </div>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="w-full py-2.5 rounded-lg bg-[#d97706] text-white font-medium text-xs shadow-subtle hover:brightness-105 transition"
                 >
                   Update Password

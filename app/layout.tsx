@@ -2,17 +2,17 @@ import type { Metadata } from "next";
 import { Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ 
-  subsets: ["latin"], 
+const inter = Inter({
+  subsets: ["latin"],
   display: "swap",
-  variable: "--font-inter" 
+  variable: "--font-inter"
 });
 
-const ibmPlexMono = IBM_Plex_Mono({ 
-  subsets: ["latin"], 
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
   weight: ["400", "500", "600"],
   display: "swap",
-  variable: "--font-mono" 
+  variable: "--font-mono"
 });
 
 export const metadata: Metadata = {
@@ -29,7 +29,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="light" suppressHydrationWarning className={`${inter.variable} ${ibmPlexMono.variable}`}>
+    <html lang="en" data-theme="dark" suppressHydrationWarning className={`${inter.variable} ${ibmPlexMono.variable}`}>
+      <head><script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('profitpilot-theme');if(t!=='dark'&&t!=='light')t='dark';document.documentElement.dataset.theme=t;document.documentElement.classList.toggle('dark',t==='dark');}catch(e){}})();` }} /></head>
       <body className="min-h-screen bg-[var(--paper)] text-[var(--ink)] font-sans antialiased selection:bg-[#d97706]/15 selection:text-[#172033]">
         {children}
       </body>
