@@ -8,6 +8,7 @@ import { LogoutButton } from '@/components/ui/logout-button';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { BillingList } from '@/components/ui/billing-list';
 import { GlassCard } from '@/components/ui/glass-card';
+import { MacroCalendarPanel, type MacroInfo } from '@/components/ui/macro-calendar-panel';
 import {
   Activity, Play, Pause, ShieldAlert, Menu, X, Settings, Sun, Moon,
   Home, Layers, History, TrendingUp, Radio, ShieldCheck, Clock, Calendar,
@@ -36,14 +37,7 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   // Macro Information
-  const [macroInfo, setMacroInfo] = useState<{
-    is_blocked: boolean;
-    active_event: any;
-    blackout_reason: string;
-    blackout_end_ist: string;
-    status: string;
-    upcoming_events: any[];
-  } | null>(null);
+  const [macroInfo, setMacroInfo] = useState<MacroInfo | null>(null);
 
   // Real-time market WebSocket prices
   const [btcPrice, setBtcPrice] = useState<number>(NaN);
@@ -135,12 +129,13 @@ export default function Dashboard() {
 
   const fetchMacroStatus = async () => {
     try {
-      const res = await fetch('/api/macro');
-      if (res.ok) {
-        const data = await res.json();
-        setMacroInfo(data);
-      }
+      const res = await fetch('/api/macro', { cache: 'no-store', signal: AbortSignal.timeout(7000) });
+      if (!res.ok) throw new Error('Calendar request failed');
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.upcoming_events)) throw new Error('Calendar unavailable');
+      setMacroInfo(data);
     } catch (err) {
+      setMacroInfo(null);
       console.error("Macro fetch error", err);
     }
   };
@@ -428,6 +423,8 @@ export default function Dashboard() {
                 </button>
               </GlassCard>
             )}
+
+            {(section === 'dashboard' || section === 'trading' || section === 'risk') && <MacroCalendarPanel info={macroInfo} />}
 
             {/* DASHBOARD SECTION */}
             {(section === 'dashboard' || section === 'trading') && (

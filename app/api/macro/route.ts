@@ -16,7 +16,6 @@ const PRIORITY_KEYWORDS = [
   "gdp",
   "unemployment rate",
   "powell",
-  "waller",
   "fed chair",
   "ism manufacturing",
   "ism services",
@@ -138,6 +137,7 @@ export async function GET() {
     let feedValid = false;
     try {
       const resp = await fetch(FEED_URL, {
+        signal: AbortSignal.timeout(5000),
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
           "Accept": "text/xml,application/xml,*/*"
@@ -146,7 +146,7 @@ export async function GET() {
       });
       if (resp.ok) {
         const xml = await resp.text();
-        if (!xml.includes('<weeklyevents') || !xml.includes('</weeklyevents>')) throw new Error('Invalid calendar feed');
+        if (!xml.includes('<weeklyevents') || !xml.includes('</weeklyevents>') || !/<event>/.test(xml)) throw new Error('Invalid calendar feed');
         events = parseXmlEvents(xml);
         feedValid = true;
       }
