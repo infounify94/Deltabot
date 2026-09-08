@@ -9,18 +9,35 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { BillingList } from '@/components/ui/billing-list';
 import { GlassCard } from '@/components/ui/glass-card';
 import { MacroCalendarPanel, type MacroInfo } from '@/components/ui/macro-calendar-panel';
+import { sectionFromSearch, sectionHref, type DashboardSection } from '@/lib/dashboard-navigation';
 import {
   Activity, Play, Pause, ShieldAlert, Menu, X, Settings, Sun, Moon,
   Home, Layers, History, TrendingUp, Radio, ShieldCheck, Clock, Calendar,
   Sparkles, Zap, CheckCircle2, AlertCircle, CreditCard, PieChart, Shield
 } from 'lucide-react';
 
-type DashboardSection = 'dashboard' | 'trading' | 'history' | 'analytics' | 'risk' | 'settings' | 'billing';
 
 export default function Dashboard() {
   const [section, setSection] = useState<DashboardSection>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
+  const refreshInFlight = useRef(false);
+
+  useEffect(() => {
+    const restore = () => { setSection(sectionFromSearch(window.location.search)); setSidebarOpen(false); };
+    restore();
+    window.addEventListener('popstate', restore);
+    return () => window.removeEventListener('popstate', restore);
+  }, []);
+
+  const navigateSection = (event: React.MouseEvent<HTMLAnchorElement>, next: DashboardSection) => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (section !== next) window.history.pushState(null, '', sectionHref(next));
+    setSection(next);
+    setSidebarOpen(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  };
 
   // Real DB Data (Supabase)
   const [openPositions, setOpenPositions] = useState<any[]>([]);
@@ -141,6 +158,8 @@ export default function Dashboard() {
   };
 
   async function fetchData() {
+    if (refreshInFlight.current) return;
+    refreshInFlight.current = true;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return setLoading(false);
@@ -214,6 +233,7 @@ export default function Dashboard() {
       setDataError("Data refresh failed. Displayed values may be stale.");
       console.error(err);
     } finally {
+      refreshInFlight.current = false;
       setLoading(false);
     }
   }
@@ -221,8 +241,9 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData();
     fetchMacroStatus();
-    const interval = setInterval(() => { fetchData(); fetchMacroStatus(); }, 8000);
-    return () => clearInterval(interval);
+    const interval = setInterval(fetchData, 8000);
+    const calendarInterval = setInterval(fetchMacroStatus, 60000);
+    return () => { clearInterval(interval); clearInterval(calendarInterval); };
   }, []);
 
   const handlePauseToggle = async () => {
@@ -270,8 +291,8 @@ export default function Dashboard() {
     statusState = 'paused'; statusText = 'Status Unavailable'; statusDesc = dataError || 'Macro safety has not been confirmed.';
   } else if (macroInfo?.is_blocked) {
     statusState = 'halted';
-    statusText = 'Emergency Halted';
-    statusDesc = macroInfo.blackout_reason || 'System paused due to extreme market volatility.';
+    statusText = 'News Entry Pause';
+    statusDesc = macroInfo.blackout_reason || 'New entries paused for news. Existing positions remain managed.';
   } else if (isPaused) {
     statusState = 'paused';
     statusText = 'New Trading Paused';
@@ -279,10 +300,10 @@ export default function Dashboard() {
   }
 
   // Sidebar Component
-  const NavItem = ({ id, icon: Icon, label }: { id: DashboardSection, icon: any, label: string }) => (
-    <button
+  const renderNavItem = (id: DashboardSection, Icon: any, label: string) => (
+    <a href={sectionHref(id)}
       aria-current={section === id ? 'page' : undefined}
-      onClick={() => { setSection(id); setSidebarOpen(false); }}
+      onClick={event => navigateSection(event, id)}
       className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
         section === id
           ? 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400'
@@ -291,7 +312,7 @@ export default function Dashboard() {
     >
       <Icon className="w-5 h-5" />
       {label}
-    </button>
+    </a>
   );
 
   return (
@@ -353,16 +374,16 @@ export default function Dashboard() {
           <div className="p-4 space-y-1 h-full overflow-y-auto">
             <div className="lg:hidden flex items-center justify-between border-b border-[var(--hair)] pb-3 mb-3"><span className="font-semibold">Your workspace</span><button onClick={() => setSidebarOpen(false)} aria-label="Close menu" className="h-11 w-11 inline-flex items-center justify-center rounded-lg hover:bg-[var(--raise)]"><X className="h-5 w-5" /></button></div>
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-4">Overview</div>
-            <NavItem id="dashboard" icon={Home} label="Dashboard" />
-            <NavItem id="trading" icon={Activity} label="Live Trading" />
+            {renderNavItem('dashboard', Home, 'Dashboard')}
+            {renderNavItem('trading', Activity, 'Live Trading')}
 
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-8">Performance</div>
-            <NavItem id="analytics" icon={PieChart} label="Analytics" />
-            <NavItem id="risk" icon={ShieldAlert} label="Risk Center" />
-            <NavItem id="history" icon={History} label="Trade History" />
+            {renderNavItem('analytics', PieChart, 'Analytics')}
+            {renderNavItem('risk', ShieldAlert, 'Risk Center')}
+            {renderNavItem('history', History, 'Trade History')}
 
             <div className="text-xs font-semibold text-[var(--grey)] uppercase tracking-wider mb-3 px-4 mt-8">Account</div>
-            <NavItem id="billing" icon={CreditCard} label="Billing & Invoices" />
+            {renderNavItem('billing', CreditCard, 'Billing & Invoices')}
             <Link href="/dashboard/settings" className="flex min-h-11 items-center gap-3 px-4 py-3 text-sm text-[var(--grey)] hover:bg-[var(--raise)] rounded-lg"><Settings className="w-5 h-5" />Settings</Link>
             {isAdmin && <Link href="/admin" className="block px-4 py-3 text-sm text-[var(--indigo)]">Admin console</Link>}
             <Link href="/dashboard/help" className="block px-4 py-3 text-sm text-[var(--grey)]">Help & support</Link>
@@ -424,7 +445,7 @@ export default function Dashboard() {
               </GlassCard>
             )}
 
-            {(section === 'dashboard' || section === 'trading' || section === 'risk') && <MacroCalendarPanel info={macroInfo} />}
+            {section === 'risk' && <MacroCalendarPanel info={macroInfo} />}
 
             {/* DASHBOARD SECTION */}
             {(section === 'dashboard' || section === 'trading') && (
@@ -649,7 +670,7 @@ export default function Dashboard() {
         </main>
       </div>
       <nav aria-label="Mobile dashboard" className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--hair-2)] bg-[var(--paper)] px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] grid grid-cols-4 shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-        {([{ id: 'dashboard', label: 'Overview', icon: Home }, { id: 'trading', label: 'Trading', icon: Activity }, { id: 'billing', label: 'Invoices', icon: CreditCard }] as const).map(item => <button key={item.id} onClick={() => { setSection(item.id); setSidebarOpen(false); window.scrollTo({ top: 0 }); }} aria-current={section === item.id ? 'page' : undefined} className={`min-h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-semibold ${section === item.id ? 'bg-[var(--emerald-tint)] text-[var(--indigo)]' : 'text-[var(--grey)]'}`}><item.icon className="h-5 w-5" />{item.label}</button>)}
+        {([{ id: 'dashboard', label: 'Overview', icon: Home }, { id: 'trading', label: 'Trading', icon: Activity }, { id: 'billing', label: 'Invoices', icon: CreditCard }] as const).map(item => <a key={item.id} href={sectionHref(item.id)} onClick={event => navigateSection(event, item.id)} aria-current={section === item.id ? 'page' : undefined} className={`min-h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-semibold ${section === item.id ? 'bg-[var(--emerald-tint)] text-[var(--indigo)]' : 'text-[var(--grey)]'}`}><item.icon className="h-5 w-5" />{item.label}</a>)}
         <button onClick={() => setSidebarOpen(true)} aria-expanded={sidebarOpen} aria-controls="dashboard-navigation" className="min-h-14 rounded-xl flex flex-col items-center justify-center gap-1 text-[11px] font-semibold text-[var(--grey)]"><Menu className="h-5 w-5" />More</button>
       </nav>
     </div>
