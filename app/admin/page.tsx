@@ -184,7 +184,21 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="aurora-wrapper text-[var(--ink)] flex flex-col min-h-screen">
+    <div className="admin-panel aurora-wrapper text-[var(--ink)] flex flex-col min-h-screen">
+      <style jsx global>{`
+        @media (max-width: 767px) {
+          .admin-panel .admin-responsive-table,
+          .admin-panel .admin-responsive-table tbody { display: block; width: 100%; }
+          .admin-panel .admin-responsive-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+          .admin-panel .admin-responsive-table tbody tr { display: block; padding: 12px; }
+          .admin-panel .admin-responsive-table td { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 8px; padding: 10px 4px; text-align: left; overflow-wrap: anywhere; }
+          .admin-panel .admin-responsive-table td::before { content: attr(data-label); color: var(--grey); font-size: 12px; font-weight: 500; }
+          .admin-panel .admin-responsive-table td > * { min-width: 0; }
+          .admin-panel .admin-responsive-table td > div:not(:first-child) { grid-column: 2; }
+          .admin-panel .admin-responsive-table td[colspan] { display: block; }
+          .admin-panel .admin-responsive-table td[colspan]::before { display: none; }
+        }
+      `}</style>
       <div className="aurora-bg" />
       
       {/* GLOBAL COMMAND CENTER BANNER */}
@@ -195,13 +209,13 @@ export default function AdminDashboard() {
               <ShieldAlert className="w-6 h-6 text-indigo-400" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-xl font-bold tracking-tight">God View</h1>
                 <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1.5 ${systemStatusColor}`}>
                   {statusIcon} {systemStatus}
                 </span>
               </div>
-              <div className="text-sm text-[var(--grey)] flex items-center gap-2 mt-0.5">
+              <div className="text-sm text-[var(--grey)] flex flex-wrap items-center gap-x-2 mt-0.5">
                 <span className="font-semibold text-[var(--ink)]">{stats.totalUsers}</span> Users &middot;
                 <span className="font-semibold text-[var(--ink)]">{stats.activeUsers}</span> Active Connections &middot;
                 <span className="font-semibold text-[var(--ink)]">{stats.openPositionsCount}</span> Open Positions
@@ -381,7 +395,7 @@ export default function AdminDashboard() {
           <section>
             <h2 className="text-lg font-bold mb-4">Active Strategies</h2>
             <GlassCard className="overflow-hidden">
-              <table className="w-full text-sm text-left">
+              <table className="admin-responsive-table w-full text-sm text-left">
                 <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-4 py-3">Strategy</th>
@@ -391,9 +405,9 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-[var(--hair)]">
                   <tr className="hover:bg-[var(--raise)]/30 transition-colors">
-                    <td className="px-4 py-3 font-medium">BTC Dual Direction</td>
-                    <td className="px-4 py-3 text-center num-tabular">{stats.activeUsers}</td>
-                    <td className="px-4 py-3">
+                    <td data-label="Strategy" className="px-4 py-3 font-medium">BTC Dual Direction</td>
+                    <td data-label="Users" className="px-4 py-3 text-center num-tabular">{stats.activeUsers}</td>
+                    <td data-label="Status" className="px-4 py-3">
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">
                         <Activity className="w-3 h-3" /> ACTIVE
                       </span>
@@ -408,7 +422,7 @@ export default function AdminDashboard() {
           <section>
             <h2 className="text-lg font-bold mb-4">Exchange Endpoints</h2>
             <GlassCard className="overflow-hidden">
-              <table className="w-full text-sm text-left">
+              <table className="admin-responsive-table w-full text-sm text-left">
                 <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-4 py-3">Exchange</th>
@@ -418,12 +432,12 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody className="divide-y divide-[var(--hair)]">
                   <tr className="hover:bg-[var(--raise)]/30 transition-colors">
-                    <td className="px-4 py-3 font-medium flex items-center gap-2">
+                    <td data-label="Exchange" className="px-4 py-3 font-medium flex items-center gap-2">
                       <div className="w-5 h-5 rounded bg-indigo-600 flex items-center justify-center text-[10px] text-white font-bold">D</div>
                       Delta Exchange
                     </td>
-                    <td className="px-4 py-3 text-[var(--grey)] text-xs">Not available</td>
-                    <td className="px-4 py-3">
+                    <td data-label="API Latency" className="px-4 py-3 text-[var(--grey)] text-xs">Not available</td>
+                    <td data-label="Status" className="px-4 py-3">
                       <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">
                         <CheckCircle2 className="w-3 h-3" /> CONNECTED
                       </span>
@@ -453,7 +467,7 @@ export default function AdminDashboard() {
 
           <GlassCard className="overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
+              <table className="admin-responsive-table w-full text-sm text-left">
                 <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
                   <tr>
                     <th className="px-5 py-4">User</th>
@@ -466,14 +480,14 @@ export default function AdminDashboard() {
                 <tbody className="divide-y divide-[var(--hair)]">
                   {filteredUsers.map(u => (
                     <tr key={u.id} className="hover:bg-[var(--raise)]/30 transition-colors">
-                      <td className="px-5 py-4">
+                      <td data-label="User" className="px-5 py-4">
                         <Link href={`/admin/users/${u.id}`} className="font-medium hover:text-indigo-500 transition-colors">
                           {u.full_name || 'Unnamed User'}
                         </Link>
                         <div className="text-xs text-[var(--grey)] mt-0.5">{u.email}</div>
                       </td>
-                      <td className="px-5 py-4 font-mono font-medium num-tabular">{formatCurrency(u.live_balance || 0)}</td>
-                      <td className="px-5 py-4">
+                      <td data-label="Live Balance" className="px-5 py-4 font-mono font-medium num-tabular">{formatCurrency(u.live_balance || 0)}</td>
+                      <td data-label="Connection" className="px-5 py-4">
                         {u.delta_api_key ? (
                           <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">
                             VALID API KEY
@@ -484,7 +498,7 @@ export default function AdminDashboard() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4">
+                      <td data-label="Status" className="px-5 py-4">
                         {!u.delta_api_key ? (
                           <span className="inline-flex items-center gap-1.5 text-[var(--grey)] text-xs font-medium">
                             <Box className="w-4 h-4" /> Not Setup
@@ -499,7 +513,7 @@ export default function AdminDashboard() {
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-right">
+                      <td data-label="Admin Actions" className="px-5 py-4 text-right">
                         {!u.delta_api_key ? (
                           <Link
                             href={`/admin/users/${u.id}`}
@@ -525,7 +539,7 @@ export default function AdminDashboard() {
                   ))}
                   {filteredUsers.length === 0 && !loading && (
                     <tr>
-                      <td colSpan={5} className="px-5 py-8 text-center text-[var(--grey)] text-sm">
+                      <td data-label="User" colSpan={5} className="px-5 py-8 text-center text-[var(--grey)] text-sm">
                         No users match your search.
                       </td>
                     </tr>

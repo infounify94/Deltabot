@@ -625,7 +625,7 @@ export default function Dashboard() {
                       {closedPositions.map(pos => (
                         <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors">
                           <td className="px-5 py-4 font-medium">{formatTradeDate(pos.closed_at)}</td>
-                          <td className="px-5 py-4">BTC Strangle ({pos.lots || 1}L)</td>
+                          <td className="px-5 py-4">{pos.underlying || 'Options'} Strangle ({pos.lots ?? 0}L)</td>
                           <td className="px-5 py-4 text-[var(--grey)]">{formatDuration(pos.opened_at, pos.closed_at) || 'N/A'}</td>
                           <td className="px-5 py-4">
                             <span className="text-xs font-medium px-2 py-1 rounded bg-[var(--raise)] text-[var(--grey)]">
