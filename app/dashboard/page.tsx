@@ -65,6 +65,7 @@ export default function Dashboard() {
   // Real-time market WebSocket prices
   const [btcPrice, setBtcPrice] = useState<number>(NaN);
   const [ethPrice, setEthPrice] = useState<number>(NaN);
+  const [priceObservedAt, setPriceObservedAt] = useState<Record<string,number>>({});
   const [currency, setCurrency] = useState<'INR' | 'USD'>('USD');
 
   const [expandedPositionIds, setExpandedPositionIds] = useState<Set<number | string>>(new Set());
@@ -133,13 +134,13 @@ export default function Dashboard() {
       wsBtc = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@trade');
       wsBtc.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.p) setBtcPrice(parseFloat(data.p));
+        if (data.p && Number(data.p)>0) {setBtcPrice(parseFloat(data.p));setPriceObservedAt(previous=>({...previous,BTC:Date.now()}));}
       };
 
       wsEth = new WebSocket('wss://stream.binance.com:9443/ws/ethusdt@trade');
       wsEth.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.p) setEthPrice(parseFloat(data.p));
+        if (data.p && Number(data.p)>0) {setEthPrice(parseFloat(data.p));setPriceObservedAt(previous=>({...previous,ETH:Date.now()}));}
       };
     } catch (e) {
       console.error(e);
@@ -559,7 +560,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                         )}
-                        <PositionPayoff position={pos} />
+                        <PositionPayoff position={pos} referencePrice={pos.underlying==='BTC'?btcPrice:pos.underlying==='ETH'?ethPrice:undefined} observedAt={priceObservedAt[pos.underlying]} />
                       </GlassCard>
                     ))}
                   </div>
