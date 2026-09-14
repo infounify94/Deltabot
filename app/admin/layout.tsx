@@ -17,10 +17,9 @@ export default async function AdminLayout({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
+        getAll() { return cookieStore.getAll(); },
       },
+      global: {fetch: (url, options) => fetch(url, {...options, cache: 'no-store'})},
     }
   );
 
@@ -31,12 +30,16 @@ export default async function AdminLayout({
   }
 
   // Check if user is admin
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('is_admin')
     .eq('id', user.id)
     .single();
 
+  if(profileError) {
+    console.error('Admin profile verification failed',profileError.code);
+    return <div role="alert" className="p-6">Unable to verify administrator access ({profileError.code}). <Link href="/admin">Try again</Link> or <Link href="/dashboard">return to your dashboard</Link>.</div>;
+  }
   if (!profile || !profile.is_admin) {
     redirect('/dashboard');
   }
