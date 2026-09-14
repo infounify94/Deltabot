@@ -4,6 +4,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Activity, AlertCircle, ArrowLeft, TrendingUp, Key, Save } from 'lucide-react';
 import Link from 'next/link';
+import {ConnectionCheck} from '@/components/ui/connection-check';
+import {ContactPhone} from '@/components/ui/contact-phone';
+import {validPhone} from '@/lib/connection-status';
 
 export default function AdminUserDetail({ params }: { params: { id: string } }) {
   const [profile, setProfile] = useState<any>(null);
@@ -66,19 +69,21 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
 
   const handleSaveApiKeys = async () => {
     if (!apiKey || !apiSecret) return;
+    if(!validPhone(profile.phone || '')) {setSaveMsg('Error: Save a contact number with country code first.');return;}
     setSaving(true);
     setSaveMsg('');
     
-    const { error } = await supabase.rpc('admin_set_user_api_keys', {
+    const { error } = await supabase.rpc('admin_connect_delta', {
       p_user_id: params.id,
       p_api_key: apiKey,
-      p_api_secret: apiSecret
+      p_api_secret: apiSecret,
+      p_phone: profile.phone
     });
     
     if (error) {
       setSaveMsg(`Error: ${error.message}`);
     } else {
-      setSaveMsg('API keys saved successfully!');
+      setSaveMsg('Credentials saved, trading paused, and Oracle verification queued.');
       setApiKey('');
       setApiSecret('');
       fetchUserData();
@@ -137,15 +142,12 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
         <div className="fintech-card p-5 shadow-subtle space-y-3">
           <div className="text-sm font-medium text-[var(--grey)]">API Connection</div>
           <div className="text-lg font-bold">
-            {profile.delta_api_key ? (
-              <span className="text-emerald-600 flex items-center gap-2"><Activity className="w-5 h-5" /> Connected</span>
-            ) : (
-              <span className="text-amber-600 flex items-center gap-2"><AlertCircle className="w-5 h-5" /> Missing</span>
-            )}
+            <ConnectionCheck profile={profile}/>
           </div>
         </div>
       </div>
 
+      <ContactPhone profile={profile} admin onSaved={phone=>setProfile({...profile,phone})}/>
       <div className="fintech-card p-5 space-y-3">
         <h2 className="font-semibold">Open positions · {profile.email}</h2>
         {closeMsg && <p role="status" className="text-sm">{closeMsg}</p>}

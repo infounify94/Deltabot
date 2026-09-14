@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { GlassCard } from '@/components/ui/glass-card';
+import {ConnectionCheck} from '@/components/ui/connection-check';
+import {validPhone,normalizePhone} from '@/lib/connection-status';
 
 type PlatformState = 'OPERATIONAL' | 'NEW_ENTRIES_PAUSED' | 'EMERGENCY_HALTED' | 'CLOSING_POSITIONS' | 'RECONCILING';
 
@@ -507,18 +509,11 @@ export default function AdminDashboard() {
                           {u.full_name || 'Unnamed User'}
                         </Link>
                         <div className="text-xs text-[var(--grey)] mt-0.5">{u.email}</div>
+                        {validPhone(u.phone || '')?<a className="text-xs underline" href={`tel:${normalizePhone(u.phone)}`}>{u.phone}</a>:<div className="text-xs text-amber-600">Contact number required</div>}
                       </td>
                       <td data-label="Live Balance" className="px-5 py-4 font-mono font-medium num-tabular">{formatCurrency(u.live_balance || 0)}</td>
                       <td data-label="Connection" className="px-5 py-4">
-                        {u.delta_api_key ? (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-500 text-[10px] font-bold border border-emerald-500/20">
-                            VALID API KEY
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-rose-500/10 text-rose-500 text-[10px] font-bold border border-rose-500/20">
-                            MISSING
-                          </span>
-                        )}
+                        <ConnectionCheck profile={u} compact />
                       </td>
                       <td data-label="Status" className="px-5 py-4">
                         {!u.delta_api_key ? (

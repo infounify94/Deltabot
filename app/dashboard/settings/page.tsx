@@ -5,6 +5,9 @@ import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { LogoutButton } from '@/components/ui/logout-button';
+import {ConnectionCheck} from '@/components/ui/connection-check';
+import {ContactPhone} from '@/components/ui/contact-phone';
+import {normalizePhone,validPhone} from '@/lib/connection-status';
 import {
   Activity,
   Key,
@@ -33,6 +36,7 @@ export default function Settings() {
   const [profile, setProfile] = useState<any>(null);
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
+  const [phone,setPhone]=useState('');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -63,12 +67,13 @@ export default function Settings() {
       // browser's perspective and must never be returned to the frontend.
       const { data: profileData, error } = await supabase
         .from('profiles')
-        .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses, max_lots, cash_reserve_pct')
+        .select('id, email, full_name, phone, is_paused, connected_at, live_balance, delta_api_key, is_admin, admin_manual_pause, unrecovered_losses, max_lots, cash_reserve_pct, connection_status, connection_code, connection_checked_at, connection_requested_at')
         .eq('id', user.id)
         .single();
 
       if (profileData) {
         setProfile(profileData);
+        setPhone(profileData.phone || '');
         setCashReservePct(Number(profileData.cash_reserve_pct) * 100);
       }
       if (error) alert('Could not load account settings. Please retry.');
@@ -76,6 +81,11 @@ export default function Settings() {
     };
     fetchUser();
   }, []);
+  useEffect(()=>{
+    if(!user?.id)return;
+    const timer=setInterval(async()=>{const {data}=await supabase.from('profiles').select('connection_status,connection_code,connection_checked_at,connection_requested_at').eq('id',user.id).single();if(data)setProfile((p:any)=>({...p,...data}));},15000);
+    return()=>clearInterval(timer);
+  },[user?.id]);
 
   const handleCopyIp = () => {
     navigator.clipboard.writeText(oracleIp);
@@ -85,6 +95,8 @@ export default function Settings() {
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
+    if(!user)return;
+    if(!validPhone(phone)){alert('Contact phone with country code is required.');return;}
     setSaving(true);
 
     if (!user) return;
@@ -94,13 +106,14 @@ export default function Settings() {
       .update({
         delta_api_key: apiKey,
         delta_api_secret: apiSecret,
+        phone: normalizePhone(phone),
         connected_at: new Date().toISOString(),
         is_paused: true
       })
       .eq('id', user.id);
 
     if (!error) {
-      setProfile({ ...profile, delta_api_key: apiKey, is_paused: true, connected_at: new Date().toISOString() });
+      setProfile({ ...profile, phone:normalizePhone(phone), delta_api_key: apiKey, is_paused: true, connection_status:'PENDING', connection_checked_at:null, connection_requested_at:new Date().toISOString(), connected_at: new Date().toISOString() });
       setApiKey('');
       setApiSecret('');
     }
@@ -255,6 +268,8 @@ export default function Settings() {
         </div>
 
         {/* TAB 1: TRADING ACCOUNT */}
+        {profile && <ContactPhone profile={profile} onSaved={value=>{setPhone(value);setProfile({...profile,phone:value});}}/>}
+        {profile?.delta_api_key && <div className="fintech-card p-4"><ConnectionCheck profile={profile}/><p className="text-xs mt-2">Connection verification does not resume trading or guarantee available capital.</p></div>}
         {activeTab === 'trading' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
@@ -266,7 +281,7 @@ export default function Settings() {
                   <h3 className="font-semibold text-[var(--ink)] text-sm">Connected Delta Account</h3>
                   {profile?.delta_api_key && (
                     <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200">
-                      Live Connected
+                      Credentials saved
                     </span>
                   )}
                 </div>
@@ -334,6 +349,7 @@ export default function Settings() {
                 </div>
 
                 <form onSubmit={handleConnect} className="space-y-3.5 text-xs">
+                  <label className="block">Contact phone with country code<input required type="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="+919876543210" className="block w-full mt-1 px-3 py-2 border rounded bg-[var(--paper)]"/></label>
                   <div>
                     <label className="block font-medium text-[var(--grey)] mb-1">
                       Target Exchange
