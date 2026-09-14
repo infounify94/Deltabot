@@ -13,9 +13,14 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
   const [apiSecret, setApiSecret] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
+  const [positions, setPositions] = useState<any[]>([]);
+  const [closeMsg, setCloseMsg] = useState('');
+  const [closingId, setClosingId] = useState<string|null>(null);
 
   useEffect(() => {
     fetchUserData();
+    const timer=setInterval(fetchUserData,15000);
+    return ()=>clearInterval(timer);
   }, [params.id]);
 
   const fetchUserData = async () => {
@@ -23,15 +28,30 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
     const { data: allUsers } = await supabase.rpc('admin_get_all_users_safe');
     const p = (allUsers || []).find((u: any) => u.id === params.id);
     if (p) setProfile(p);
+    const {data:active,error:activeError}=await supabase.from('positions').select('id,underlying,lots,short_call_symbol,short_put_symbol,manual_exit_requested,status').eq('user_id',params.id).in('status',['open','adjusted','closing','close_failed','execution_anomaly','reconciliation_required']);
+    if(!activeError) setPositions(active || []);
+    else setCloseMsg('Current positions could not be refreshed.');
 
     const { data: events } = await supabase
       .from('trade_events')
       .select('*, positions!inner(user_id, underlying)')
       .eq('positions.user_id', params.id)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false }).limit(100);
     
     if (events) setTrades(events);
     setLoading(false);
+  };
+
+  const requestClose=async(id:string)=>{
+    if(!confirm('Request an emergency market close for this user’s position? The worker must confirm execution.')) return;
+    setClosingId(id);setCloseMsg('');
+    try {
+      const {data,error}=await supabase.rpc('admin_request_position_close',{p_position_id:id});
+      if(error) throw error;
+      setCloseMsg(data?'Close requested. Awaiting worker execution; check the final position status.':'Position is already closed or unavailable.');
+      await fetchUserData();
+    } catch(error:any) {setCloseMsg(`Close request failed: ${error.message}`);}
+    finally {setClosingId(null);}
   };
 
   const handlePauseUser = async () => {
@@ -125,6 +145,15 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
         </div>
       </div>
 
+      <div className="fintech-card p-5 space-y-3">
+        <h2 className="font-semibold">Open positions · {profile.email}</h2>
+        {closeMsg && <p role="status" className="text-sm">{closeMsg}</p>}
+        {positions.map(p=><div key={p.id} className="border-t border-[var(--hair)] pt-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="min-w-0"><p className="font-medium">{p.underlying} · {p.lots} lots</p><p className="text-xs text-[var(--grey)] break-all">{p.short_call_symbol}<br/>{p.short_put_symbol}</p></div>
+          <button disabled={closingId===p.id || p.manual_exit_requested} onClick={()=>requestClose(p.id)} className="px-3 py-2 text-sm border rounded text-rose-600 disabled:opacity-50">{p.manual_exit_requested?'Close requested':closingId===p.id?'Requesting…':'Emergency close'}</button>
+        </div>)}
+        {!positions.length && <p className="text-sm text-[var(--grey)]">No open positions shown.</p>}
+      </div>
       {/* API Key Setup (Admin can set for user) */}
       {!profile.delta_api_key && (
         <div className="fintech-card shadow-subtle p-6">
@@ -175,7 +204,7 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
 
       <div className="fintech-card shadow-subtle overflow-hidden">
         <div className="px-5 py-4 border-b border-[var(--hair)]">
-          <h2 className="font-semibold text-[var(--ink)]">User Trade Ledger</h2>
+          <h2 className="font-semibold text-[var(--ink)]">User Trade Ledger · latest 100 events</h2>
         </div>
         <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
           <table className="w-full text-sm text-left">

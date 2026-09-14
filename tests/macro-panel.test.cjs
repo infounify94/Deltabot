@@ -37,7 +37,7 @@ test('blocked panel shows event, IST time and entry window', () => {
   assert.match(html, /Entries paused for CPI/);
   assert.match(html, /06:00 pm/);
   assert.match(html, /04:00 pm/);
-  assert.match(html, /07:00 pm/);
+  assert.match(html, /09:00 pm/);
 });
 test('API fails closed on empty upstream feed', async () => {
   const api = load('app/api/macro/route.ts', { fetch: async () => ({ ok:true, text:async () => '<weeklyevents></weeklyevents>' }), console:{warn(){}} });

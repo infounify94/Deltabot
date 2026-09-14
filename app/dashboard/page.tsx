@@ -9,6 +9,8 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { BillingList } from '@/components/ui/billing-list';
 import { GlassCard } from '@/components/ui/glass-card';
 import { MacroCalendarPanel, type MacroInfo } from '@/components/ui/macro-calendar-panel';
+import { PositionPayoff } from '@/components/ui/position-payoff';
+import { fillDetails } from '@/lib/trade-details';
 import { sectionFromSearch, sectionHref, type DashboardSection } from '@/lib/dashboard-navigation';
 import {
   Activity, Play, Pause, ShieldAlert, Menu, X, Settings, Sun, Moon,
@@ -42,6 +44,10 @@ export default function Dashboard() {
   // Real DB Data (Supabase)
   const [openPositions, setOpenPositions] = useState<any[]>([]);
   const [closedPositions, setClosedPositions] = useState<any[]>([]);
+  const [historyPage, setHistoryPage] = useState(0);
+  const historyPageRef = useRef(0);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [accountMargin, setAccountMargin] = useState({ available: NaN, utilization: NaN });
   const [metrics, setMetrics] = useState({ roundTrips: 0, winners: 0, hitRate: 0, totalPnl: 0, todayPnl: 0, liveBalance: 0 });
@@ -160,6 +166,7 @@ export default function Dashboard() {
   async function fetchData() {
     if (refreshInFlight.current) return;
     refreshInFlight.current = true;
+    const requestedPage = historyPageRef.current;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return setLoading(false);
@@ -177,13 +184,15 @@ export default function Dashboard() {
       setInvoices(invs || []);
 
       const { data: openData, error: openError } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['open', 'adjusted', 'closing', 'close_failed', 'execution_anomaly', 'reconciliation_required']);
-      const { data: closedData, error: closedError } = await supabase.from('positions').select('*').eq('user_id', user.id).in('status', ['closed', 'closed_unreconciled']).order('opened_at', { ascending: false });
+      const { data: closedData, error: closedError, count: closedCount } = await supabase.from('positions').select('*', { count: 'exact' }).eq('user_id', user.id).in('status', ['closed', 'closed_unreconciled']).order('closed_at', { ascending: false, nullsFirst: false }).order('id', { ascending: false }).range(requestedPage*50, requestedPage*50+49);
+      const { data: summary, error: summaryError } = await supabase.rpc('dashboard_trade_summary');
 
-      if (openError || closedError) throw new Error("Position data unavailable");
+      if (openError || closedError || summaryError || !summary) throw new Error("Position data unavailable");
       const posIds = [...(openData || []), ...(closedData || [])].map((p: any) => p.id);
-      const { data: eventsData } = posIds.length > 0
-        ? await supabase.from('trade_events').select('*').in('position_id', posIds)
-        : { data: [] };
+      const { data: eventsData, error: eventsError } = posIds.length > 0
+        ? await supabase.from('trade_events').select('position_id,event_type,detail,created_at').in('position_id', posIds).eq('user_id', user.id)
+        : { data: [], error: null };
+      if(eventsError) throw new Error('Trade details unavailable');
 
       const processedClosed = (closedData || []).map(pos => {
         let fees = 0;
@@ -201,22 +210,27 @@ export default function Dashboard() {
           }
         });
         const realizedPnl = pos.realized_pnl == null ? NaN : Number(pos.realized_pnl);
-        return { ...pos, fees, grossPnl: realizedPnl + fees, realizedPnl };
+        return { ...pos, fees, grossPnl: realizedPnl + fees, realizedPnl, fillDetails: fillDetails(pos,posEvents) };
       });
 
       const processedOpen = (openData || []).map((pos: any) => ({
         ...pos,
+        fillDetails: fillDetails(pos,(eventsData || []).filter(e=>e.position_id===pos.id)),
         actualPnl: pos.pnl_observed_at && Date.now() - Date.parse(pos.pnl_observed_at) < 60000 && pos.actual_pnl != null ? Number(pos.actual_pnl) : NaN,
         peakPnl: parseFloat(pos.peak_unrealized_pnl || 0),
       }));
 
       setOpenPositions(processedOpen);
-      setClosedPositions(processedClosed);
+      if(requestedPage===historyPageRef.current) {
+        setClosedPositions(processedClosed);
+        setHistoryTotal(closedCount || 0);
+        setHistoryLoading(false);
+      }
 
-      const roundTrips = processedClosed.length;
-      const winners = processedClosed.filter(p => p.realizedPnl > 0).length;
+      const roundTrips = Number(summary.round_trips);
+      const winners = Number(summary.winners);
       const hitRate = roundTrips > 0 ? Math.round((winners / roundTrips) * 100) : 0;
-      const totalPnl = processedClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
+      const totalPnl = summary.total_pnl == null ? NaN : Number(summary.total_pnl);
 
       const todayMidnight = new Date();
       todayMidnight.setHours(0, 0, 0, 0);
@@ -224,19 +238,25 @@ export default function Dashboard() {
         const d = p.closed_at ? new Date(p.closed_at) : (p.opened_at ? new Date(p.opened_at) : null);
         return d && d >= todayMidnight;
       });
-      const todayPnl = todayClosed.reduce((sum, p) => sum + p.realizedPnl, 0);
+      const todayPnl = summary.today_pnl == null ? NaN : Number(summary.today_pnl);
 
       setMetrics({ roundTrips, winners, hitRate, totalPnl, todayPnl, liveBalance });
       setAccountMargin({ available: !balanceFresh || profile.available_balance == null ? NaN : Number(profile.available_balance), utilization: !balanceFresh || profile.margin_utilization == null ? NaN : Number(profile.margin_utilization) });
       setDataError(balanceFresh ? null : 'Worker telemetry is stale; trading status is unconfirmed.'); setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       setDataError("Data refresh failed. Displayed values may be stale.");
+      setHistoryLoading(false);
       console.error(err);
     } finally {
       refreshInFlight.current = false;
       setLoading(false);
+      if(requestedPage!==historyPageRef.current) queueMicrotask(()=>fetchData());
     }
   }
+
+  const changeHistoryPage = (page:number) => {
+    historyPageRef.current=page; setHistoryPage(page);setHistoryLoading(true);fetchData();
+  };
 
   useEffect(() => {
     fetchData();
@@ -522,12 +542,12 @@ export default function Dashboard() {
                             <div>
                               <div className="text-[var(--grey)] mb-1">Short Call</div>
                               <div className="font-medium break-all">{pos.short_call_symbol}</div>
-                              <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.callEntry}</div>
+                              <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.fillDetails?.[pos.short_call_symbol]?.entry ?? 'Unavailable'} USD</div>
                             </div>
                             <div>
                               <div className="text-[var(--grey)] mb-1">Short Put</div>
                               <div className="font-medium break-all">{pos.short_put_symbol}</div>
-                              <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.putEntry}</div>
+                              <div className="text-xs text-[var(--grey)] mt-0.5">Entry: {pos.fillDetails?.[pos.short_put_symbol]?.entry ?? 'Unavailable'} USD</div>
                             </div>
                             <div>
                               <div className="text-[var(--grey)] mb-1">Peak Profit</div>
@@ -539,6 +559,7 @@ export default function Dashboard() {
                             </div>
                           </div>
                         )}
+                        <PositionPayoff position={pos} />
                       </GlassCard>
                     ))}
                   </div>
@@ -610,7 +631,7 @@ export default function Dashboard() {
                 <div className="p-5 border-b border-[var(--hair)]">
                   <h2 className="text-lg font-bold">Trade History</h2>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[65vh] overflow-y-auto" aria-busy={historyLoading}>
                   <table className="w-full text-sm text-left">
                     <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
                       <tr>
@@ -622,10 +643,15 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--hair)]">
-                      {closedPositions.map(pos => (
+                      {!historyLoading && closedPositions.map(pos => (
                         <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors">
                           <td className="px-5 py-4 font-medium">{formatTradeDate(pos.closed_at)}</td>
-                          <td className="px-5 py-4">{pos.underlying || 'Options'} Strangle ({pos.lots ?? 0}L)</td>
+                          <td className="px-5 py-4 min-w-[230px]">{pos.underlying || 'Options'} Strangle ({pos.lots ?? 0}L)
+                            <details className="mt-2 text-xs"><summary className="cursor-pointer text-[var(--pine)]">Strikes and fill prices</summary>
+                              {Object.entries(pos.fillDetails || {}).map(([symbol,raw])=>{const r=raw as {entry:number|null;exit:number|null};return <div key={symbol} className="mt-2 break-words"><div className="font-medium">{symbol}</div><div className="text-[var(--grey)]">Entry: {r.entry ?? 'Unavailable'} · Exit: {r.exit ?? 'Unavailable'} USD</div></div>;})}
+                              <div className="mt-2 text-[var(--grey)]">Prices are per contract unit, not total trade value.</div>
+                            </details>
+                          </td>
                           <td className="px-5 py-4 text-[var(--grey)]">{formatDuration(pos.opened_at, pos.closed_at) || 'N/A'}</td>
                           <td className="px-5 py-4">
                             <span className="text-xs font-medium px-2 py-1 rounded bg-[var(--raise)] text-[var(--grey)]">
@@ -637,16 +663,20 @@ export default function Dashboard() {
                           </td>
                         </tr>
                       ))}
-                      {closedPositions.length === 0 && (
+                      {(historyLoading || closedPositions.length === 0) && (
                         <tr>
                           <td colSpan={5} className="px-5 py-10 text-center text-[var(--grey)]">
-                            No closed trades found.
+                            {historyLoading ? 'Loading trades…' : 'No closed trades found.'}
                           </td>
                         </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
+                <nav aria-label="Trade history pages" className="p-4 border-t border-[var(--hair)] flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <span>{historyTotal ? `${historyPage*50+1}–${Math.min((historyPage+1)*50,historyTotal)} of ${historyTotal}` : '0 trades'} · Page {historyPage+1}</span>
+                  <div className="flex gap-3"><button disabled={historyPage===0 || historyLoading} onClick={()=>changeHistoryPage(historyPage-1)} className="px-3 py-2 rounded border border-[var(--hair)] disabled:opacity-40">Previous</button><button disabled={(historyPage+1)*50>=historyTotal || historyLoading} onClick={()=>changeHistoryPage(historyPage+1)} className="px-3 py-2 rounded border border-[var(--hair)] disabled:opacity-40">Next</button></div>
+                </nav>
               </GlassCard>
             )}
 
