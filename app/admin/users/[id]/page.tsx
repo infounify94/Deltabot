@@ -56,10 +56,11 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
 
   const handlePauseUser = async () => {
     if (!profile) return;
-    await supabase.rpc('admin_set_user_pause', { 
+    const {error}=await supabase.rpc('admin_set_user_pause', { 
       p_user_id: profile.id, 
       p_is_paused: !profile.is_paused 
     });
+    if(error) {setCloseMsg(`Entry pause was not changed: ${error.message}`);return;}
     fetchUserData();
   };
 
@@ -112,7 +113,7 @@ export default function AdminUserDetail({ params }: { params: { id: string } }) 
                   : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
               }`}
             >
-              {profile.is_paused ? 'Resume Trading' : 'Pause Trading'}
+              {profile.is_paused ? 'Resume entries' : 'Pause entries'}
             </button>
           ) : (
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">

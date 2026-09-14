@@ -279,9 +279,10 @@ export default function Dashboard() {
 
   const handleKillSwitch = async (id: string | number) => {
     if (!userId) return;
-    if (confirm("EMERGENCY KILL SWITCH: Are you sure you want to market close this position immediately?")) {
-      const { error } = await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id).eq('user_id', userId);
+    if (confirm("Request an emergency market close for this position? The worker will execute it; completion depends on the exchange.")) {
+      const { data, error } = await supabase.from('positions').update({ manual_exit_requested: true }).eq('id', id).eq('user_id', userId).select('id');
       if (error) { alert(`Exit request failed: ${error.message}`); return; }
+      if(!data?.length) {alert('No owned position was updated. Refresh and check its status.');return;}
       fetchData();
     }
   };
@@ -532,9 +533,10 @@ export default function Dashboard() {
                           </button>
                           <button
                             onClick={() => handleKillSwitch(pos.id)}
+                            disabled={!!pos.manual_exit_requested}
                             className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-semibold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1"
                           >
-                            <ShieldAlert className="w-3.5 h-3.5" /> Emergency Close
+                            <ShieldAlert className="w-3.5 h-3.5" /> {pos.manual_exit_requested?'Close requested':'Emergency Close'}
                           </button>
                         </div>
 

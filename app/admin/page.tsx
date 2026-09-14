@@ -34,6 +34,7 @@ export default function AdminDashboard() {
   // UI Action States
   const [isProcessingAction, setIsProcessingAction] = useState(false);
   const [showCloseAllModal, setShowCloseAllModal] = useState(false);
+  const [otherCloseMessage, setOtherCloseMessage] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -101,8 +102,21 @@ export default function AdminDashboard() {
   };
 
   const handlePauseUser = async (userId: string, currentStatus: boolean) => {
-    await supabase.rpc('admin_set_user_pause', { p_user_id: userId, p_is_paused: !currentStatus });
-    fetchData();
+    const {error}=await supabase.rpc('admin_set_user_pause', { p_user_id: userId, p_is_paused: !currentStatus });
+    if(error) {alert(`Entry pause was not changed: ${error.message}`);return;}
+    await fetchData();
+  };
+
+  const handleCloseOthers = async () => {
+    if(!confirm('Close all other users’ positions and pause their new entries? chilumulas62@gmail.com is excluded. Other admin accounts are included. Requests execute through the worker; resume each account only after its close is confirmed.')) return;
+    setIsProcessingAction(true);setOtherCloseMessage('');
+    try {
+      const {data,error}=await supabase.rpc('admin_close_other_users');
+      if(error) throw error;
+      setOtherCloseMessage(`Close requested for ${data.positions_requested} positions; ${data.accounts_paused} accounts paused. Your account is excluded. Check each user’s positions for completion.`);
+      await fetchData();
+    } catch(error:any) {setOtherCloseMessage(`Request failed: ${error.message}`);}
+    finally {setIsProcessingAction(false);}
   };
 
   const handleGlobalPause = async (pauseStatus: boolean) => {
@@ -344,7 +358,7 @@ export default function AdminDashboard() {
             <GlassCard hoverEffect className="p-5 flex flex-col justify-between border-l-4 border-l-rose-600">
               <div>
                 <h3 className="font-semibold text-rose-600 mb-1 flex items-center gap-2"><ShieldAlert className="w-4 h-4" /> Close All Positions</h3>
-                <p className="text-xs text-[var(--grey)] mb-4">Force market close across all active user accounts simultaneously.</p>
+                <p className="text-xs text-[var(--grey)] mb-4">Request market closes for every account, including yours. The worker processes each account.</p>
               </div>
               <button 
                 onClick={() => setShowCloseAllModal(true)}
@@ -356,6 +370,14 @@ export default function AdminDashboard() {
             </GlassCard>
           </div>
         </section>
+
+        <GlassCard className="p-5 border-l-4 border-l-rose-600 mb-6">
+          <h3 className="font-semibold">Close other users’ trades</h3>
+          <p className="text-sm text-[var(--grey)] mt-1 mb-3">Excludes chilumulas62@gmail.com. Pauses all other accounts’ new entries and requests their positions be closed, including any entry already in flight. Your account keeps running.</p>
+          <button disabled={isProcessingAction} onClick={handleCloseOthers} className="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm disabled:opacity-50">Close &amp; pause other users</button>
+          {otherCloseMessage && <p role="status" className="text-sm mt-3">{otherCloseMessage}</p>}
+          <p className="text-xs text-[var(--grey)] mt-2">Closure is confirmed by the exchange, not by clicking this button. Resume accounts individually after checking their positions.</p>
+        </GlassCard>
 
         {/* dY? PLATFORM OVERVIEW */}
         <section>
@@ -531,7 +553,7 @@ export default function AdminDashboard() {
                             }`}
                           >
                             {u.is_paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
-                            {u.is_paused ? 'Enable' : 'Suspend'}
+                            {u.is_paused ? 'Resume entries' : 'Pause entries'}
                           </button>
                         )}
                       </td>
