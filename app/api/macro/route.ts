@@ -157,7 +157,7 @@ export async function GET() {
 
     const nowTs = Math.floor(Date.now() / 1000);
     const blackoutBeforeSec = 120 * 60; // 2 hours before
-    const blackoutAfterSec = 60 * 60;   // 1 hour after
+    const blackoutAfterSec = 180 * 60;  // 3 hours after; worker also requires market stability
 
     let isBlocked = false;
     let activeEvent: MacroEvent | null = null;

@@ -35,13 +35,13 @@ export function MacroCalendarPanel({ info }: { info: MacroInfo | null }) {
           ? 'Calendar status cannot be confirmed. A clear news gate is not assumed.'
           : blocked ? info.blackout_reason
           : 'No calendar blackout is active. Other entry and risk checks still apply.'}</p>
-        <p className="mt-2 text-xs text-[var(--grey)]">New entries pause 2 hours before and 1 hour after an event. Existing positions continue to be managed.</p>
+        <p className="mt-2 text-xs text-[var(--grey)]">New entries pause 2 hours before and 3 hours after an event. The bot then requires 15 minutes of stable market conditions; entry may resume later. Existing positions continue to be managed.</p>
         {!unknown && <ul className="mt-4 divide-y divide-[var(--hair)]">
           {info.upcoming_events.map(event => (
             <li key={event.id} className="flex flex-col gap-1 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="min-w-0"><p className="text-sm font-medium break-words">{event.title}{info.active_event?.id === event.id && <span className="ml-2 text-xs text-[var(--orange)]">Active window</span>}</p>
                 <p className="mt-1 text-xs text-[var(--grey)]">{event.country} · {event.impact.toLowerCase() === 'high' ? 'High impact' : 'Priority event'}</p></div>
-              <div className="text-xs sm:text-right"><p className="font-medium">{ist(event.timestamp_utc)} IST</p><p className="mt-1 text-[var(--grey)]">Entry pause: {ist(event.timestamp_utc - 7200)} – {ist(event.timestamp_utc + 3600)} IST</p></div>
+              <div className="text-xs sm:text-right"><p className="font-medium">{ist(event.timestamp_utc)} IST</p><p className="mt-1 text-[var(--grey)]">Minimum news pause: {ist(event.timestamp_utc - 7200)} – {ist(event.timestamp_utc + 10800)} IST</p></div>
             </li>
           ))}
           {info.upcoming_events.length === 0 && <li className="py-3 text-sm text-[var(--grey)]">No remaining qualifying events in this week’s feed.</li>}
