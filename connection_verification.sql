@@ -30,6 +30,7 @@ begin
  if auth.uid() is null or (auth.uid()<>p_user_id and not exists(select 1 from public.profiles where id=auth.uid() and is_admin)) then raise exception 'Access denied';end if;
  if not exists(select 1 from public.profiles where id=p_user_id and delta_api_key is not null and delta_api_secret is not null) then raise exception 'Save both API credentials first';end if;
  update public.profiles set connection_requested_at=now() where id=p_user_id and (connection_requested_at is null or connection_requested_at<now()-interval '30 seconds');
+ if not found then raise exception 'A check was requested recently. Wait 30 seconds before requesting another.';end if;
 end $$;
 revoke all on function public.request_connection_check(uuid) from public,anon;
 grant execute on function public.request_connection_check(uuid) to authenticated;
