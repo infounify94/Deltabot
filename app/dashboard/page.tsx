@@ -126,6 +126,11 @@ export default function Dashboard() {
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
   };
 
+  const formatFillPrice = (val?: number | null) => {
+    if (val == null || !Number.isFinite(val)) return '—';
+    return `$${Number(val.toFixed(2))}`;
+  };
+
   const formatDuration = (openedAt?: string | null, closedAt?: string | null) => {
     if (!openedAt || !closedAt) return null;
     const t1 = new Date(openedAt).getTime();
@@ -661,7 +666,7 @@ export default function Dashboard() {
 
         {/* Main Workspace Content */}
         <main className="relative z-10 min-w-0 flex-1 p-4 sm:p-6 xl:p-8 pb-28 lg:pb-8">
-          <div className="max-w-6xl mx-auto space-y-6">
+          <div className="max-w-[1440px] w-full mx-auto space-y-6">
 
             {/* Sub-header text */}
             {section !== 'billing' && (
@@ -1015,7 +1020,7 @@ export default function Dashboard() {
                                   </div>
                                   <div className="flex items-center gap-4 text-[var(--grey)]">
                                     <span>Strike: <strong className="text-[var(--ink)]">${Number(callStrike).toLocaleString()}</strong></span>
-                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry} USD` : 'Recorded'}</strong></span>
+                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{formatFillPrice(callEntry)}</strong></span>
                                   </div>
                                 </div>
 
@@ -1027,7 +1032,7 @@ export default function Dashboard() {
                                   </div>
                                   <div className="flex items-center gap-4 text-[var(--grey)]">
                                     <span>Strike: <strong className="text-[var(--ink)]">${Number(putStrike).toLocaleString()}</strong></span>
-                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry} USD` : 'Recorded'}</strong></span>
+                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{formatFillPrice(putEntry)}</strong></span>
                                   </div>
                                 </div>
 
@@ -1138,17 +1143,17 @@ export default function Dashboard() {
                   {ledgerTab === 'closed' && (
                     <>
                       <div className="overflow-x-auto max-h-[70vh] overflow-y-auto" aria-busy={historyLoading}>
-                        <table className="w-full text-sm text-left border-collapse">
-                          <thead className="bg-[var(--paper-2)]/80 backdrop-blur sticky top-0 z-10 text-[var(--grey)] text-xs uppercase font-semibold border-b border-[var(--hair)]">
+                        <table className="w-full text-xs text-left border-collapse table-auto">
+                          <thead className="bg-[var(--paper-2)]/90 backdrop-blur sticky top-0 z-10 text-[var(--grey)] text-[11px] uppercase font-semibold border-b border-[var(--hair)]">
                             <tr>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Date Closed</th>
-                              <th className="px-4 py-3.5">Strategy & Strikes</th>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Entry Fill</th>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Exit Fill</th>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Size</th>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Fees</th>
-                              <th className="px-4 py-3.5 whitespace-nowrap">Exit Reason</th>
-                              <th className="px-4 py-3.5 text-right whitespace-nowrap">Net P&L</th>
+                              <th className="px-2.5 py-3 whitespace-nowrap w-24">Date</th>
+                              <th className="px-2.5 py-3">Strategy & Strikes</th>
+                              <th className="px-2.5 py-3 whitespace-nowrap">Entry Fill</th>
+                              <th className="px-2.5 py-3 whitespace-nowrap">Exit Fill</th>
+                              <th className="px-2 py-3 text-center whitespace-nowrap w-14">Size</th>
+                              <th className="px-2 py-3 text-right whitespace-nowrap w-16">Fees</th>
+                              <th className="px-2.5 py-3 whitespace-nowrap w-24">Exit Reason</th>
+                              <th className="px-2.5 py-3 text-right whitespace-nowrap w-24">Net P&L</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[var(--hair)]">
@@ -1163,78 +1168,78 @@ export default function Dashboard() {
                               return (
                                 <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors">
                                   {/* Date Closed & Duration */}
-                                  <td className="px-4 py-3.5 align-top text-xs whitespace-nowrap">
+                                  <td className="px-2.5 py-2.5 align-top whitespace-nowrap">
                                     <div className="font-semibold text-[var(--ink)]">{formatShortDate(pos.closed_at)}</div>
-                                    <div className="text-[11px] text-[var(--grey)] mt-0.5">
+                                    <div className="text-[10px] text-[var(--grey)]">
                                       {pos.closed_at ? new Date(pos.closed_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}
                                     </div>
-                                    <div className="text-[10px] text-[var(--grey)] mt-1">
+                                    <div className="text-[10px] text-[var(--grey)]">
                                       {formatDuration(pos.opened_at, pos.closed_at) ? `⏱ ${formatDuration(pos.opened_at, pos.closed_at)}` : ''}
                                     </div>
                                   </td>
 
                                   {/* Strategy & Line-by-Line Strikes */}
-                                  <td className="px-4 py-3.5 align-top min-w-[220px]">
-                                    <div className="flex items-center gap-2 mb-1.5">
-                                      <span className="font-bold text-xs text-[var(--ink)]">{pos.underlying || 'BTC'} Strangle</span>
-                                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[var(--raise)] text-[var(--grey)] border border-[var(--hair)]">
+                                  <td className="px-2.5 py-2.5 align-top">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <span className="font-bold text-[var(--ink)]">{pos.underlying || 'BTC'} Strangle</span>
+                                      <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-[var(--raise)] text-[var(--grey)] border border-[var(--hair)]">
                                         {pos.expiry_date || 'DAILY'}
                                       </span>
                                     </div>
 
                                     {/* Line 1: Call Leg & Strike */}
-                                    <div className="space-y-1 font-mono text-[11px]">
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CE</span>
-                                        <span className="font-semibold text-[var(--ink)]">{pos.short_call_symbol || 'Call'}</span>
-                                        <span className="text-[var(--grey)] font-sans font-medium">(${Number(callStrike).toLocaleString()})</span>
+                                    <div className="space-y-0.5 font-mono text-[11px]">
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="px-1 py-0.2 rounded text-[8px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CE</span>
+                                        <span className="font-semibold text-[var(--ink)]">${Number(callStrike).toLocaleString()}</span>
+                                        <span className="text-[10px] text-[var(--grey)]" title={pos.short_call_symbol}>({pos.short_call_symbol})</span>
                                       </div>
 
                                       {/* Line 2: Put Leg & Strike */}
-                                      <div className="flex items-center gap-1.5">
-                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PE</span>
-                                        <span className="font-semibold text-[var(--ink)]">{pos.short_put_symbol || 'Put'}</span>
-                                        <span className="text-[var(--grey)] font-sans font-medium">(${Number(putStrike).toLocaleString()})</span>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="px-1 py-0.2 rounded text-[8px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PE</span>
+                                        <span className="font-semibold text-[var(--ink)]">${Number(putStrike).toLocaleString()}</span>
+                                        <span className="text-[10px] text-[var(--grey)]" title={pos.short_put_symbol}>({pos.short_put_symbol})</span>
                                       </div>
                                     </div>
                                   </td>
 
-                                  {/* Entry Fill Prices (Line by Line) */}
-                                  <td className="px-4 py-3.5 align-top text-xs font-mono whitespace-nowrap">
-                                    <div className="space-y-1">
-                                      <div><span className="text-[var(--grey)] text-[11px]">CE: </span><strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry}` : '—'}</strong></div>
-                                      <div><span className="text-[var(--grey)] text-[11px]">PE: </span><strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry}` : '—'}</strong></div>
+                                  {/* Entry Fill Prices (Clean 2-decimal rounded) */}
+                                  <td className="px-2.5 py-2.5 align-top font-mono whitespace-nowrap">
+                                    <div className="space-y-0.5">
+                                      <div><span className="text-[var(--grey)] text-[10px]">CE: </span><strong className="text-[var(--ink)]">{formatFillPrice(callEntry)}</strong></div>
+                                      <div><span className="text-[var(--grey)] text-[10px]">PE: </span><strong className="text-[var(--ink)]">{formatFillPrice(putEntry)}</strong></div>
                                     </div>
                                   </td>
 
-                                  {/* Exit Fill Prices (Line by Line) */}
-                                  <td className="px-4 py-3.5 align-top text-xs font-mono whitespace-nowrap">
-                                    <div className="space-y-1">
-                                      <div><span className="text-[var(--grey)] text-[11px]">CE: </span><strong className="text-[var(--ink)]">{callExit != null ? `$${callExit}` : '—'}</strong></div>
-                                      <div><span className="text-[var(--grey)] text-[11px]">PE: </span><strong className="text-[var(--ink)]">{putExit != null ? `$${putExit}` : '—'}</strong></div>
+                                  {/* Exit Fill Prices (Clean 2-decimal rounded) */}
+                                  <td className="px-2.5 py-2.5 align-top font-mono whitespace-nowrap">
+                                    <div className="space-y-0.5">
+                                      <div><span className="text-[var(--grey)] text-[10px]">CE: </span><strong className="text-[var(--ink)]">{formatFillPrice(callExit)}</strong></div>
+                                      <div><span className="text-[var(--grey)] text-[10px]">PE: </span><strong className="text-[var(--ink)]">{formatFillPrice(putExit)}</strong></div>
                                     </div>
                                   </td>
 
                                   {/* Position Size */}
-                                  <td className="px-4 py-3.5 align-top font-bold text-xs num-tabular whitespace-nowrap">
-                                    {pos.lots || 1} Lots
+                                  <td className="px-2 py-2.5 align-top font-bold text-center num-tabular whitespace-nowrap">
+                                    {pos.lots || 1}L
                                   </td>
 
                                   {/* Fees */}
-                                  <td className="px-4 py-3.5 align-top text-xs text-[var(--grey)] num-tabular whitespace-nowrap">
+                                  <td className="px-2 py-2.5 align-top text-right text-[var(--grey)] num-tabular whitespace-nowrap">
                                     {fmt(pos.fees || 0)}
                                   </td>
 
                                   {/* Exit Reason */}
-                                  <td className="px-4 py-3.5 align-top text-xs whitespace-nowrap">
-                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--raise)] text-[var(--grey)]">
+                                  <td className="px-2.5 py-2.5 align-top whitespace-nowrap">
+                                    <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-[var(--raise)] text-[var(--grey)]">
                                       {pos.close_reason ? pos.close_reason.replace(/_/g, ' ') : 'Closed'}
                                     </span>
                                   </td>
 
                                   {/* Net Realized P&L */}
-                                  <td className="px-4 py-3.5 align-top text-right whitespace-nowrap">
-                                    <div className={`text-base font-bold num-tabular ${
+                                  <td className="px-2.5 py-2.5 align-top text-right whitespace-nowrap">
+                                    <div className={`text-sm font-bold num-tabular ${
                                       pos.realizedPnl > 0 ? 'text-[var(--pine)]' : pos.realizedPnl < 0 ? 'text-[var(--clay)]' : ''
                                     }`}>
                                       {pos.realizedPnl > 0 ? '+' : ''}{fmt(pos.realizedPnl)}
@@ -1437,7 +1442,7 @@ export default function Dashboard() {
                               </div>
                               <div className="flex items-center gap-4 text-[var(--grey)]">
                                 <span>Strike: <strong className="text-[var(--ink)]">${Number(callStrike).toLocaleString()}</strong></span>
-                                <span>Entry Fill: <strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry} USD` : 'Recorded'}</strong></span>
+                                <span>Entry Fill: <strong className="text-[var(--ink)]">{formatFillPrice(callEntry)}</strong></span>
                               </div>
                             </div>
 
@@ -1448,7 +1453,7 @@ export default function Dashboard() {
                               </div>
                               <div className="flex items-center gap-4 text-[var(--grey)]">
                                 <span>Strike: <strong className="text-[var(--ink)]">${Number(putStrike).toLocaleString()}</strong></span>
-                                <span>Entry Fill: <strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry} USD` : 'Recorded'}</strong></span>
+                                <span>Entry Fill: <strong className="text-[var(--ink)]">{formatFillPrice(putEntry)}</strong></span>
                               </div>
                             </div>
                           </div>
