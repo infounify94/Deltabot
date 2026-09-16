@@ -1137,77 +1137,118 @@ export default function Dashboard() {
                   {/* CLOSED TAB TABLE */}
                   {ledgerTab === 'closed' && (
                     <>
-                      <div className="overflow-x-auto max-h-[65vh] overflow-y-auto" aria-busy={historyLoading}>
-                        <table className="w-full text-sm text-left">
-                          <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
+                      <div className="overflow-x-auto max-h-[70vh] overflow-y-auto" aria-busy={historyLoading}>
+                        <table className="w-full text-sm text-left border-collapse">
+                          <thead className="bg-[var(--paper-2)]/80 backdrop-blur sticky top-0 z-10 text-[var(--grey)] text-xs uppercase font-semibold border-b border-[var(--hair)]">
                             <tr>
-                              <th className="px-5 py-4">Instrument</th>
-                              <th className="px-5 py-4">Strategy</th>
-                              <th className="px-5 py-4">Size</th>
-                              <th className="px-5 py-4">Duration</th>
-                              <th className="px-5 py-4">Exit Reason</th>
-                              <th className="px-5 py-4 text-right">Net P&L</th>
-                              <th className="px-5 py-4">Closed</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Date Closed</th>
+                              <th className="px-4 py-3.5">Strategy & Strikes</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Entry Fill</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Exit Fill</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Size</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Fees</th>
+                              <th className="px-4 py-3.5 whitespace-nowrap">Exit Reason</th>
+                              <th className="px-4 py-3.5 text-right whitespace-nowrap">Net P&L</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-[var(--hair)]">
                             {!historyLoading && closedPositions.map(pos => {
-                              const isExpanded = expandedTradeIds.has(pos.id);
+                              const callStrike = pos.short_call_strike || (pos.short_call_symbol ? pos.short_call_symbol.split('-')[2] : '—');
+                              const putStrike = pos.short_put_strike || (pos.short_put_symbol ? pos.short_put_symbol.split('-')[2] : '—');
+                              const callEntry = pos.fillDetails?.[pos.short_call_symbol]?.entry;
+                              const callExit = pos.fillDetails?.[pos.short_call_symbol]?.exit;
+                              const putEntry = pos.fillDetails?.[pos.short_put_symbol]?.entry;
+                              const putExit = pos.fillDetails?.[pos.short_put_symbol]?.exit;
 
                               return (
-                                <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors group">
-                                  <td className="px-5 py-4 font-mono font-medium text-xs">
-                                    <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => toggleExpand(pos.id)}>
-                                      <span>{pos.underlying || 'BTC'}-{pos.expiry_date || 'DAILY'}</span>
-                                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5 text-emerald-500" /> : <ChevronDown className="w-3.5 h-3.5 text-[var(--grey)]" />}
+                                <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors">
+                                  {/* Date Closed & Duration */}
+                                  <td className="px-4 py-3.5 align-top text-xs whitespace-nowrap">
+                                    <div className="font-semibold text-[var(--ink)]">{formatShortDate(pos.closed_at)}</div>
+                                    <div className="text-[11px] text-[var(--grey)] mt-0.5">
+                                      {pos.closed_at ? new Date(pos.closed_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—'}
+                                    </div>
+                                    <div className="text-[10px] text-[var(--grey)] mt-1">
+                                      {formatDuration(pos.opened_at, pos.closed_at) ? `⏱ ${formatDuration(pos.opened_at, pos.closed_at)}` : ''}
+                                    </div>
+                                  </td>
+
+                                  {/* Strategy & Line-by-Line Strikes */}
+                                  <td className="px-4 py-3.5 align-top min-w-[220px]">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                      <span className="font-bold text-xs text-[var(--ink)]">{pos.underlying || 'BTC'} Strangle</span>
+                                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-[var(--raise)] text-[var(--grey)] border border-[var(--hair)]">
+                                        {pos.expiry_date || 'DAILY'}
+                                      </span>
                                     </div>
 
-                                    {/* Expandable Leg Details Accordion */}
-                                    {isExpanded && (
-                                      <div className="mt-3 p-3 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] space-y-2 text-xs font-sans">
-                                        <div className="font-bold text-[var(--ink)]">Strategy Leg Details:</div>
-                                        {Object.entries(pos.fillDetails || {}).map(([sym, raw]) => {
-                                          const r = raw as { entry: number | null; exit: number | null };
-                                          return (
-                                            <div key={sym} className="font-mono text-[11px] text-[var(--grey)]">
-                                              <span className="font-semibold text-[var(--ink)]">{sym}</span>
-                                              <div>Entry Fill: {r.entry ?? '—'} · Exit Fill: {r.exit ?? '—'} USD</div>
-                                            </div>
-                                          );
-                                        })}
-                                        <div className="pt-2 border-t border-[var(--hair)] text-[11px] space-y-1">
-                                          <div>Gross Result: <span className="font-semibold">{fmt(pos.grossPnl)}</span></div>
-                                          <div>Execution Fees: <span className="font-semibold">{fmt(pos.fees)}</span></div>
-                                          <div>Net Realized: <span className="font-bold text-[var(--pine)]">{fmt(pos.realizedPnl)}</span></div>
-                                          <div className="text-[var(--grey)] mt-1">Fill prices are per contract unit. Net P&L reflects total trade cash flow.</div>
-                                        </div>
+                                    {/* Line 1: Call Leg & Strike */}
+                                    <div className="space-y-1 font-mono text-[11px]">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CE</span>
+                                        <span className="font-semibold text-[var(--ink)]">{pos.short_call_symbol || 'Call'}</span>
+                                        <span className="text-[var(--grey)] font-sans font-medium">(${Number(callStrike).toLocaleString()})</span>
                                       </div>
-                                    )}
+
+                                      {/* Line 2: Put Leg & Strike */}
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="px-1 py-0.2 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PE</span>
+                                        <span className="font-semibold text-[var(--ink)]">{pos.short_put_symbol || 'Put'}</span>
+                                        <span className="text-[var(--grey)] font-sans font-medium">(${Number(putStrike).toLocaleString()})</span>
+                                      </div>
+                                    </div>
                                   </td>
-                                  <td className="px-5 py-4">
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-[var(--raise)] text-[var(--ink)] border border-[var(--hair)]">
-                                      Strangle
-                                    </span>
+
+                                  {/* Entry Fill Prices (Line by Line) */}
+                                  <td className="px-4 py-3.5 align-top text-xs font-mono whitespace-nowrap">
+                                    <div className="space-y-1">
+                                      <div><span className="text-[var(--grey)] text-[11px]">CE: </span><strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry}` : '—'}</strong></div>
+                                      <div><span className="text-[var(--grey)] text-[11px]">PE: </span><strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry}` : '—'}</strong></div>
+                                    </div>
                                   </td>
-                                  <td className="px-5 py-4 font-medium num-tabular">{pos.lots || 1}L</td>
-                                  <td className="px-5 py-4 text-xs text-[var(--grey)]">{formatDuration(pos.opened_at, pos.closed_at) || '—'}</td>
-                                  <td className="px-5 py-4">
-                                    <span className="text-xs font-medium px-2 py-0.5 rounded bg-[var(--raise)] text-[var(--grey)]">
+
+                                  {/* Exit Fill Prices (Line by Line) */}
+                                  <td className="px-4 py-3.5 align-top text-xs font-mono whitespace-nowrap">
+                                    <div className="space-y-1">
+                                      <div><span className="text-[var(--grey)] text-[11px]">CE: </span><strong className="text-[var(--ink)]">{callExit != null ? `$${callExit}` : '—'}</strong></div>
+                                      <div><span className="text-[var(--grey)] text-[11px]">PE: </span><strong className="text-[var(--ink)]">{putExit != null ? `$${putExit}` : '—'}</strong></div>
+                                    </div>
+                                  </td>
+
+                                  {/* Position Size */}
+                                  <td className="px-4 py-3.5 align-top font-bold text-xs num-tabular whitespace-nowrap">
+                                    {pos.lots || 1} Lots
+                                  </td>
+
+                                  {/* Fees */}
+                                  <td className="px-4 py-3.5 align-top text-xs text-[var(--grey)] num-tabular whitespace-nowrap">
+                                    {fmt(pos.fees || 0)}
+                                  </td>
+
+                                  {/* Exit Reason */}
+                                  <td className="px-4 py-3.5 align-top text-xs whitespace-nowrap">
+                                    <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--raise)] text-[var(--grey)]">
                                       {pos.close_reason ? pos.close_reason.replace(/_/g, ' ') : 'Closed'}
                                     </span>
                                   </td>
-                                  <td className={`px-5 py-4 text-right font-bold num-tabular ${
-                                    pos.realizedPnl > 0 ? 'text-[var(--pine)]' : pos.realizedPnl < 0 ? 'text-[var(--clay)]' : ''
-                                  }`}>
-                                    {pos.realizedPnl > 0 ? '+' : ''}{fmt(pos.realizedPnl)}
+
+                                  {/* Net Realized P&L */}
+                                  <td className="px-4 py-3.5 align-top text-right whitespace-nowrap">
+                                    <div className={`text-base font-bold num-tabular ${
+                                      pos.realizedPnl > 0 ? 'text-[var(--pine)]' : pos.realizedPnl < 0 ? 'text-[var(--clay)]' : ''
+                                    }`}>
+                                      {pos.realizedPnl > 0 ? '+' : ''}{fmt(pos.realizedPnl)}
+                                    </div>
+                                    <div className="text-[10px] text-[var(--grey)] num-tabular">
+                                      Gross: {pos.grossPnl > 0 ? '+' : ''}{fmt(pos.grossPnl)}
+                                    </div>
                                   </td>
-                                  <td className="px-5 py-4 text-xs text-[var(--grey)]">{formatTradeDate(pos.closed_at)}</td>
                                 </tr>
                               );
                             })}
                             {(historyLoading || closedPositions.length === 0) && (
                               <tr>
-                                <td colSpan={7} className="px-5 py-10 text-center text-[var(--grey)]">
+                                <td colSpan={8} className="px-5 py-10 text-center text-[var(--grey)] text-xs">
                                   {historyLoading ? 'Loading execution records…' : 'No closed trades recorded.'}
                                 </td>
                               </tr>
