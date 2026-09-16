@@ -690,9 +690,9 @@ export default function Dashboard() {
             {section === 'dashboard' && (
               <div className="space-y-6">
 
-                {/* 1. Big Headline P&L Hero Card */}
-                <GlassCard className="p-6 sm:p-8 relative overflow-hidden border border-[var(--hair)] shadow-lg">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                {/* 1. Headline P&L Hero Card */}
+                <GlassCard className="p-5 sm:p-6 relative overflow-hidden border border-[var(--hair)] shadow-md">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                     <div>
                       <span className="text-xs font-bold uppercase tracking-wider text-[var(--grey)]">
                         {periodHeroTitle}
@@ -717,9 +717,9 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Huge Headline Number */}
-                  <div className="mb-6">
-                    <div className={`text-4xl sm:text-6xl font-black tracking-tight num-tabular ${
+                  {/* Clean, Proportional Headline Number */}
+                  <div className="mb-4">
+                    <div className={`text-2xl sm:text-3xl font-bold tracking-tight num-tabular ${
                       periodPnl > 0 ? 'text-[var(--pine)]' : periodPnl < 0 ? 'text-[var(--clay)]' : 'text-[var(--ink)]'
                     }`}>
                       {periodPnl > 0 ? '+' : ''}{fmt(periodPnl)}
@@ -946,136 +946,108 @@ export default function Dashboard() {
                     </GlassCard>
                   ) : (
                     <div className="space-y-3">
-                      {openPositions.map(pos => (
-                        <GlassCard key={pos.id} hoverEffect className="p-5 border-l-4 border-l-emerald-500">
-                          <div className="flex flex-wrap items-center justify-between gap-4">
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-bold text-base sm:text-lg">
-                                  {pos.underlying || 'BTC'} Options Strangle
-                                </span>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                                  {pos.lots || 1} LOT
-                                </span>
-                              </div>
-                              <div className="text-xs text-[var(--grey)]">
-                                Opened {formatTradeDate(pos.opened_at)}
-                              </div>
-                            </div>
+                      {openPositions.map(pos => {
+                        const isExpanded = expandedTradeIds.has(pos.id);
+                        const callStrike = pos.short_call_strike || (pos.short_call_symbol ? pos.short_call_symbol.split('-')[2] : '—');
+                        const putStrike = pos.short_put_strike || (pos.short_put_symbol ? pos.short_put_symbol.split('-')[2] : '—');
+                        const callEntry = pos.fillDetails?.[pos.short_call_symbol]?.entry;
+                        const putEntry = pos.fillDetails?.[pos.short_put_symbol]?.entry;
 
-                            <div className="text-right">
-                              <div className="text-xs text-[var(--grey)] font-medium mb-1">Floating P&L</div>
-                              <div className={`text-xl font-bold num-tabular ${pos.actualPnl > 0 ? 'text-[var(--pine)]' : pos.actualPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
-                                {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 pt-4 border-t border-[var(--hair)] flex items-center justify-between">
-                            <button
-                              onClick={() => toggleExpand(pos.id)}
-                              className="text-xs text-emerald-500 font-semibold hover:underline flex items-center gap-1"
-                            >
-                              {expandedTradeIds.has(pos.id) ? 'Hide Leg Details' : 'View Leg Details'}
-                              {expandedTradeIds.has(pos.id) ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                            </button>
-
-                            <button
-                              onClick={() => handleKillSwitch(pos.id)}
-                              disabled={!!pos.manual_exit_requested}
-                              className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5"
-                            >
-                              <ShieldAlert className="w-3.5 h-3.5" />
-                              {pos.manual_exit_requested ? 'Close Requested' : 'Emergency Close'}
-                            </button>
-                          </div>
-
-                          {expandedTradeIds.has(pos.id) && (
-                            <div className="mt-4 pt-4 border-t border-[var(--hair)] grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
+                        return (
+                          <GlassCard key={pos.id} hoverEffect className="p-5 border-l-4 border-l-emerald-500">
+                            <div className="flex flex-wrap items-center justify-between gap-4">
                               <div>
-                                <span className="text-[var(--grey)]">Call Leg:</span>
-                                <div className="font-mono font-medium mt-0.5">{pos.short_call_symbol || '—'}</div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-bold text-base sm:text-lg">
+                                    {pos.underlying || 'BTC'} Options Strangle
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                    {pos.lots || 1} LOT
+                                  </span>
+                                </div>
+                                <div className="text-xs text-[var(--grey)]">
+                                  Opened {formatTradeDate(pos.opened_at)}
+                                </div>
                               </div>
-                              <div>
-                                <span className="text-[var(--grey)]">Put Leg:</span>
-                                <div className="font-mono font-medium mt-0.5">{pos.short_put_symbol || '—'}</div>
-                              </div>
-                              <div>
-                                <span className="text-[var(--grey)]">Credit Received:</span>
-                                <div className="font-bold text-[var(--pine)] mt-0.5">
-                                  {pos.credit_received ? fmt(Number(pos.credit_received)) : '—'}
+
+                              <div className="flex items-center gap-6 text-right">
+                                <div>
+                                  <div className="text-xs text-[var(--grey)] font-medium mb-0.5">Peak P&L</div>
+                                  <div className="text-base sm:text-lg font-bold text-[var(--pine)] num-tabular">
+                                    +{fmt(pos.peakPnl)}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-xs text-[var(--grey)] font-medium mb-0.5">Floating P&L</div>
+                                  <div className={`text-base sm:text-lg font-bold num-tabular ${pos.actualPnl > 0 ? 'text-[var(--pine)]' : pos.actualPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
+                                    {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
+                                  </div>
                                 </div>
                               </div>
                             </div>
-                          )}
-                        </GlassCard>
-                      ))}
+
+                            <div className="mt-4 pt-4 border-t border-[var(--hair)] flex items-center justify-between">
+                              <button
+                                onClick={() => toggleExpand(pos.id)}
+                                className="text-xs text-emerald-500 font-semibold hover:underline flex items-center gap-1"
+                              >
+                                {isExpanded ? 'Hide Live Details' : 'View Live Details'}
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+
+                              <button
+                                onClick={() => handleKillSwitch(pos.id)}
+                                disabled={!!pos.manual_exit_requested}
+                                className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5"
+                              >
+                                <ShieldAlert className="w-3.5 h-3.5" />
+                                {pos.manual_exit_requested ? 'Close Requested' : 'Emergency Close'}
+                              </button>
+                            </div>
+
+                            {isExpanded && (
+                              <div className="mt-4 pt-4 border-t border-[var(--hair)] space-y-2.5">
+                                {/* Call Leg Line */}
+                                <div className="flex flex-wrap items-center justify-between p-3 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CALL LEG</span>
+                                    <span className="font-mono font-bold text-[var(--ink)]">{pos.short_call_symbol || '—'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-[var(--grey)]">
+                                    <span>Strike: <strong className="text-[var(--ink)]">${Number(callStrike).toLocaleString()}</strong></span>
+                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry} USD` : 'Recorded'}</strong></span>
+                                  </div>
+                                </div>
+
+                                {/* Put Leg Line */}
+                                <div className="flex flex-wrap items-center justify-between p-3 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PUT LEG</span>
+                                    <span className="font-mono font-bold text-[var(--ink)]">{pos.short_put_symbol || '—'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-4 text-[var(--grey)]">
+                                    <span>Strike: <strong className="text-[var(--ink)]">${Number(putStrike).toLocaleString()}</strong></span>
+                                    <span>Entry Fill: <strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry} USD` : 'Recorded'}</strong></span>
+                                  </div>
+                                </div>
+
+                                {/* Summary Line */}
+                                <div className="flex flex-wrap items-center justify-between p-3 rounded-lg bg-[var(--card)] border border-[var(--hair)] text-xs">
+                                  <div className="flex flex-wrap items-center gap-6">
+                                    <div>Credit Received: <strong className="text-[var(--pine)]">{pos.credit_received ? fmt(Number(pos.credit_received)) : '—'}</strong></div>
+                                    <div>Peak P&L: <strong className="text-[var(--pine)]">+{fmt(pos.peakPnl)}</strong></div>
+                                    <div>Floating P&L: <strong className={pos.actualPnl >= 0 ? 'text-[var(--pine)]' : 'text-[var(--clay)]'}>{fmt(pos.actualPnl)}</strong></div>
+                                  </div>
+                                  <div>Size: <strong className="text-[var(--ink)]">{pos.lots || 1} Lots</strong></div>
+                                </div>
+                              </div>
+                            )}
+                          </GlassCard>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
-
-                {/* 5. Recent Closed Trades Preview with link to full Trade History */}
-                <GlassCard className="overflow-hidden">
-                  <div className="p-5 border-b border-[var(--hair)] flex items-center justify-between">
-                    <div>
-                      <h2 className="text-base font-bold">Recent Closed Trades</h2>
-                      <p className="text-xs text-[var(--grey)]">Latest executed round-trip trades</p>
-                    </div>
-                    <a
-                      href={sectionHref('history')}
-                      onClick={e => navigateSection(e, 'history')}
-                      className="text-xs font-bold text-emerald-500 hover:underline flex items-center gap-1"
-                    >
-                      View all in Trade History <ArrowRight className="w-3.5 h-3.5" />
-                    </a>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                      <thead className="bg-[var(--paper-2)]/50 text-[var(--grey)] text-xs uppercase font-semibold">
-                        <tr>
-                          <th className="px-5 py-3">Date Closed</th>
-                          <th className="px-5 py-3">Strategy</th>
-                          <th className="px-5 py-3">Duration</th>
-                          <th className="px-5 py-3">Exit Reason</th>
-                          <th className="px-5 py-3 text-right">Net Realized P&L</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[var(--hair)]">
-                        {closedPositions.slice(0, 5).map(pos => (
-                          <tr key={pos.id} className="hover:bg-[var(--raise)]/30 transition-colors">
-                            <td className="px-5 py-3.5 font-medium text-xs">{formatTradeDate(pos.closed_at)}</td>
-                            <td className="px-5 py-3.5">
-                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold bg-[var(--raise)] text-[var(--ink)]">
-                                {pos.underlying || 'BTC'} Strangle
-                              </span>
-                            </td>
-                            <td className="px-5 py-3.5 text-xs text-[var(--grey)]">
-                              {formatDuration(pos.opened_at, pos.closed_at) || '—'}
-                            </td>
-                            <td className="px-5 py-3.5">
-                              <span className="text-[11px] font-medium px-2 py-0.5 rounded bg-[var(--raise)] text-[var(--grey)]">
-                                {pos.close_reason ? pos.close_reason.replace(/_/g, ' ') : 'Closed'}
-                              </span>
-                            </td>
-                            <td className={`px-5 py-3.5 text-right font-bold text-sm num-tabular ${
-                              pos.realizedPnl > 0 ? 'text-[var(--pine)]' : pos.realizedPnl < 0 ? 'text-[var(--clay)]' : ''
-                            }`}>
-                              {pos.realizedPnl > 0 ? '+' : ''}{fmt(pos.realizedPnl)}
-                            </td>
-                          </tr>
-                        ))}
-                        {closedPositions.length === 0 && (
-                          <tr>
-                            <td colSpan={5} className="px-5 py-8 text-center text-[var(--grey)] text-xs">
-                              No closed trades recorded yet.
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </GlassCard>
 
               </div>
             )}
@@ -1381,33 +1353,82 @@ export default function Dashboard() {
                   </GlassCard>
                 ) : (
                   <div className="space-y-4">
-                    {openPositions.map(pos => (
-                      <GlassCard key={pos.id} className="p-5 border-l-4 border-l-emerald-500">
-                        <div className="flex flex-wrap items-center justify-between gap-4">
-                          <div>
-                            <div className="font-bold text-lg">{pos.underlying || 'BTC'} Options Strangle</div>
-                            <div className="text-xs text-[var(--grey)]">Lots: {pos.lots} · Opened {formatTradeDate(pos.opened_at)}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-[var(--grey)] font-medium">Unrealized P&L</div>
-                            <div className={`text-xl font-bold num-tabular ${pos.actualPnl > 0 ? 'text-[var(--pine)]' : pos.actualPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
-                              {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
+                    {openPositions.map(pos => {
+                      const callStrike = pos.short_call_strike || (pos.short_call_symbol ? pos.short_call_symbol.split('-')[2] : '—');
+                      const putStrike = pos.short_put_strike || (pos.short_put_symbol ? pos.short_put_symbol.split('-')[2] : '—');
+                      const callEntry = pos.fillDetails?.[pos.short_call_symbol]?.entry;
+                      const putEntry = pos.fillDetails?.[pos.short_put_symbol]?.entry;
+
+                      return (
+                        <GlassCard key={pos.id} className="p-5 border-l-4 border-l-emerald-500">
+                          <div className="flex flex-wrap items-center justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-bold text-lg">{pos.underlying || 'BTC'} Options Strangle</span>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                                  {pos.lots || 1} LOT
+                                </span>
+                              </div>
+                              <div className="text-xs text-[var(--grey)]">Opened {formatTradeDate(pos.opened_at)}</div>
+                            </div>
+                            <div className="flex items-center gap-6 text-right">
+                              <div>
+                                <div className="text-xs text-[var(--grey)] font-medium mb-0.5">Peak P&L</div>
+                                <div className="text-base sm:text-lg font-bold text-[var(--pine)] num-tabular">
+                                  +{fmt(pos.peakPnl)}
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-xs text-[var(--grey)] font-medium mb-0.5">Floating P&L</div>
+                                <div className={`text-base sm:text-lg font-bold num-tabular ${pos.actualPnl > 0 ? 'text-[var(--pine)]' : pos.actualPnl < 0 ? 'text-[var(--clay)]' : ''}`}>
+                                  {pos.actualPnl > 0 ? '+' : ''}{fmt(pos.actualPnl)}
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
 
-                        <div className="mt-4 pt-4 border-t border-[var(--hair)] flex justify-end">
-                          <button
-                            onClick={() => handleKillSwitch(pos.id)}
-                            disabled={!!pos.manual_exit_requested}
-                            className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5"
-                          >
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                            {pos.manual_exit_requested ? 'Exit Requested' : 'Emergency Close'}
-                          </button>
-                        </div>
-                      </GlassCard>
-                    ))}
+                          {/* Line-by-line strike details */}
+                          <div className="mt-4 pt-4 border-t border-[var(--hair)] space-y-2">
+                            <div className="flex flex-wrap items-center justify-between p-2.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-500 border border-blue-500/20">CALL LEG</span>
+                                <span className="font-mono font-bold text-[var(--ink)]">{pos.short_call_symbol || '—'}</span>
+                              </div>
+                              <div className="flex items-center gap-4 text-[var(--grey)]">
+                                <span>Strike: <strong className="text-[var(--ink)]">${Number(callStrike).toLocaleString()}</strong></span>
+                                <span>Entry Fill: <strong className="text-[var(--ink)]">{callEntry != null ? `$${callEntry} USD` : 'Recorded'}</strong></span>
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center justify-between p-2.5 rounded-lg bg-[var(--paper-2)] border border-[var(--hair)] text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">PUT LEG</span>
+                                <span className="font-mono font-bold text-[var(--ink)]">{pos.short_put_symbol || '—'}</span>
+                              </div>
+                              <div className="flex items-center gap-4 text-[var(--grey)]">
+                                <span>Strike: <strong className="text-[var(--ink)]">${Number(putStrike).toLocaleString()}</strong></span>
+                                <span>Entry Fill: <strong className="text-[var(--ink)]">{putEntry != null ? `$${putEntry} USD` : 'Recorded'}</strong></span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 pt-4 border-t border-[var(--hair)] flex items-center justify-between">
+                            <div className="text-xs text-[var(--grey)]">
+                              Total Credit: <strong className="text-[var(--pine)]">{pos.credit_received ? fmt(Number(pos.credit_received)) : '—'}</strong>
+                            </div>
+
+                            <button
+                              onClick={() => handleKillSwitch(pos.id)}
+                              disabled={!!pos.manual_exit_requested}
+                              className="px-3 py-1.5 rounded bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/20 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                              {pos.manual_exit_requested ? 'Exit Requested' : 'Emergency Close'}
+                            </button>
+                          </div>
+                        </GlassCard>
+                      );
+                    })}
                   </div>
                 )}
               </div>
